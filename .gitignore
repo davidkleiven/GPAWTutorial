@@ -1,0 +1,6 @@
+# Ignored files
+*.gpw
+*.out
+*.txt
+*.cube
+*.log
