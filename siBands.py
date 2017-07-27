@@ -34,5 +34,6 @@ def main():
         line.set_color("black")
     plt.show()
 
+
 if __name__ == "__main__":
     main()

@@ -1,6 +1,7 @@
 from __future__ import print_function
 import ase
 import gpaw as gp
+print (gp.__file__)
 
 def main():
     unitcellSize = 10.0 # Size of unit cell in Angstrohm
