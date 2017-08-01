@@ -7,7 +7,7 @@
 
 module load python
 export GPAW_FFTWSO=''
-export LD_LIBRARY_PATH="/usr/lib64":"/home/ntnu/davidkl/.local/lib"
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:"/usr/lib64":"/home/ntnu/davidkl/.local/lib"
 
 FOLDER="/home/ntnu/davidkl/GPAWTutorial"
 
