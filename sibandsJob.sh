@@ -12,4 +12,4 @@ FOLDER="/home/ntnu/davidkl/GPAWTutorial"
 
 cd ${FOLDER}
 
-python ${FOLDER}/sibands.py
+python ${FOLDER}/siBands.py
