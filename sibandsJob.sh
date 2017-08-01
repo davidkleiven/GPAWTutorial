@@ -8,7 +8,7 @@
 module load python
 export GPAW_FFTWSO=''
 
-FOLDER="/home/ntnu/davidkl/GPAWTutorials"
+FOLDER="/home/ntnu/davidkl/GPAWTutorial"
 
 cd ${FOLDER}
 
