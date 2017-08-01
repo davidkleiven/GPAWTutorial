@@ -1,8 +1,11 @@
 #!/bin/bash
 
+#PBS -N SIbands
 #PBS -l walltime=00:02:00
+#PBS -A NN9497K
 
 module load python
+export GPAW_FFTWSO=''
 
 FOLDER="/home/ntnu/davidkl/GPAWTutorials"
 
