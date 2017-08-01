@@ -22,17 +22,18 @@ def main():
     calc.get_potential_energy()
     bs = calc.band_structure()
 
-    fig = plt.figure()
-    ax = fig.add_subplot(1,1,1)
-    bs.plot( ax=ax, emax=10.0, show=False )
-    ax.set_ylabel( "Energy (ev)" )
-    ax.spines["right"].set_visible(False)
-    ax.spines["top"].set_visible(False)
-    ax.xaxis.set_ticks_position("bottom")
-    ax.yaxis.set_ticks_position("left")
-    for line in ax.get_lines():
-        line.set_color("black")
-    plt.show()
+    if 0:
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1)
+        bs.plot( ax=ax, emax=10.0, show=False )
+        ax.set_ylabel( "Energy (ev)" )
+        ax.spines["right"].set_visible(False)
+        ax.spines["top"].set_visible(False)
+        ax.xaxis.set_ticks_position("bottom")
+        ax.yaxis.set_ticks_position("left")
+        for line in ax.get_lines():
+            line.set_color("black")
+        plt.show()
 
 
 if __name__ == "__main__":
