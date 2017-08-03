@@ -11,7 +11,7 @@ export LD_LIBRARY_PATH="/usr/lib64":"/home/ntnu/davidkl/.local/lib":${LD_LIBRARY
 export GPAW_SETUP_PATH="/home/ntnu/davidkl/GPAW/gpawData/gpaw-setups-0.9.20000"
 export PATH=${PATH}:"/home/ntnu/davidkl/.local/bin"
 
-FOLDER="/home/ntnu/davidkl/GPAWTutorial/Exercises"
+FOLDER="/home/ntnu/davidkl/GPAWTutorial/Exercises/Al7068"
 
 cd ${FOLDER}
 
