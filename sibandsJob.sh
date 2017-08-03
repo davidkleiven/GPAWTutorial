@@ -2,7 +2,7 @@
 
 #PBS -N SIbands
 #PBS -l walltime=00:02:00
-#PBS -l select=1:ncpus=1
+#PBS -l select=1:ncpus=32
 #PBS -A nn9497k
 
 module load python
@@ -14,4 +14,4 @@ FOLDER="/home/ntnu/davidkl/GPAWTutorial"
 
 cd ${FOLDER}
 
-python ${FOLDER}/siBands.py
+mpirun -np 4 gpaw-python ${FOLDER}/siBands.py
