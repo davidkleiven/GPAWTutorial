@@ -4,3 +4,11 @@
 *.txt
 *.cube
 *.log
+*.ini
+*.pov
+*.png
+*.xyz
+*.pyc
+*.traj
+*.db
+Exercises/GettingStarted/data/*
