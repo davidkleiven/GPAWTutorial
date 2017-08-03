@@ -11,7 +11,7 @@ def main():
     atoms.center()
     k=4
     #calc = gp.GPAW( xc="PBE", mode=gp.PW(300), kpts=(k,k,k) )
-    calc = gp.GPAW( xc="PBE", h=0.15 )
+    calc = gp.GPAW( xc="PBE", h=0.2 )
     atoms.set_calculator( calc )
     energy = atoms.get_potential_energy()
 
