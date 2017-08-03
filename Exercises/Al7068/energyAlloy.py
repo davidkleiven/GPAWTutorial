@@ -14,6 +14,7 @@ def main():
     calc = gp.GPAW( xc="PBE", h=0.2 )
     atoms.set_calculator( calc )
     energy = atoms.get_potential_energy()
+    print ("Energy: %.2E eV/atom"%(energy) )
 
 if __name__ == "__main__":
     main()
