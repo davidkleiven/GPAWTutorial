@@ -19,7 +19,7 @@ def main():
     kpts={"path":"GXWKL","npoints":60},
     convergence={"bands":8})
 
-    calc.get_potential_energy()
+    energy = calc.get_potential_energy()
     bs = calc.band_structure()
 
     if 0:
