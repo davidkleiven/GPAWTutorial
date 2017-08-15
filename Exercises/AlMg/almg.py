@@ -37,7 +37,7 @@ def main( argv ):
 
     if ( atom_row_id < 0 ):
         # Target primitive cell
-        atoms = bulk( "Al", crystalstructure="fcc" )
+        atoms = buikd.bulk( "Al", crystalstructure="fcc" )
 
         # Create a supercell consisting of 32 atoms
         P = build.find_optimal_cell_shape( atoms, 32, "sc" )
