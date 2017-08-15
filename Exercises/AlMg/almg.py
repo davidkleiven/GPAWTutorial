@@ -1,15 +1,31 @@
+import sys
 from ase import Atoms
 from ase.lattice.cubic import FaceCenteredCubic
 import ase.db
+import sqlite3 as sq
 
-def main():
-    db_name = "AlMg.db"
+def main( argv ):
+    if ( len(argv) != 1 ):
+        print ("Usage: python almg.py paramID")
+        return
+
+    db_name = "/home/ntnu/davidkl/GPAWTutorial/Exercises/AlMg/AlMg.db"
     db = ase.db.connect( db_name )
+    runID = argv[0]
+
+    # Read parameters from the database
+    con  = sq.connect( db_name )
+    cur = con.cursor()
+    cur.execute( "SELECT hspacing,relax,atomID FROM runs WHERE ID=?", runID )
+    params = cur.fetchall()
+    con.close()
+
     save_pov = False
     run_sim = True
-    relax = True
-    h_spacing = 0.25
-    atom_row_id = -1
+    h_spacing = params[0]
+    relax = params[1]
+    atom_row_id = params[2]
+
     # Generate super cell
     NatomsX = 2
     NatomsY = 2
@@ -38,7 +54,7 @@ def main():
         write( "Al.pov", atoms*(3,3,1), rotation="-10z,-70x" )
 
     if ( run_sim ):
-        import gpaw import GPAW
+        from gpaw import GPAW
         calc = GPAW( h=h_spacing, xc="PBE" )
         atoms.set_calculator( calc )
 
@@ -49,7 +65,14 @@ def main():
         else:
             energy = atoms.get_potential_energy()
             print ("Energy %.2f eV/atom"%(energy) )
-        db.write( atoms, relaxed=True )
+        lastID = db.write( atoms, relaxed=True )
+
+        # Update the database
+        con = sq.connect( db_name )
+        cur = con.cursor()
+        cur.execute( "UPDATE runs SET status='finished',resultID=? WHERE ID=?", lastID, runID )
+        con.commit()
+        con.close()
 
 if ( __name__ == "__main__" ):
-    main()
+    main( sys.argv[1:] )
