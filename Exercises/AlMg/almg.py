@@ -40,7 +40,7 @@ def main( argv ):
         atoms = build.bulk( "Al", crystalstructure="fcc" )
 
         # Create a supercell consisting of 32 atoms
-        P = build.find_optimal_cell_shape( atoms.cell, 32, "sc" )
+        P = build.find_optimal_cell_shape_pure_python( atoms.cell, 32, "sc" )
         atoms = build.make_supercell( atoms, P )
         print (len(atoms))
 
