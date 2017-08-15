@@ -17,7 +17,7 @@ def main( argv ):
     con  = sq.connect( db_name )
     cur = con.cursor()
     cur.execute( "SELECT hspacing,relax,atomID FROM runs WHERE ID=?", runID )
-    params = cur.fetchall()
+    params = cur.fetchall()[0]
     con.close()
 
     save_pov = False
