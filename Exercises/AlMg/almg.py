@@ -3,6 +3,7 @@ from ase import Atoms
 from ase.lattice.cubic import FaceCenteredCubic
 import ase.db
 import sqlite3 as sq
+from ase import build
 
 def main( argv ):
     if ( len(argv) != 1 ):
@@ -35,8 +36,13 @@ def main( argv ):
     a = 4.05
 
     if ( atom_row_id < 0 ):
-        atoms = FaceCenteredCubic( directions=[[1,-1,0], [1,1,-2], [1,1,1]],
-                size=(2,2,2), symbol="Al" )
+        # Target primitive cell
+        atoms = bulk( "Al", crystalstructure="fcc" )
+
+        # Create a supercell consisting of 32 atoms
+        P = build.find_optimal_cell_shape( atoms, 32, "sc" )
+        atoms = build.make_supercell( atoms, P )
+        print (len(atoms))
 
         print ("Number of atoms: %d"%( len(atoms)) )
 
@@ -70,7 +76,7 @@ def main( argv ):
         # Update the database
         con = sq.connect( db_name )
         cur = con.cursor()
-        cur.execute( "UPDATE runs SET status='finished',resultID=? WHERE ID=?", lastID, runID )
+        cur.execute( "UPDATE runs SET status='finished',resultID=? WHERE ID=?", (lastID, runID) )
         con.commit()
         con.close()
 
