@@ -17,7 +17,7 @@ def main( argv ):
     # Read parameters from the database
     con  = sq.connect( db_name )
     cur = con.cursor()
-    cur.execute( "SELECT hspacing,relax,atomID,kpts FROM runs WHERE ID=?", runID )
+    cur.execute( "SELECT hspacing,relax,atomID,kpts FROM runs WHERE ID=?", (runID,) )
     params = cur.fetchall()[0]
     con.close()
 
