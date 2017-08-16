@@ -72,12 +72,12 @@ def main( argv ):
             from ase.optimize import QuasiNewton
 
             # Change mode to LCAO for faster relaxation
-            calc.set_mode("lcao")
+            calc.set( mode="lcao")
             relaxer = QuasiNewton( atoms, logfile="relaxation.log" )
             relaxer.run( fmax=0.05 )
 
             # Switch to FD mode for further relaxation
-            calc.set_mode( "fd" )
+            calc.set( mode="fd" )
             relaxer.run( fmax=0.05 )
         else:
             energy = atoms.get_potential_energy()
