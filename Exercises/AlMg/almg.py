@@ -62,7 +62,7 @@ def main( argv ):
 
     if ( run_sim ):
         from gpaw import GPAW
-        kpts = {"size":(Nkpts,Nkpts,Nkpts), gamma=True} # Monkhorst pack
+        kpts = {"size":(Nkpts,Nkpts,Nkpts), "gamma":True} # Monkhorst pack
         calc = GPAW( h=h_spacing, xc="PBE", kpts=kpts )
         atoms.set_calculator( calc )
 
