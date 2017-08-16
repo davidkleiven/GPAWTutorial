@@ -4,6 +4,7 @@ from ase.lattice.cubic import FaceCenteredCubic
 import ase.db
 import sqlite3 as sq
 from ase import build
+from gpaw.poisson import PoissonSolver
 
 def main( argv ):
     if ( len(argv) > 2 ):
@@ -64,16 +65,19 @@ def main( argv ):
         from gpaw import GPAW
         kpts = {"size":(Nkpts,Nkpts,Nkpts), "gamma":True} # Monkhorst pack
 
-        mode="fd"
-        if ( relax ):
-            mode = "lcao"
-
-        calc = GPAW( mode=mode, h=h_spacing, xc="PBE", kpts=kpts )
+        calc = GPAW( mode="fd", h=h_spacing, xc="PBE", kpts=kpts, basis="dzp", poissonsolver=PoissonSolver(relax="GS", eps=1E-7) )
         atoms.set_calculator( calc )
 
         if ( relax ):
             from ase.optimize import QuasiNewton
+
+            # Change mode to LCAO for faster relaxation
+            calc.set_mode("lcao")
             relaxer = QuasiNewton( atoms, logfile="relaxation.log" )
+            relaxer.run( fmax=0.05 )
+
+            # Switch to FD mode for further relaxation
+            calc.set_mode( "fd" )
             relaxer.run( fmax=0.05 )
         else:
             energy = atoms.get_potential_energy()
