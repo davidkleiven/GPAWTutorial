@@ -18,7 +18,7 @@ def main( argv ):
     # Read parameters from the database
     con  = sq.connect( db_name )
     cur = con.cursor()
-    cur.execute( "SELECT hspacing,relax,atomID,kpts FROM runs WHERE ID=?", (runID,) )
+    cur.execute( "SELECT hspacing,relax,atomID,kpts,nbands FROM runs WHERE ID=?", (runID,) )
     params = cur.fetchall()[0]
     con.close()
 
@@ -28,6 +28,7 @@ def main( argv ):
     relax = params[1]
     atom_row_id = params[2]
     Nkpts = params[3]
+    nbands=params[4]
 
     # Generate super cell
     NatomsX = 2
@@ -65,7 +66,7 @@ def main( argv ):
         from gpaw import GPAW
         kpts = {"size":(Nkpts,Nkpts,Nkpts), "gamma":True} # Monkhorst pack
 
-        calc = GPAW( mode="fd", h=h_spacing, xc="PBE", kpts=kpts, basis="dzp", poissonsolver=PoissonSolver(relax="GS", eps=1E-7) )
+        calc = GPAW( mode="fd", h=h_spacing, xc="PBE", nbands=nbands, kpts=kpts, basis="dzp", poissonsolver=PoissonSolver(relax="GS", eps=1E-7) )
         atoms.set_calculator( calc )
 
         if ( relax ):
