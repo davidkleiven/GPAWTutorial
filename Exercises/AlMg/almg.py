@@ -6,7 +6,7 @@ import sqlite3 as sq
 from ase import build
 
 def main( argv ):
-    if ( len(argv) != 1 ):
+    if ( len(argv) > 2 ):
         print ("Usage: python almg.py paramID")
         return
 
