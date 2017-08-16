@@ -67,8 +67,8 @@ def main( argv ):
         mode="fd"
         if ( relax ):
             mode = "lcao"
-            
-        calc = GPAW( ode=mode, h=h_spacing, xc="PBE", kpts=kpts )
+
+        calc = GPAW( mode=mode, h=h_spacing, xc="PBE", kpts=kpts )
         atoms.set_calculator( calc )
 
         if ( relax ):
