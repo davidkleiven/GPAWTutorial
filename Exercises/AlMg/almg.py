@@ -12,7 +12,7 @@ def main( argv ):
 
     db_name = "/home/ntnu/davidkl/GPAWTutorial/Exercises/AlMg/AlMg.db"
     db = ase.db.connect( db_name )
-    runID = argv[0]
+    runID = int(argv[0])
 
     # Read parameters from the database
     con  = sq.connect( db_name )
