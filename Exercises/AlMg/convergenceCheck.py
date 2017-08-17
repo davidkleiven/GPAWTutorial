@@ -1,5 +1,6 @@
 import sqlite3 as sq
 from matplotlib import pyplot as plt
+import numpy as np
 
 def main():
     db_name = "AlMg.db"
@@ -27,14 +28,27 @@ def main():
     for rid in resID:
         cur.execute( "SELECT energy FROM systems WHERE ID=?", (rid,) )
         kptsEnergies.append( cur.fetchall()[0] )
+
+    # Extract band convergence
+    cur.execute( "SELECT nbands,resultID FROM runs WHERE tags='bandconv'" )
+    res = cur.fetchall()
+    nbands,resultID = zip( *res )
+    bandeng = []
+    for rid in resultID:
+        cur.execute( "SELECT energy FROM systems WHERE ID=?", (rid,) )
+        bandeng.append( cur.fetchall()[0] )
     con.close()
 
     # Create plots
     fig = plt.figure()
-    ax = fig.add_subplot(1,2,1)
+    ax = fig.add_subplot(1,3,1)
     ax.plot( hspacing, energies )
-    ax2 = fig.add_subplot(1,2,2)
+    ax2 = fig.add_subplot(1,3,2)
     ax2.plot( kpts, kptsEnergies )
+
+    ax3 = fig.add_subplot(1,3,3)
+    nbands = np.array( nbands )
+    ax3.plot( np.abs(nbands), bandeng )
     plt.show()
 
 if __name__ == "__main__":
