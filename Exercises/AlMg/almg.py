@@ -97,7 +97,7 @@ def main( argv ):
             mode = PW(cutoff)
         else:
             mode = "fd"
-        #calc = GPAW( mode=mode, h=h_spacing, xc="PBE", nbands=nbands, kpts=kpts, basis="dzp")#, poissonsolver=PoissonSolver(relax="GS", eps=1E-7) )
+        calc = GPAW( mode="fd", h=h_spacing, xc="PBE", nbands=nbands, kpts=kpts, basis="dzp", poissonsolver=PoissonSolver(relax="GS", eps=1E-7) )
         calc = GPAW( mode=mode, xc="PBE", nbands=nbands, kpts=kpts, basis="dzp")
         atoms.set_calculator( calc )
 
