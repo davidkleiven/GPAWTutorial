@@ -97,22 +97,37 @@ def main( argv ):
             mode = PW(cutoff)
         else:
             mode = "fd"
-        calc = GPAW( mode=mode, h=h_spacing, xc="PBE", nbands=nbands, kpts=kpts, basis="dzp")#, poissonsolver=PoissonSolver(relax="GS", eps=1E-7) )
+        #calc = GPAW( mode=mode, h=h_spacing, xc="PBE", nbands=nbands, kpts=kpts, basis="dzp")#, poissonsolver=PoissonSolver(relax="GS", eps=1E-7) )
+        calc = GPAW( mode=PW(cutoff), xc="PBE", nbands=nbands, kpts=kpts )
         atoms.set_calculator( calc )
 
         if ( relax ):
-            from ase.optimize import QuasiNewton
+            from ase.optimize import QuasiNewton, BFGS
             from ase.optimize.precon import PreconLBFGS
 
             # First relax only the unit cell
+            logfile = "relaxation.log"
 
+            strfilter = StrainFilter( atoms )
+            relaxer = BFGS( strfilter )
+            relaxer.run( fmax=1E-4, logfile=logfile )
 
-            #relaxer = QuasiNewton( atoms, logfile="relaxation.log" )
+            # Relax atoms within the unit cell
             relaxer = PreconLBFGS( atoms, use_armijo=True, logfile="preconRelax.log", trajectory="precon.traj" )
             relaxer.run( fmax=0.05 )
 
-            # Switch to FD mode for further relaxation
-            calc.set( mode="fd" )
+            # Optimize both
+            uf = UnitCellFilter( atoms )
+            relaxer = BFGS( uf )
+            relaxer.run( fmax=0.05 )
+
+            # Optimize both due to a warning in the GPAW documentation
+            strfilter = StrainFilter( atoms )
+            relaxer = BFGS( strfilter )
+            relaxer.run( fmax=1E-4, logfile=logfile )
+
+            # Relax atoms within the unit cell
+            relaxer = PreconLBFGS( atoms, use_armijo=True, logfile="preconRelax.log", trajectory="precon.traj" )
             relaxer.run( fmax=0.05 )
         else:
             energy = atoms.get_potential_energy()
