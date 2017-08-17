@@ -71,10 +71,12 @@ def main( argv ):
 
         if ( relax ):
             from ase.optimize import QuasiNewton
+            from ase.optimize.precon import PreconLBFGS
 
             # Change mode to LCAO for faster relaxation
             calc.set( mode="lcao")
-            relaxer = QuasiNewton( atoms, logfile="relaxation.log" )
+            #relaxer = QuasiNewton( atoms, logfile="relaxation.log" )
+            relaxer = PreconLBFGS( atoms, use_armijo=True, logfile="preconRelax.log", trajectory="precon.traj" )
             relaxer.run( fmax=0.05 )
 
             # Switch to FD mode for further relaxation
