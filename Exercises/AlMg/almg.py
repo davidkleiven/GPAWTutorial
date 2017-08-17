@@ -7,6 +7,7 @@ import sqlite3 as sq
 from ase import build
 from gpaw.poisson import PoissonSolver
 import numpy as np
+from ase.constraint import UnitCellFilter, StrainFilter
 
 def main( argv ):
     if ( len(argv) > 2 ):
@@ -34,7 +35,7 @@ def main( argv ):
     # Read parameters from the database
     con  = sq.connect( db_name )
     cur = con.cursor()
-    cur.execute( "SELECT hspacing,relax,atomID,kpts,nbands,latticeConst FROM runs WHERE ID=?", (runID,) )
+    cur.execute( "SELECT hspacing,relax,atomID,kpts,nbands,latticeConst,cutoff FROM runs WHERE ID=?", (runID,) )
     params = cur.fetchall()[0]
     con.close()
 
@@ -46,6 +47,7 @@ def main( argv ):
     atom_row_id = params[2]
     Nkpts = params[3]
     nbands=params[4]
+    cutoff = params[5]
 
     # Generate super cell
     NatomsX = 2
@@ -91,15 +93,20 @@ def main( argv ):
         from gpaw import GPAW
         kpts = {"size":(Nkpts,Nkpts,Nkpts), "gamma":True} # Monkhorst pack
 
-        calc = GPAW( mode="fd", h=h_spacing, xc="PBE", nbands=nbands, kpts=kpts, basis="dzp", poissonsolver=PoissonSolver(relax="GS", eps=1E-7) )
+        if ( cutoff > 0 ):
+            mode = PW(cutoff)
+        else:
+            mode = "fd"
+        calc = GPAW( mode=mode, h=h_spacing, xc="PBE", nbands=nbands, kpts=kpts, basis="dzp", poissonsolver=PoissonSolver(relax="GS", eps=1E-7) )
         atoms.set_calculator( calc )
 
         if ( relax ):
             from ase.optimize import QuasiNewton
             from ase.optimize.precon import PreconLBFGS
 
-            # Change mode to LCAO for faster relaxation
-            calc.set( mode="lcao")
+            # First relax only the unit cell
+
+
             #relaxer = QuasiNewton( atoms, logfile="relaxation.log" )
             relaxer = PreconLBFGS( atoms, use_armijo=True, logfile="preconRelax.log", trajectory="precon.traj" )
             relaxer.run( fmax=0.05 )
