@@ -7,7 +7,7 @@ import sqlite3 as sq
 from ase import build
 from gpaw.poisson import PoissonSolver
 import numpy as np
-from ase.constraint import UnitCellFilter, StrainFilter
+from ase.constraints import UnitCellFilter, StrainFilter
 
 def main( argv ):
     if ( len(argv) > 2 ):
@@ -90,14 +90,14 @@ def main( argv ):
         return
 
     if ( run_sim ):
-        from gpaw import GPAW
+        from gpaw import GPAW, PW
         kpts = {"size":(Nkpts,Nkpts,Nkpts), "gamma":True} # Monkhorst pack
 
         if ( cutoff > 0 ):
             mode = PW(cutoff)
         else:
             mode = "fd"
-        calc = GPAW( mode=mode, h=h_spacing, xc="PBE", nbands=nbands, kpts=kpts, basis="dzp", poissonsolver=PoissonSolver(relax="GS", eps=1E-7) )
+        calc = GPAW( mode=mode, h=h_spacing, xc="PBE", nbands=nbands, kpts=kpts, basis="dzp")#, poissonsolver=PoissonSolver(relax="GS", eps=1E-7) )
         atoms.set_calculator( calc )
 
         if ( relax ):
