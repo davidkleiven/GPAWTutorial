@@ -56,7 +56,7 @@ def main( argv ):
 
     # Generate super cell
     if ( "test" in tags ):
-        Natoms = 8
+        Natoms = 16
     else:
         Natoms = 32
 
