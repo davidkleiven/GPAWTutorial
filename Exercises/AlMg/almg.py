@@ -47,7 +47,7 @@ def main( argv ):
     atom_row_id = params[2]
     Nkpts = params[3]
     nbands=params[4]
-    cutoff = params[5]
+    cutoff = params[6]
 
     # Generate super cell
     NatomsX = 2
