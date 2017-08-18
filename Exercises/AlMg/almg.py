@@ -8,6 +8,7 @@ from ase import build
 from gpaw.poisson import PoissonSolver
 import numpy as np
 from ase.constraints import UnitCellFilter, StrainFilter
+import random as rnd
 
 def main( argv ):
     if ( len(argv) > 2 ):
@@ -107,7 +108,7 @@ def main( argv ):
             from ase.optimize.precon import PreconLBFGS
 
             # First relax only the unit cell
-            logfile = "relaxation.log"
+            logfile = "relaxation_%d.log"%( rnd.randint(0,10000000) )
 
             strfilter = StrainFilter( atoms )
             relaxer = BFGS( strfilter, logfile=logfile )
@@ -121,15 +122,6 @@ def main( argv ):
             uf = UnitCellFilter( atoms, logfile=logfile )
             relaxer = BFGS( uf )
             relaxer.run( fmax=0.05 )
-
-            # Optimize both due to a warning in the GPAW documentation
-            strfilter = StrainFilter( atoms )
-            relaxer = BFGS( strfilter, logfile=logfile )
-            relaxer.run( fmax=1E-4 )
-
-            # Relax atoms within the unit cell
-            relaxer = PreconLBFGS( atoms, use_armijo=True, logfile="preconRelax.log", trajectory="precon.traj" )
-            relaxer.run( fmax=0.05 )
         else:
             energy = atoms.get_potential_energy()
             print ("Energy %.2f eV/atom"%(energy) )
@@ -138,7 +130,7 @@ def main( argv ):
         # Update the database
         con = sq.connect( db_name )
         cur = con.cursor()
-        cur.execute( "UPDATE runs SET status='finished',resultID=? WHERE ID=?", (lastID, runID) )
+        cur.execute( "UPDATE runs SET status='finished',resultID=?,logfile=? WHERE ID=?", (lastID, runID, logfile) )
         con.commit()
         con.close()
 
