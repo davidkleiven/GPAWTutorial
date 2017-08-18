@@ -122,9 +122,9 @@ def main( argv ):
             uf = UnitCellFilter( atoms, logfile=logfile )
             relaxer = BFGS( uf )
             relaxer.run( fmax=0.05 )
-        else:
-            energy = atoms.get_potential_energy()
-            print ("Energy %.2f eV/atom"%(energy) )
+
+        energy = atoms.get_potential_energy()
+        print ("Energy %.2f eV/atom"%(energy) )
         lastID = db.write( atoms, relaxed=True )
 
         # Update the database
