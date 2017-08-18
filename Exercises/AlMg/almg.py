@@ -110,22 +110,22 @@ def main( argv ):
             logfile = "relaxation.log"
 
             strfilter = StrainFilter( atoms )
-            relaxer = BFGS( strfilter )
-            relaxer.run( fmax=1E-4, logfile=logfile )
+            relaxer = BFGS( strfilter, logfile=logfile )
+            relaxer.run( fmax=1E-4 )
 
             # Relax atoms within the unit cell
             relaxer = PreconLBFGS( atoms, use_armijo=True, logfile="preconRelax.log", trajectory="precon.traj" )
             relaxer.run( fmax=0.05 )
 
-            # Optimize both simulatneously
-            uf = UnitCellFilter( atoms )
+            # Optimize both simultaneously
+            uf = UnitCellFilter( atoms, logfile=logfile )
             relaxer = BFGS( uf )
             relaxer.run( fmax=0.05 )
 
             # Optimize both due to a warning in the GPAW documentation
             strfilter = StrainFilter( atoms )
-            relaxer = BFGS( strfilter )
-            relaxer.run( fmax=1E-4, logfile=logfile )
+            relaxer = BFGS( strfilter, logfile=logfile )
+            relaxer.run( fmax=1E-4 )
 
             # Relax atoms within the unit cell
             relaxer = PreconLBFGS( atoms, use_armijo=True, logfile="preconRelax.log", trajectory="precon.traj" )
