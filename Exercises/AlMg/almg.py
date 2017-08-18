@@ -112,7 +112,7 @@ def main( argv ):
 
             strfilter = StrainFilter( atoms )
             relaxer = BFGS( strfilter, logfile=logfile )
-            relaxer.run( fmax=1E-4 )
+            relaxer.run( fmax=0.05 )
 
             # Relax atoms within the unit cell
             relaxer = PreconLBFGS( atoms, use_armijo=True, logfile="preconRelax.log", trajectory="precon.traj" )
