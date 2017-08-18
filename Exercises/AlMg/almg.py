@@ -65,10 +65,11 @@ def main( argv ):
 
     if ( old_traj != "none" ):
         # Read the atoms from the trajectory file
+        print ("Reading atoms from trajectory file")
         traj = Trajectory( old_traj )
         atoms = traj[-1]
-
     elif ( atom_row_id < 0 ):
+        print ("Building supercell using find_optimal_cell_shape_pure_python from ASE")
         # Target primitive cell
         atoms = build.bulk( "Al", crystalstructure="fcc", a=a )
 
@@ -82,6 +83,7 @@ def main( argv ):
         for i in range(n_mg_atoms):
             atoms[i].set( "symbol", "Mg" )
     else:
+        print ("Reading atoms object from the database")
         # Read atoms from database
         atoms = db.get_atoms( selection=atom_row_id )
 
