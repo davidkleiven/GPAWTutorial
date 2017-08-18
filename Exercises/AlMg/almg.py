@@ -119,8 +119,8 @@ def main( argv ):
             relaxer.run( fmax=0.05 )
 
             # Optimize both simultaneously
-            uf = UnitCellFilter( atoms, logfile=logfile )
-            relaxer = BFGS( uf )
+            uf = UnitCellFilter( atoms )
+            relaxer = BFGS( uf, logfile=logfile  )
             relaxer.run( fmax=0.05 )
 
         energy = atoms.get_potential_energy()
