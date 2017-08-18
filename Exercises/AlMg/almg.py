@@ -115,7 +115,7 @@ def main( argv ):
             relaxer.run( fmax=0.05 )
 
             # Relax atoms within the unit cell
-            relaxer = PreconLBFGS( atoms, use_armijo=True, logfile="preconRelax.log", trajectory="precon.traj" )
+            relaxer = PreconLBFGS( atoms, use_armijo=True, logfile=logfile, trajectory="precon.traj" )
             relaxer.run( fmax=0.05 )
 
             # Optimize both simultaneously
