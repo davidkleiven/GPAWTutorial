@@ -37,7 +37,7 @@ def main( argv ):
     # Read parameters from the database
     con  = sq.connect( db_name )
     cur = con.cursor()
-    cur.execute( "SELECT hspacing,relax,atomID,kpts,nbands,latticeConst,cutoff,traj,fmax FROM runs WHERE ID=?", (runID,) )
+    cur.execute( "SELECT hspacing,relax,atomID,kpts,nbands,latticeConst,cutoff,traj,fmax,tags FROM runs WHERE ID=?", (runID,) )
     params = cur.fetchall()[0]
     con.close()
 
@@ -52,11 +52,13 @@ def main( argv ):
     cutoff = params[6]
     old_traj = params[7]
     fmax = params[8]
+    tags = params[9]
 
     # Generate super cell
-    NatomsX = 2
-    NatomsY = 2
-    NatomsZ = 4
+    if ( "test" in tags ):
+        Natoms = 4
+    else:
+        Natoms = 32
 
     # Lattice parameter
     a = float( params[5] )
@@ -65,12 +67,13 @@ def main( argv ):
         # Read the atoms from the trajectory file
         traj = Trajectory( old_traj )
         atoms = traj[-1]
+
     elif ( atom_row_id < 0 ):
         # Target primitive cell
         atoms = build.bulk( "Al", crystalstructure="fcc", a=a )
 
         # Create a supercell consisting of 32 atoms
-        P = build.find_optimal_cell_shape_pure_python( atoms.cell, 32, "sc" )
+        P = build.find_optimal_cell_shape_pure_python( atoms.cell, Natoms, "sc" )
         atoms = build.make_supercell( atoms, P )
 
         # Replace some atoms with Mg atoms
