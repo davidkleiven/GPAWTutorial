@@ -92,6 +92,7 @@ def main( argv ):
     if ( run_sim ):
         from gpaw import GPAW, PW
         kpts = {"size":(Nkpts,Nkpts,Nkpts), "gamma":True} # Monkhorst pack
+        kpts = (Nkpts,Nkpts,Nkpts)
 
         if ( cutoff > 0 ):
             mode = PW(cutoff)
