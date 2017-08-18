@@ -54,12 +54,6 @@ def main( argv ):
     fmax = params[8]
     tags = params[9]
 
-    # Generate super cell
-    if ( "test" in tags ):
-        Natoms = 16
-    else:
-        Natoms = 32
-
     # Lattice parameter
     a = float( params[5] )
 
@@ -74,8 +68,10 @@ def main( argv ):
         atoms = build.bulk( "Al", crystalstructure="fcc", a=a )
 
         # Create a supercell consisting of 32 atoms
-        P = build.find_optimal_cell_shape_pure_python( atoms.cell, Natoms, "sc" )
-        atoms = build.make_supercell( atoms, P )
+        if ( not "test" in tags ):
+            # Skip this if the run is a test run
+            P = build.find_optimal_cell_shape_pure_python( atoms.cell, 32, "sc" )
+            atoms = build.make_supercell( atoms, P )
 
         # Replace some atoms with Mg atoms
         n_mg_atoms = int( 0.2*len(atoms) )
@@ -124,17 +120,24 @@ def main( argv ):
             logfile = "relaxation_%d.log"%( uid )
             trajfile = "trajectory_%d.traj"%( uid )
 
+            print ("Logfile: %s, Trajectory file: %s"%(logfile,trajfile) )
+
+            traj = Trajectory( trajfile, 'w', atoms )
+
             strfilter = StrainFilter( atoms )
-            relaxer = BFGS( strfilter, logfile=logfile, trajectory=trajfile )
+            relaxer = BFGS( strfilter, logfile=logfile )
+            relaxer.attach( traj )
             relaxer.run( fmax=fmax )
 
             # Relax atoms within the unit cell
-            relaxer = PreconLBFGS( atoms, use_armijo=True, logfile=logfile, trajectory=trajfile )
+            relaxer = PreconLBFGS( atoms, use_armijo=True, logfile=logfile )
+            relaxer.attach( traj )
             relaxer.run( fmax=fmax )
 
             # Optimize both simultaneously
             uf = UnitCellFilter( atoms )
-            relaxer = BFGS( uf, logfile=logfile, trajectory=trajfile )
+            relaxer = BFGS( uf, logfile=logfile )
+            relaxer.attach( traj )
             relaxer.run( fmax=fmax )
 
         energy = atoms.get_potential_energy()
@@ -144,7 +147,7 @@ def main( argv ):
         # Update the database
         con = sq.connect( db_name )
         cur = con.cursor()
-        cur.execute( "UPDATE runs SET status='finished',resultID=?,logfile=?,traj=? WHERE ID=?", (lastID, runID, logfile,trajfile) )
+        cur.execute( "UPDATE runs SET status='finished',resultID=?,logfile=?,traj=? WHERE ID=?", (lastID, logfile,trajfile, runID) )
         con.commit()
         con.close()
 
