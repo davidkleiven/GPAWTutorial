@@ -9,6 +9,7 @@ from gpaw.poisson import PoissonSolver
 import numpy as np
 from ase.constraints import UnitCellFilter, StrainFilter
 import random as rnd
+from ase.io.trajectory import Trajectory
 
 def main( argv ):
     if ( len(argv) > 2 ):
@@ -36,7 +37,7 @@ def main( argv ):
     # Read parameters from the database
     con  = sq.connect( db_name )
     cur = con.cursor()
-    cur.execute( "SELECT hspacing,relax,atomID,kpts,nbands,latticeConst,cutoff FROM runs WHERE ID=?", (runID,) )
+    cur.execute( "SELECT hspacing,relax,atomID,kpts,nbands,latticeConst,cutoff,traj,fmax FROM runs WHERE ID=?", (runID,) )
     params = cur.fetchall()[0]
     con.close()
 
@@ -49,6 +50,8 @@ def main( argv ):
     Nkpts = params[3]
     nbands=params[4]
     cutoff = params[6]
+    old_traj = params[7]
+    fmax = params[8]
 
     # Generate super cell
     NatomsX = 2
@@ -58,7 +61,11 @@ def main( argv ):
     # Lattice parameter
     a = float( params[5] )
 
-    if ( atom_row_id < 0 ):
+    if ( old_traj != "none" ):
+        # Read the atoms from the trajectory file
+        traj = Trajectory( old_traj )
+        atoms = traj[-1]
+    elif ( atom_row_id < 0 ):
         # Target primitive cell
         atoms = build.bulk( "Al", crystalstructure="fcc", a=a )
 
@@ -93,7 +100,6 @@ def main( argv ):
     if ( run_sim ):
         from gpaw import GPAW, PW
         kpts = {"size":(Nkpts,Nkpts,Nkpts), "gamma":True} # Monkhorst pack
-        kpts = (Nkpts,Nkpts,Nkpts)
 
         if ( cutoff > 0 ):
             mode = PW(cutoff)
@@ -107,21 +113,23 @@ def main( argv ):
             from ase.optimize import QuasiNewton, BFGS
             from ase.optimize.precon import PreconLBFGS
 
+            uid = rnd.randint(0,10000000)
             # First relax only the unit cell
-            logfile = "relaxation_%d.log"%( rnd.randint(0,10000000) )
+            logfile = "relaxation_%d.log"%( uid )
+            trajfile = "trajectory_%d.traj"%( uid )
 
             strfilter = StrainFilter( atoms )
-            relaxer = BFGS( strfilter, logfile=logfile )
-            relaxer.run( fmax=0.05 )
+            relaxer = BFGS( strfilter, logfile=logfile, trajectory=trajfile )
+            relaxer.run( fmax=fmax )
 
             # Relax atoms within the unit cell
-            relaxer = PreconLBFGS( atoms, use_armijo=True, logfile=logfile, trajectory="precon.traj" )
-            relaxer.run( fmax=0.05 )
+            relaxer = PreconLBFGS( atoms, use_armijo=True, logfile=logfile, trajectory=trajfile )
+            relaxer.run( fmax=fmax )
 
             # Optimize both simultaneously
             uf = UnitCellFilter( atoms )
-            relaxer = BFGS( uf, logfile=logfile  )
-            relaxer.run( fmax=0.05 )
+            relaxer = BFGS( uf, logfile=logfile, trajectory=trajfile )
+            relaxer.run( fmax=fmax )
 
         energy = atoms.get_potential_energy()
         print ("Energy %.2f eV/atom"%(energy) )
@@ -130,7 +138,7 @@ def main( argv ):
         # Update the database
         con = sq.connect( db_name )
         cur = con.cursor()
-        cur.execute( "UPDATE runs SET status='finished',resultID=?,logfile=? WHERE ID=?", (lastID, runID, logfile) )
+        cur.execute( "UPDATE runs SET status='finished',resultID=?,logfile=?,traj=? WHERE ID=?", (lastID, runID, logfile,trajfile) )
         con.commit()
         con.close()
 
