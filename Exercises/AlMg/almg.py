@@ -99,7 +99,7 @@ def main( argv ):
         else:
             mode = "fd"
         #calc = GPAW( mode="fd", h=h_spacing, xc="PBE", nbands=nbands, kpts=kpts, basis="dzp", poissonsolver=PoissonSolver(relax="GS", eps=1E-7) )
-        calc = GPAW( mode=mode, xc="PBE", kpts=kpts )
+        calc = GPAW( mode=mode, xc="PBE", nbands=nbands, kpts=kpts )
         atoms.set_calculator( calc )
 
         if ( relax ):
@@ -117,7 +117,7 @@ def main( argv ):
             relaxer = PreconLBFGS( atoms, use_armijo=True, logfile="preconRelax.log", trajectory="precon.traj" )
             relaxer.run( fmax=0.05 )
 
-            # Optimize both
+            # Optimize both simulatneously
             uf = UnitCellFilter( atoms )
             relaxer = BFGS( uf )
             relaxer.run( fmax=0.05 )
