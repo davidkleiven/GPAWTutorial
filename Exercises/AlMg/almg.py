@@ -10,6 +10,7 @@ import numpy as np
 from ase.constraints import UnitCellFilter, StrainFilter
 import random as rnd
 from ase.io.trajectory import Trajectory
+import fftw3
 
 def main( argv ):
     if ( len(argv) > 2 ):
@@ -44,6 +45,7 @@ def main( argv ):
     save_pov = False
     run_sim = True
     swap_atoms = False
+    useOnlyUnitCellFilter = True
     h_spacing = params[0]
     relax = params[1]
     atom_row_id = params[2]
@@ -124,21 +126,22 @@ def main( argv ):
 
             traj = Trajectory( trajfile, 'w', atoms )
 
-            strfilter = StrainFilter( atoms )
-            relaxer = BFGS( strfilter, logfile=logfile )
-            relaxer.attach( traj )
-            relaxer.run( fmax=fmax )
+            if ( not useOnlyUnitCellFilter ):
+                strfilter = StrainFilter( atoms )
+                relaxer = BFGS( strfilter, logfile=logfile )
+                relaxer.attach( traj )
+                relaxer.run( fmax=fmax )
 
-            # Relax atoms within the unit cell
-            relaxer = PreconLBFGS( atoms, use_armijo=True, logfile=logfile )
-            relaxer.attach( traj )
-            relaxer.run( fmax=fmax )
-
-            # Optimize both simultaneously
-            uf = UnitCellFilter( atoms )
-            relaxer = BFGS( uf, logfile=logfile )
-            relaxer.attach( traj )
-            relaxer.run( fmax=fmax )
+                # Relax atoms within the unit cell
+                relaxer = PreconLBFGS( atoms, use_armijo=True, logfile=logfile )
+                relaxer.attach( traj )
+                relaxer.run( fmax=fmax )
+            else:
+                # Optimize both simultaneously
+                uf = UnitCellFilter( atoms )
+                relaxer = BFGS( uf, logfile=logfile )
+                relaxer.attach( traj )
+                relaxer.run( fmax=fmax )
 
         energy = atoms.get_potential_energy()
         print ("Energy %.2f eV/atom"%(energy) )
