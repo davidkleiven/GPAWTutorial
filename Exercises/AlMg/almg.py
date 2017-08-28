@@ -10,7 +10,6 @@ import numpy as np
 from ase.constraints import UnitCellFilter, StrainFilter
 import random as rnd
 from ase.io.trajectory import Trajectory
-import fftw3
 
 def main( argv ):
     if ( len(argv) > 2 ):
