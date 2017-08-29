@@ -10,8 +10,11 @@ import numpy as np
 from ase.constraints import UnitCellFilter, StrainFilter
 import random as rnd
 from ase.io.trajectory import Trajectory
+import gpaw as gp
+from gpaw import GPAW, PW
 
 def main( argv ):
+    print ("Dry-run", gp.dry_run)
     if ( len(argv) > 2 ):
         print ("Usage: python almg.py paramID")
         return
@@ -100,7 +103,6 @@ def main( argv ):
         return
 
     if ( run_sim ):
-        from gpaw import GPAW, PW
         kpts = {"size":(Nkpts,Nkpts,Nkpts), "gamma":True} # Monkhorst pack
         kpts = (Nkpts,Nkpts,Nkpts)
 
@@ -112,6 +114,8 @@ def main( argv ):
         calc = GPAW( mode=mode, xc="PBE", nbands=nbands, kpts=kpts )
         atoms.set_calculator( calc )
 
+        logfile = "no file"
+        trajfile= "no file"
         if ( relax ):
             from ase.optimize import QuasiNewton, BFGS
             from ase.optimize.precon import PreconLBFGS
