@@ -109,7 +109,7 @@ def main( argv ):
     # Update the parameters in the database
     con = sq.connect( db_name )
     cur = con.cursor()
-    cur.execute( "UPDATE SET status=?,systemID=? WHERE ID=?", ("finished",lastID,runID) )
+    cur.execute( "UPDATE simpar SET status=?,systemID=? WHERE ID=?", ("finished",lastID,runID) )
     con.commit()
     con.close()
 
