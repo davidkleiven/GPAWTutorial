@@ -33,8 +33,6 @@ def moveAtoms( atoms, n_atoms_to_shift, alat=4.05 ):
     for i in range(n_atoms_to_shift):
         atoms[i].x += translation[0]
         atoms[i].y += translation[1]
-    print (atoms.get_cell())
-    exit()
     return atoms
 
 def translateAtomToInsideUnitCell( atom, cell ):
