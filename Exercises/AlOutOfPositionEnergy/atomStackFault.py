@@ -35,7 +35,7 @@ def moveAtoms( atoms, n_atoms_to_shift, alat=4.05 ):
         atoms[i].y += translation[1]
 
     # Wrap positions to cell
-    positions = geomtry.wrap_positions( atoms.get_positions(), atoms.get_cell() )
+    positions = geometry.wrap_positions( atoms.get_positions(), atoms.get_cell() )
     atoms.set_positions( positions )
     return atoms
 
@@ -104,8 +104,8 @@ def main( argv ):
     P = build.find_optimal_cell_shape_pure_python( aluminum.cell, 32, "sc" )
     aluminum = build.make_supercell( aluminum, P )
 
-    closestPackLabeling( aluminum )
     aluminum = moveAtoms( aluminum, params["n_atoms_to_shift"], alat=4.05 )
+    exit()
     aluminum.set_calculator( calc )
     if ( params["relax"] ):
         logfile = "logilfe%d.log"%(runID)
