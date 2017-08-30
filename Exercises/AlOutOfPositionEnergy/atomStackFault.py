@@ -4,7 +4,7 @@ import os
 import gpaw as gp
 import sys
 from ase import Atoms
-from ase.lattice.Cubic import FaceCenteredCubic
+from ase.lattice.cubic import FaceCenteredCubic
 import ase.db
 import sqlite3 as sq
 from ase.constraints import StrainFilter
@@ -61,7 +61,7 @@ def main( argv ):
     # Read parameters from database
     con = sq.connect( db_name )
     cur = con.cursor()
-    cur.execute( "SELECT cutoff,kpts,n_atoms_to_shift,nbands,relax FROM simpar WHERE ID=?,", (runID,) )
+    cur.execute( "SELECT cutoff,kpts,n_atoms_to_shift,nbands,relax FROM simpar WHERE ID=?", (runID,) )
     dbparams = cur.fetchall()[0]
     con.close()
 
@@ -72,15 +72,17 @@ def main( argv ):
     params["nbands"] = dbparams[3]
     params["relax"] = dbparams[4]
 
+    kpts = (params["kpts"],params["kpts"],params["kpts"])
     # Initialize the calculator
-    calc = gp.GPAW( mode=gp.PW(params["cutoff"]), xc="PBE", nbands=nbands, kpts=kpts )
+    calc = gp.GPAW( mode=gp.PW(params["cutoff"]), xc="PBE", nbands=params["nbands"], kpts=kpts )
 
     # Initialize the atoms
     aluminum = build.bulk( "Al", crystalstructure="fcc" )
-    P = build.find_optimal_cell_shape_pure_python( atoms.cell, 32, "sc" )
+    P = build.find_optimal_cell_shape_pure_python( aluminum.cell, 32, "sc" )
     aluminum = build.make_supercell( aluminum, P )
 
     aluminum = moveAtoms( aluminum, params["n_atoms_to_shift"], alat=4.05 )
+    aluminum.set_calculator( calc )
 
     if ( params["relax"] ):
         logfile = "logilfe%d.log"%(runID)
@@ -107,7 +109,7 @@ def main( argv ):
     # Update the parameters in the database
     con = sq.connect( db_name )
     cur = con.cursor()
-    cur.execute( "UPDATE SET status=?,systemID=? WHERE ID=?,", ("finished",lastID,runID) )
+    cur.execute( "UPDATE SET status=?,systemID=? WHERE ID=?", ("finished",lastID,runID) )
     con.commit()
     con.close()
 
