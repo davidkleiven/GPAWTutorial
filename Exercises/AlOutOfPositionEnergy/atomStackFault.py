@@ -11,6 +11,7 @@ from ase.constraints import StrainFilter
 from ase.io.trajectory import Trajectory
 from ase import build
 import numpy as np
+from ase.optimize import BFGS
 
 def moveAtoms( atoms, n_atoms_to_shift, alat=4.05 ):
     """
