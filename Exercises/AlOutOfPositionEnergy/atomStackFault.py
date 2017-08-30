@@ -12,6 +12,7 @@ from ase.io.trajectory import Trajectory
 from ase import build
 import numpy as np
 from ase.optimize import BFGS
+from ase import geometry
 
 def moveAtoms( atoms, n_atoms_to_shift, alat=4.05 ):
     """
@@ -32,7 +33,14 @@ def moveAtoms( atoms, n_atoms_to_shift, alat=4.05 ):
     for i in range(n_atoms_to_shift):
         atoms[i].x += translation[0]
         atoms[i].y += translation[1]
+    print (atoms.get_cell())
+    exit()
     return atoms
+
+def translateAtomToInsideUnitCell( atom, cell ):
+    """
+    Subtract/add integer lattice vector to ensure that the atoms are inside the unitcell
+    """
 
 def main( argv ):
     runID = int( argv[0] )
@@ -91,8 +99,6 @@ def main( argv ):
 
     aluminum = moveAtoms( aluminum, params["n_atoms_to_shift"], alat=4.05 )
     aluminum.set_calculator( calc )
-    print (aluminum.get_positions())
-    exit()
     if ( params["relax"] ):
         logfile = "logilfe%d.log"%(runID)
         trajfile = "optTrajectory%d.traj"%(runID)
