@@ -28,8 +28,11 @@ def moveAtoms( atoms, n_atoms_to_shift, alat=4.05 ):
     translation = np.zeros(3)
     translation += d[0]*xhat
     translation += d[1]*yhat
+
+    translateAllAtoms = np.zeros((len(atoms),3))
     for i in range(n_atoms_to_shift):
-        atoms[i].translate(translation)
+        translateAllAtoms[i,:] = translation
+    atoms.translate(translation)
     return atoms
 
 def main( argv ):
