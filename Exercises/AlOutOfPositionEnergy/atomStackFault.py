@@ -22,7 +22,7 @@ def moveAtoms( atoms, n_atoms_to_shift, alat=4.05 ):
     """
     r = alat/(2.0*np.sqrt(2.0)) # For FCC lattice
     xhat = np.array( [1,-1,0] )/np.sqrt(2)
-    yhat = np.array( [-1,1,0] )/np.sqrt(2)
+    yhat = np.array( [1,1,-2] )/np.sqrt(6)
 
     # Translation vec normal t0 (1,1,1)
     d = np.array( [1.0,1/np.sqrt(3),0] )*r
@@ -33,12 +33,21 @@ def moveAtoms( atoms, n_atoms_to_shift, alat=4.05 ):
     for i in range(n_atoms_to_shift):
         atoms[i].x += translation[0]
         atoms[i].y += translation[1]
+
+    # Wrap positions to cell
+    positions = geomtry.wrap_positions( atoms.get_positions(), atoms.get_cell() )
+    atoms.set_positions( positions )
     return atoms
 
-def translateAtomToInsideUnitCell( atom, cell ):
+def closestPackLabeling( atoms ):
     """
-    Subtract/add integer lattice vector to ensure that the atoms are inside the unitcell
+    Gives each atom a label A,B or C depending on which layer they are in
     """
+    atomLabels = []
+    layerIndx, dist = geometry.get_layers( atoms, (1,1,1), tolerance=0.8 )
+    print (layerIndx,dist)
+    exit()
+
 
 def main( argv ):
     runID = int( argv[0] )
@@ -95,6 +104,7 @@ def main( argv ):
     P = build.find_optimal_cell_shape_pure_python( aluminum.cell, 32, "sc" )
     aluminum = build.make_supercell( aluminum, P )
 
+    closestPackLabeling( aluminum )
     aluminum = moveAtoms( aluminum, params["n_atoms_to_shift"], alat=4.05 )
     aluminum.set_calculator( calc )
     if ( params["relax"] ):
