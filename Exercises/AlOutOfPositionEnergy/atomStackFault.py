@@ -105,7 +105,6 @@ def main( argv ):
     aluminum = build.make_supercell( aluminum, P )
 
     aluminum = moveAtoms( aluminum, params["n_atoms_to_shift"], alat=4.05 )
-    exit()
     aluminum.set_calculator( calc )
     if ( params["relax"] ):
         logfile = "logilfe%d.log"%(runID)
