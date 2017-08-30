@@ -29,10 +29,9 @@ def moveAtoms( atoms, n_atoms_to_shift, alat=4.05 ):
     translation += d[0]*xhat
     translation += d[1]*yhat
 
-    translateAllAtoms = np.zeros((len(atoms),3))
     for i in range(n_atoms_to_shift):
-        translateAllAtoms[i,:] = translation
-    atoms.translate(translation)
+        atoms[i].x += translation[0]
+        atoms[i].y += translation[1]
     return atoms
 
 def main( argv ):
@@ -92,7 +91,8 @@ def main( argv ):
 
     aluminum = moveAtoms( aluminum, params["n_atoms_to_shift"], alat=4.05 )
     aluminum.set_calculator( calc )
-
+    print (aluminum.get_positions())
+    exit()
     if ( params["relax"] ):
         logfile = "logilfe%d.log"%(runID)
         trajfile = "optTrajectory%d.traj"%(runID)
