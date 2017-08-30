@@ -39,7 +39,8 @@ def main( argv ):
         "kpts":1,
         "n_atoms_to_shift":0,
         "nbands":-1,
-        "relax":False
+        "relax":False,
+        "gamma":False
     }
 
     db_name = "none"
@@ -61,7 +62,7 @@ def main( argv ):
     # Read parameters from database
     con = sq.connect( db_name )
     cur = con.cursor()
-    cur.execute( "SELECT cutoff,kpts,n_atoms_to_shift,nbands,relax FROM simpar WHERE ID=?", (runID,) )
+    cur.execute( "SELECT cutoff,kpts,n_atoms_to_shift,nbands,relax,gamma FROM simpar WHERE ID=?", (runID,) )
     dbparams = cur.fetchall()[0]
     con.close()
 
@@ -71,8 +72,12 @@ def main( argv ):
     params["n_atoms_to_shift"] = dbparams[2]
     params["nbands"] = dbparams[3]
     params["relax"] = dbparams[4]
+    params["gamma"] = dbparams[5]
 
-    kpts = (params["kpts"],params["kpts"],params["kpts"])
+    if ( params["gamma"] ):
+        kpts = {"size":(params["kpts"],params["kpts"],params["kpts"]), "gamma":True}
+    else:
+        kpts = (params["kpts"],params["kpts"],params["kpts"])
     # Initialize the calculator
     calc = gp.GPAW( mode=gp.PW(params["cutoff"]), xc="PBE", nbands=params["nbands"], kpts=kpts )
 
