@@ -111,14 +111,14 @@ def main( argv ):
         trajfile = "optTrajectory%d.traj"%(runID)
 
         traj = Trajectory( trajfile, 'w', aluminum )
-        # Optimize cell
-        strain = StrainFilter( aluminum )
-        relaxer = BFGS( strain, logfile=logfile )
+        # Optimize internal positions
+        relaxer = BFGS( aluminum, logfile=logfile )
         relaxer.attach( traj )
         relaxer.run( fmax=0.05 )
 
-        # Optimize internal positions
-        relaxer = BFGS( aluminum, logfile=logfile )
+        # Optimize cell
+        strain = StrainFilter( aluminum )
+        relaxer = BFGS( strain, logfile=logfile )
         relaxer.attach( traj )
         relaxer.run( fmax=0.05 )
 
