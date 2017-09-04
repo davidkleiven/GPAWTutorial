@@ -114,8 +114,8 @@ def main( argv ):
         calc = GPAW( mode=mode, xc="PBE", nbands=nbands, kpts=kpts )
         atoms.set_calculator( calc )
 
-        logfile = "no file"
-        trajfile= "no file"
+        logfile = "none"
+        trajfile= "none"
         if ( relax ):
             from ase.optimize import QuasiNewton, BFGS
             from ase.optimize.precon import PreconLBFGS
