@@ -114,7 +114,7 @@ def main( argv ):
             mode = "fd"
         #calc = GPAW( mode="fd", h=h_spacing, xc="PBE", nbands=nbands, kpts=kpts, basis="dzp", poissonsolver=PoissonSolver(relax="GS", eps=1E-7) )
         if ( useVASP ):
-            calc = vsp.Vasp( xc="pbe", kpts=kpts, encut=cutoff, nbands=nbands )
+            calc = vsp.Vasp( xc="PBE", kpts=kpts, encut=cutoff, nbands=nbands )
         else:
             calc = GPAW( mode=mode, xc="PBE", nbands=nbands, kpts=kpts )
         atoms.set_calculator( calc )
