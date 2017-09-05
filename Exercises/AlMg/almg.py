@@ -12,6 +12,7 @@ import random as rnd
 from ase.io.trajectory import Trajectory
 import gpaw as gp
 from gpaw import GPAW, PW
+from ase.calculators import vasp as vsp
 
 def main( argv ):
     print ("Dry-run", gp.dry_run)
@@ -47,6 +48,7 @@ def main( argv ):
     save_pov = False
     run_sim = True
     swap_atoms = False
+    useVASP = True # If False --> GPAW
     useOnlyUnitCellFilter = True
     h_spacing = params[0]
     relax = params[1]
@@ -111,7 +113,10 @@ def main( argv ):
         else:
             mode = "fd"
         #calc = GPAW( mode="fd", h=h_spacing, xc="PBE", nbands=nbands, kpts=kpts, basis="dzp", poissonsolver=PoissonSolver(relax="GS", eps=1E-7) )
-        calc = GPAW( mode=mode, xc="PBE", nbands=nbands, kpts=kpts )
+        if ( useVASP ):
+            calc = vsp.Vasp( xc="pbe", kpts=kpts, encut=cutoff, nbands=nbands )
+        else:
+            calc = GPAW( mode=mode, xc="PBE", nbands=nbands, kpts=kpts )
         atoms.set_calculator( calc )
 
         logfile = "none"
