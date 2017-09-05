@@ -48,7 +48,7 @@ def main( argv ):
     save_pov = False
     run_sim = True
     swap_atoms = False
-    useVASP = True # If False --> GPAW
+    useVASP = False # If False --> GPAW
     useOnlyUnitCellFilter = True
     h_spacing = params[0]
     relax = params[1]
@@ -123,7 +123,7 @@ def main( argv ):
         trajfile= "none"
         if ( relax ):
             from ase.optimize import QuasiNewton, BFGS
-            from ase.optimize.precon import PreconLBFGS
+            #from ase.optimize.precon import PreconLBFGS
 
             uid = rnd.randint(0,10000000)
             # First relax only the unit cell
@@ -141,7 +141,7 @@ def main( argv ):
                 relaxer.run( fmax=fmax )
 
                 # Relax atoms within the unit cell
-                relaxer = PreconLBFGS( atoms, use_armijo=True, logfile=logfile )
+                relaxer = BFGS( atoms, use_armijo=True, logfile=logfile )
                 relaxer.attach( traj )
                 relaxer.run( fmax=fmax )
             else:
