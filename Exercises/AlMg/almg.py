@@ -137,13 +137,13 @@ def main( argv ):
 
                     # Relax unit cell
                     strfilter = StrainFilter( atoms )
-                    relaxer = QuasiNewton( strfilter, logfile=logfile )
+                    relaxer = BFGS( strfilter, logfile=logfile )
                     relaxer.attach( traj )
                     convergence = 0.01*energy
                     relaxer.run( fmax=convergence ) # NOTE: Uses generalized forces = volume*stress
 
                     # Relax atoms within the unit cell
-                    relaxer = QuasiNewton( atoms, logfile=logfile )
+                    relaxer = BFGS( atoms, logfile=logfile )
                     relaxer.attach( traj )
                     relaxer.run( fmax=fmax )
             else:
