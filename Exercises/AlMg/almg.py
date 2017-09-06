@@ -74,7 +74,7 @@ def main( argv ):
         # Create a supercell consisting of 32 atoms
         if ( not "test" in tags ):
             # Skip this if the run is a test run
-            P = build.find_optimal_cell_shape_pure_python( atoms.cell, 32, "sc" )
+            P = build.find_optimal_cell_shape_pure_python( atoms.cell, 32, "fcc" )
             atoms = build.make_supercell( atoms, P )
 
         # Replace some atoms with Mg atoms
@@ -139,7 +139,7 @@ def main( argv ):
                     strfilter = StrainFilter( atoms )
                     relaxer = BFGS( strfilter, logfile=logfile )
                     relaxer.attach( traj )
-                    convergence = 0.01*energy
+                    convergence = np.abs( 0.01*energy )
                     relaxer.run( fmax=convergence ) # NOTE: Uses generalized forces = volume*stress
 
                     # Relax atoms within the unit cell
