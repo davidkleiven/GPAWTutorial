@@ -73,8 +73,9 @@ def main( argv ):
 
         # Create a supercell consisting of 32 atoms
         if ( not "test" in tags ):
-            # Skip this if the run is a test run
-            P = build.find_optimal_cell_shape_pure_python( atoms.cell, 32, "fcc" )
+            # Skip this if the run is a test run. For some reason the target_shape="fcc" does not work
+            # using sc instead
+            P = build.find_optimal_cell_shape_pure_python( atoms.cell, 32, "sc" )
             atoms = build.make_supercell( atoms, P )
 
         # Replace some atoms with Mg atoms
