@@ -131,7 +131,7 @@ def main( argv ):
 
             if ( not useOnlyUnitCellFilter ):
                 # Relax atoms within the unit cell
-                relaxer = QuasiNewton( atoms, use_armijo=True, logfile=logfile )
+                relaxer = QuasiNewton( atoms, logfile=logfile )
                 relaxer.attach( traj )
                 relaxer.run( fmax=fmax )
 
