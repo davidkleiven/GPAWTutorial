@@ -130,13 +130,14 @@ def main( argv ):
             traj = Trajectory( trajfile, 'w', atoms )
 
             if ( not useOnlyUnitCellFilter ):
-                strfilter = StrainFilter( atoms )
-                relaxer = BFGS( strfilter, logfile=logfile )
+                # Relax atoms within the unit cell
+                relaxer = QuasiNewton( atoms, use_armijo=True, logfile=logfile )
                 relaxer.attach( traj )
                 relaxer.run( fmax=fmax )
 
-                # Relax atoms within the unit cell
-                relaxer = BFGS( atoms, use_armijo=True, logfile=logfile )
+                # Relax the unit cell
+                strfilter = StrainFilter( atoms )
+                relaxer = QuasiNewton( strfilter, logfile=logfile )
                 relaxer.attach( traj )
                 relaxer.run( fmax=fmax )
             else:
