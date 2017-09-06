@@ -47,7 +47,7 @@ def main( argv ):
     save_pov = False
     run_sim = True
     swap_atoms = False
-    useOnlyUnitCellFilter = True
+    useOnlyUnitCellFilter = False
     h_spacing = params[0]
     relax = params[1]
     atom_row_id = params[2]
@@ -74,7 +74,7 @@ def main( argv ):
         # Create a supercell consisting of 32 atoms
         if ( not "test" in tags ):
             # Skip this if the run is a test run
-            P = build.find_optimal_cell_shape_pure_python( atoms.cell, 64, "sc" )
+            P = build.find_optimal_cell_shape_pure_python( atoms.cell, 16, "sc" )
             atoms = build.make_supercell( atoms, P )
 
         # Replace some atoms with Mg atoms
@@ -135,15 +135,18 @@ def main( argv ):
                 relaxer.attach( traj )
                 relaxer.run( fmax=fmax )
 
-                # Relax the unit cell
+                energy = atoms.get_potential_energy()
+
+                # Relax unit cell
                 strfilter = StrainFilter( atoms )
                 relaxer = QuasiNewton( strfilter, logfile=logfile )
                 relaxer.attach( traj )
-                relaxer.run( fmax=fmax )
+                convergence = 0.001*energy
+                relaxer.run( fmax=convergence ) # NOTE: Uses generalized forces = volume*stress
             else:
                 # Optimize both simultaneously
-                uf = UnitCellFilter( atoms )
-                relaxer = BFGS( uf, logfile=logfile )
+                uf = UnitCellFilter( atoms, cell_factor=conversion_stress_to_force )
+                relaxer = QuasiNewton( uf, logfile=logfile )
                 relaxer.attach( traj )
                 relaxer.run( fmax=fmax )
 
