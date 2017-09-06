@@ -132,7 +132,7 @@ def main( argv ):
             if ( not useOnlyUnitCellFilter ):
                 for num_kpts in [1,Nkpts]:
                     kpts = (num_kpts,num_kpts,num_kpts)
-                    calc.set("kpts",  kpts )
+                    calc.set( kpts=kpts )
                     energy = atoms.get_potential_energy()
 
                     # Relax unit cell
