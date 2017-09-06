@@ -133,12 +133,6 @@ def main( argv ):
                 for num_kpts in [1,Nkpts]:
                     kpts = (num_kpts,num_kpts,num_kpts)
                     calc.set("kpts",  kpts )
-
-                    # Relax atoms within the unit cell
-                    relaxer = QuasiNewton( atoms, logfile=logfile )
-                    relaxer.attach( traj )
-                    relaxer.run( fmax=fmax )
-
                     energy = atoms.get_potential_energy()
 
                     # Relax unit cell
@@ -147,6 +141,11 @@ def main( argv ):
                     relaxer.attach( traj )
                     convergence = 0.01*energy
                     relaxer.run( fmax=convergence ) # NOTE: Uses generalized forces = volume*stress
+
+                    # Relax atoms within the unit cell
+                    relaxer = QuasiNewton( atoms, logfile=logfile )
+                    relaxer.attach( traj )
+                    relaxer.run( fmax=fmax )
             else:
                 # Optimize both simultaneously
                 uf = UnitCellFilter( atoms, cell_factor=conversion_stress_to_force )
