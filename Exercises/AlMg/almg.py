@@ -150,7 +150,7 @@ def main( argv ):
                     relaxer.run( fmax=fmax )
             else:
                 # Optimize both simultaneously
-                uf = UnitCellFilter( atoms, cell_factor=conversion_stress_to_force )
+                uf = UnitCellFilter( atoms )
                 relaxer = PreconLBFGS( uf, logfile=logfile )
                 relaxer.attach( traj )
                 relaxer.run( fmax=fmax )
