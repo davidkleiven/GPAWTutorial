@@ -76,7 +76,7 @@ def main( argv ):
         if ( not "test" in tags ):
             # Skip this if the run is a test run. For some reason the target_shape="fcc" does not work
             # using sc instead
-            P = build.find_optimal_cell_shape_pure_python( atoms.cell, 64, "sc" )
+            P = build.find_optimal_cell_shape_pure_python( atoms.cell, 32, "sc" )
             atoms = build.make_supercell( atoms, P )
 
         # Replace some atoms with Mg atoms
@@ -113,7 +113,9 @@ def main( argv ):
         else:
             mode = "fd"
         #calc = GPAW( mode="fd", h=h_spacing, xc="PBE", nbands=nbands, kpts=kpts, basis="dzp", poissonsolver=PoissonSolver(relax="GS", eps=1E-7) )
+        densityConv = 1E-2 # Default 1E-4
         calc = GPAW( mode=mode, xc="PBE", nbands=nbands, kpts=kpts )
+        calc.set( "convergence", "density", densityConv )
         atoms.set_calculator( calc )
 
         logfile = "none"
