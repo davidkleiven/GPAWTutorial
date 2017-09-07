@@ -114,8 +114,10 @@ def main( argv ):
             mode = "fd"
         #calc = GPAW( mode="fd", h=h_spacing, xc="PBE", nbands=nbands, kpts=kpts, basis="dzp", poissonsolver=PoissonSolver(relax="GS", eps=1E-7) )
         densityConv = 1E-2 # Default 1E-4
+        wfsConv = 5E-3
         calc = GPAW( mode=mode, xc="PBE", nbands=nbands, kpts=kpts )
         calc.set( "convergence", "density", densityConv )
+        calc.set( "convergence", "eigenstates", wfsConv )
         atoms.set_calculator( calc )
 
         logfile = "none"
