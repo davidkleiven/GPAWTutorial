@@ -12,6 +12,7 @@ import random as rnd
 from ase.io.trajectory import Trajectory
 import gpaw as gp
 from gpaw import GPAW, PW
+from ase.optimize.precon import PreconLBFGS
 
 def main( argv ):
     print ("Dry-run", gp.dry_run)
@@ -47,7 +48,7 @@ def main( argv ):
     save_pov = False
     run_sim = True
     swap_atoms = False
-    useOnlyUnitCellFilter = False
+    useOnlyUnitCellFilter = True
     h_spacing = params[0]
     relax = params[1]
     atom_row_id = params[2]
@@ -150,7 +151,7 @@ def main( argv ):
             else:
                 # Optimize both simultaneously
                 uf = UnitCellFilter( atoms, cell_factor=conversion_stress_to_force )
-                relaxer = QuasiNewton( uf, logfile=logfile )
+                relaxer = PreconLBFGS( uf, logfile=logfile )
                 relaxer.attach( traj )
                 relaxer.run( fmax=fmax )
 
