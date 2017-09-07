@@ -120,7 +120,7 @@ def main( argv ):
             "eigenstates":5E-3
         }
         calc = GPAW( mode=mode, xc="PBE", nbands=nbands, kpts=kpts )
-        calc.set( "convergence", cnvg )
+        calc.set( convergence=cnvg )
         atoms.set_calculator( calc )
 
         logfile = "none"
