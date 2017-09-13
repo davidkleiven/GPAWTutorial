@@ -49,6 +49,7 @@ def main( argv ):
     run_sim = True
     swap_atoms = False
     useOnlyUnitCellFilter = True
+    repeatFCCStructure = True # If False, ASE find_optimal_cell_shape will be used to create the unit cell
     h_spacing = params[0]
     relax = params[1]
     atom_row_id = params[2]
@@ -76,8 +77,11 @@ def main( argv ):
         if ( not "test" in tags ):
             # Skip this if the run is a test run. For some reason the target_shape="fcc" does not work
             # using sc instead
-            P = build.find_optimal_cell_shape_pure_python( atoms.cell, 32, "sc" )
-            atoms = build.make_supercell( atoms, P )
+            if ( repeatFCCStructure ):
+                atoms = atoms*(4,4,2)
+            else:
+                P = build.find_optimal_cell_shape_pure_python( atoms.cell, 32, "sc" )
+                atoms = build.make_supercell( atoms, P )
 
         # Replace some atoms with Mg atoms
         n_mg_atoms = int( 0.2*len(atoms) )
