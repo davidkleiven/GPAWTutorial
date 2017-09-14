@@ -40,7 +40,7 @@ def main():
         energy = system.get_potential_energy()/len(system)
         print ("Energy: %.2E eV/atom"%(energy) )
 
-        traj = Trajectory( "trajectoryResuse.traj", 'a', atoms )
+        traj = Trajectory( "trajectoryResuse.traj", 'w', atoms )
 
         if ( i == 0 ):
             relaxer = PreconLBFGS( UnitCellFilter( system ), logfile="resuse.log" )
