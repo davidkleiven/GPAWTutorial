@@ -59,7 +59,7 @@ def main():
         if ( parallel.rank == 0 ):
             with open( optimizerFname, 'w' ) as outfile:
                 pck.dump( relaxer, outfile )
-        parllel.barrier()
+        parallel.barrier()
 
 if __name__ == "__main__":
     main()
