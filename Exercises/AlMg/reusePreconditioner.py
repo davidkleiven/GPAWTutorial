@@ -34,13 +34,16 @@ def main():
         calc = gp.GPAW( mode=gp.PW(400), kpts=(4,4,4), nbands=-10 )
         system.set_calculator( calc )
 
+        traj = Trajectory( "trajectoryResuse.traj", 'a', atoms )
+
         if ( i == 0 ):
-            relaxer = PreconLBFGS( UnitCellFilter( system ), trajectory="reuseTrajectory.traj", logfile="resuse.log" )
+            relaxer = PreconLBFGS( UnitCellFilter( system ), logfile="resuse.log" )
         else:
             with open( optimizerFname, 'r' ) as infile:
                 relaxer = pck.load( infile )
             # Change the system, but re use the preconditioner
             relaxer.atoms = UnitCellFilter( system )
+        relaxer.attach( traj )
 
         relaxer.run( fmax=0.05 )
         print (relaxer.iteration)
