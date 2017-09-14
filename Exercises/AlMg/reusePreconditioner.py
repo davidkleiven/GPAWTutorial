@@ -45,7 +45,7 @@ def main():
         else:
             relaxer = None
             if ( parallel.rank == 0 ):
-                with open( optimizerFname, 'r' ) as infile:
+                with open( optimizerFname, 'rb' ) as infile:
                     relaxer = pck.load( infile )
             parallel.barrier()
             relaxer = parallel.broadcast( relaxer )
@@ -57,8 +57,8 @@ def main():
         relaxer.run( fmax=0.05 )
         print (relaxer.iteration)
         if ( parallel.rank == 0 ):
-            with open( optimizerFname, 'w' ) as outfile:
-                pck.dump( relaxer, outfile )
+            with open( optimizerFname, 'wb' ) as outfile:
+                pck.dump( relaxer, outfile, pck.HIGHEST_PROTOCOL )
         parallel.barrier()
 
 if __name__ == "__main__":
