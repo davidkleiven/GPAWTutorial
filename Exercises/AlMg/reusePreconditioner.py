@@ -21,16 +21,18 @@ def main():
 
         # Insert Mg atoms
         system = cp.copy(atoms)
-        for j in range(nMgAtoms):
-            system[i].symbol = "Mg"
+        if ( parallel.rank == 0 ):
+            for j in range(nMgAtoms):
+                system[i].symbol = "Mg"
 
-        # Shuffle the list
-        for j in range(10*len(system)):
-            first = np.random.randint(0,len(system))
-            second = np.random.randint(0,len(system))
-            symb1 = system[first].symbol
-            system[first].symbol = system[second].symbol
-            system[second].symbol = symb1
+            # Shuffle the list
+            for j in range(10*len(system)):
+                first = np.random.randint(0,len(system))
+                second = np.random.randint(0,len(system))
+                symb1 = system[first].symbol
+                system[first].symbol = system[second].symbol
+                system[second].symbol = symb1
+        system = parallel.broadcast( system )
 
         # Initialize the calculator
         calc = gp.GPAW( mode=gp.PW(400), xc="PBE", kpts=(4,4,4), nbands=-10 )
