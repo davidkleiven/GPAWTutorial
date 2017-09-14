@@ -34,6 +34,8 @@ def main():
         # Initialize the calculator
         calc = gp.GPAW( mode=gp.PW(400), xc="PBE", kpts=(4,4,4), nbands=-10 )
         system.set_calculator( calc )
+        energy = system.get_potential_energy()/len(system)
+        print ("Energy: %.2E eV/atom"%(energy) )
 
         traj = Trajectory( "trajectoryResuse.traj", 'a', atoms )
 
