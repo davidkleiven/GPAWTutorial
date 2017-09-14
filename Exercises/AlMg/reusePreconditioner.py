@@ -12,6 +12,7 @@ from ase import parallel
 def main():
     atoms = build.bulk( "Al" )
     atoms = atoms*(2,2,2)
+    print (len(atoms))
 
     nRuns = 10
     optimizerFname = "optimizer.pck"
