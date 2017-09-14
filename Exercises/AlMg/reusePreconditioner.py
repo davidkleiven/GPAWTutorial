@@ -1,6 +1,6 @@
 from ase import build
 import gpaw as gp
-from ase.optimize.precon import PreconLBFGS
+from ase.optimize.precon import PreconLBFGS, Exp
 from ase.io.trajectory import Trajectory
 from ase.constraints import UnitCellFilter
 import numpy as np
@@ -46,19 +46,24 @@ def main():
             relaxer = None
             if ( parallel.rank == 0 ):
                 with open( optimizerFname, 'rb' ) as infile:
-                    relaxer = pck.load( infile )
-            parallel.barrier()
-            relaxer = parallel.broadcast( relaxer )
-
-            # Change the system, but re use the preconditioner
-            relaxer.atoms = UnitCellFilter( system )
+                    relaxParams = pck.load( infile )
+            relaxParams = parallel.broadcast( relaxParams )
+            precon = Exp( r_cut=relaxParams["r_cut"], r_NN=relaxParams["r_NN"], mu=relaxParams["mu"], mu_c=relaxParams["mu_c"] )
+            relaxer = PreconLBFGS( UnitCellFilter(system), logfile="resuse.log", precon=precon )
+            
         relaxer.attach( traj )
 
         relaxer.run( fmax=0.05 )
         print (relaxer.iteration)
         if ( parallel.rank == 0 ):
             with open( optimizerFname, 'wb' ) as outfile:
-                pck.dump( relaxer, outfile, pck.HIGHEST_PROTOCOL )
+                relaxParams = {
+                "r_cut":relaxer.precon.r_cut,
+                "r_NN":relaxer.precon.r_NN
+                "mu":relaxer.precon.mu,
+                "mu_c":relaxer.precon.mu_c
+                }
+                pck.dump( relaxParams, outfile, pck.HIGHEST_PROTOCOL )
         parallel.barrier()
 
 if __name__ == "__main__":
