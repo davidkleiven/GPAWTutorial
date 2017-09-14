@@ -44,6 +44,7 @@ def main():
             relaxer = PreconLBFGS( UnitCellFilter( system ), logfile="resuse.log" )
         else:
             relaxer = None
+            relaxParams = None
             if ( parallel.rank == 0 ):
                 with open( optimizerFname, 'rb' ) as infile:
                     relaxParams = pck.load( infile )
