@@ -50,7 +50,7 @@ def main():
             relaxParams = parallel.broadcast( relaxParams )
             precon = Exp( r_cut=relaxParams["r_cut"], r_NN=relaxParams["r_NN"], mu=relaxParams["mu"], mu_c=relaxParams["mu_c"] )
             relaxer = PreconLBFGS( UnitCellFilter(system), logfile="resuse.log", precon=precon )
-            
+
         relaxer.attach( traj )
 
         relaxer.run( fmax=0.05 )
@@ -59,7 +59,7 @@ def main():
             with open( optimizerFname, 'wb' ) as outfile:
                 relaxParams = {
                 "r_cut":relaxer.precon.r_cut,
-                "r_NN":relaxer.precon.r_NN
+                "r_NN":relaxer.precon.r_NN,
                 "mu":relaxer.precon.mu,
                 "mu_c":relaxer.precon.mu_c
                 }
