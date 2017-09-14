@@ -7,6 +7,7 @@ import numpy as np
 import random as rnd
 import copy as cp
 import pickle as pck
+from ase import parallel
 
 def main():
     atoms = build.bulk( "Al" )
@@ -31,7 +32,7 @@ def main():
             system[second].symbol = symb1
 
         # Initialize the calculator
-        calc = gp.GPAW( mode=gp.PW(400), kpts=(4,4,4), nbands=-10 )
+        calc = gp.GPAW( mode=gp.PW(400), xc="PBE", kpts=(4,4,4), nbands=-10 )
         system.set_calculator( calc )
 
         traj = Trajectory( "trajectoryResuse.traj", 'a', atoms )
@@ -39,16 +40,23 @@ def main():
         if ( i == 0 ):
             relaxer = PreconLBFGS( UnitCellFilter( system ), logfile="resuse.log" )
         else:
-            with open( optimizerFname, 'r' ) as infile:
-                relaxer = pck.load( infile )
+            relaxer = None
+            if ( parallel.rank == 0 ):
+                with open( optimizerFname, 'r' ) as infile:
+                    relaxer = pck.load( infile )
+            parallel.barrier()
+            relaxer = parallel.broadcast( relaxer )
+
             # Change the system, but re use the preconditioner
             relaxer.atoms = UnitCellFilter( system )
         relaxer.attach( traj )
 
         relaxer.run( fmax=0.05 )
         print (relaxer.iteration)
-        with open( optimizerFname, 'w' ) as outfile:
-            pck.dump( relaxer, outfile )
+        if ( parallel.rank == 0 ):
+            with open( optimizerFname, 'w' ) as outfile:
+                pck.dump( relaxer, outfile )
+        parllel.barrier()
 
 if __name__ == "__main__":
     main()
