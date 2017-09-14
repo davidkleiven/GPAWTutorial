@@ -35,12 +35,12 @@ def main():
         system.set_calculator( calc )
 
         if ( i == 0 ):
-            relaxer = PreconLBFGS( system, trajectory="reuseTrajectory.traj", logfile="resuse.log" )
+            relaxer = PreconLBFGS( UnitCellFilter( system ), trajectory="reuseTrajectory.traj", logfile="resuse.log" )
         else:
             with open( optimizerFname, 'r' ) as infile:
                 relaxer = pck.load( infile )
             # Change the system, but re use the preconditioner
-            relaxer.atoms = system
+            relaxer.atoms = UnitCellFilter( system )
 
         relaxer.run( fmax=0.05 )
         print (relaxer.iteration)
