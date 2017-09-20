@@ -4,15 +4,27 @@ import ase.db
 from ase.optimize.precon import PreconLBFGS
 from ase.constraints import UnitCellFilter
 from ase.io.trajectory import Trajectory
+import os
+import sqlite3 as sq
 
 def main( argv ):
-    runID = int(sys.argv[0])
-    db_name = "/home/ntnu/davidkl/Documents/GPAWTutorials/ceTest.db"
+    runID = int(argv[0])
+    db_paths = ["/home/ntnu/davidkl/Documents/GPAWTutorials/ceTest.db", "ceTest.db"]
+    for path in db_paths:
+        if ( os.path.isfile(path) ):
+            db_name = path
+            break
+    #db_name = "/home/ntnu/davidkl/Documents/GPAWTutorials/ceTest.db"
     db = ase.db.connect( db_name )
 
+    con = sq.connect( db_name )
+    cur = con.cursor()
+    cur.execute( "SELECT value FROM text_key_values WHERE id=? AND key='name'", (runID,) )
+    name = cur.fetchone()[0]
+    con.close()
+
     # Update the databse
-    db.update( runID, started=True )
-    db.update( runID, collapsed=True )
+    db.update( runID, started=True, converged=False, collapsed=True )
     atoms = db.get_atoms(id=runID)
 
     cnvg = {
@@ -28,14 +40,17 @@ def main( argv ):
 
     uf = UnitCellFilter(atoms)
     relaxer = PreconLBFGS( uf, logfile=logfile )
-    trajObj = Trajectory(traj)
-    relaxer.attach( traj )
+    trajObj = Trajectory(traj, 'w', atoms )
+    relaxer.attach( trajObj )
     relaxer.run( fmax=0.05 )
 
     energy = atoms.get_potential_energy()
-    db.update( runID, energy=energy )
-    db.update( runID, positions=atoms.get_positions() )
-    db.update( runID, collapsed=False )
+    db.update( runID, collapsed=False, converged=True )
+    print ("Energy: %.2E eV/atom"%(energy/len(atoms)) )
+    key_value_pairs = db.get(name=name).key_value_pairs
+    del db[runID]
+    newid = db.write( atoms, key_value_pairs=key_value_pairs )
+    print ("New ID: %d"%(newid))
 
 if __name__ == "__main__":
     main( sys.argv[1:] )
