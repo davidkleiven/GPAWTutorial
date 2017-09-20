@@ -29,7 +29,8 @@ def main( argv ):
 
     cnvg = {
         "density":1E-2,
-        "eigenstates":5E-3
+        "eigenstates":5E-3,
+        "bands":-10
     }
     calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=(6,6,6), nbands=-10 )
     calc.set( convergence=cnvg )

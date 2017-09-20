@@ -9,8 +9,8 @@ from ase.ce.newStruct import GenerateStructures
 
 def main():
     conc_args = {
-        "conc_ratio_min_1":[[0,1]],
-        "conc_ratio_max_1":[[1,0]],
+        "conc_ratio_min_1":[[52,12]],
+        "conc_ratio_max_1":[[64,0]],
     }
     atoms = bulk( "Al" )
     N = 4
@@ -18,10 +18,11 @@ def main():
 
     db_name = "ceTest.db"
     ceBulk = BulkCrystal( "fcc", 4.05, [N,N,N], 1, [["Al","Mg"]], conc_args, db_name, max_cluster_size=4 )
-    #print (ceBulk.conc_matrix)
-    struc_generator = GenerateStructures( ceBulk, struct_per_gen=3 )
+    print (ceBulk.conc_matrix)
 
-    struc_generator.generate()
+    struc_generator = GenerateStructures( ceBulk, struct_per_gen=6 )
+
+    #struc_generator.generate()
 
 if __name__ == "__main__":
     main()
