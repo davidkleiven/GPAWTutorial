@@ -9,7 +9,7 @@ import sqlite3 as sq
 
 def main( argv ):
     runID = int(argv[0])
-    db_paths = ["/home/ntnu/davidkl/Documents/GPAWTutorials/CE/ceTest.db", "ceTest.db"]
+    db_paths = ["/home/ntnu/davidkl/GPAWTutorial/CE/ceTest.db", "ceTest.db"]
     for path in db_paths:
         if ( os.path.isfile(path) ):
             db_name = path
