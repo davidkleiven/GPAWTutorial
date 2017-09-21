@@ -2,6 +2,7 @@ import sys
 import gpaw as gp
 import ase.db
 from ase.optimize.precon import PreconLBFGS
+from ase.optimize import BFGS
 from ase.constraints import UnitCellFilter
 from ase.io.trajectory import Trajectory
 import os
@@ -40,7 +41,8 @@ def main( argv ):
     traj = "ceTest%d.traj"%(runID)
 
     uf = UnitCellFilter(atoms)
-    relaxer = PreconLBFGS( uf, logfile=logfile )
+    #relaxer = PreconLBFGS( uf, logfile=logfile )
+    relaxer = BFGS( atoms, logfile=logfile )
     trajObj = Trajectory(traj, 'w', atoms )
     relaxer.attach( trajObj )
     relaxer.run( fmax=0.05 )
