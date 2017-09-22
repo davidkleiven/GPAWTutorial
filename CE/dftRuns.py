@@ -69,17 +69,20 @@ def main( argv ):
 
     storeBest = SaveToDB(db_name,runID,name)
 
-    uf = UnitCellFilter(atoms)
-    relaxer = PreconLBFGS( uf, logfile=logfile, use_armijo=False )
-    #relaxer = BFGS( atoms, logfile=logfile )
-    relaxer.attach( trajObj )
-    relaxer.attach( storeBest, interval=1, atoms=atoms )
-    relaxer.run( fmax=0.05 )
+    try:
+        uf = UnitCellFilter(atoms)
+        relaxer = PreconLBFGS( uf, logfile=logfile, use_armijo=False )
+        #relaxer = BFGS( atoms, logfile=logfile )
+        relaxer.attach( trajObj )
+        relaxer.attach( storeBest, interval=1, atoms=atoms )
+        relaxer.run( fmax=0.05 )
 
-    energy = atoms.get_potential_energy()
+        energy = atoms.get_potential_energy()
 
-    db.update( storeBest.runID, converged=True )
-    print ("Energy: %.2E eV/atom"%(energy/len(atoms)) )
+        db.update( storeBest.runID, converged=True )
+        print ("Energy: %.2E eV/atom"%(energy/len(atoms)) )
+    except Exception as exc:
+        print (exc)
 
 if __name__ == "__main__":
     main( sys.argv[1:] )
