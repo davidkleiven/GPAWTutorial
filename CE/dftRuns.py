@@ -14,6 +14,7 @@ class SaveToDB(object):
         self.runID = runID
         self.name = name
         self.smallestEnergy = 1000.0
+        self._is_first = True
 
     def __call__(self, atoms=None):
         """
@@ -21,6 +22,10 @@ class SaveToDB(object):
         """
         if ( atoms is None ):
             return
+
+        if ( self._is_first ):
+            self.db.update( self.runID, collapsed=False )
+            self._is_first = False
 
         if ( atoms.get_potential_energy() < self.smallestEnergy ):
             self.smallestEnergy = atoms.get_potential_energy()
@@ -73,7 +78,7 @@ def main( argv ):
 
     energy = atoms.get_potential_energy()
 
-    db.update( storeBest.runID, collapsed=False, converged=True )
+    db.update( storeBest.runID, converged=True )
     print ("Energy: %.2E eV/atom"%(energy/len(atoms)) )
 
 if __name__ == "__main__":
