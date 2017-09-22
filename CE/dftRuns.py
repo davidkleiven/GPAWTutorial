@@ -8,6 +8,26 @@ from ase.io.trajectory import Trajectory
 import os
 import sqlite3 as sq
 
+class SaveToDB(object):
+    def __init__(self, db_name, runID, name):
+        self.db = ase.db.connect( db_name )
+        self.runID = runID
+        self.name = name
+        self.smallestEnergy = 1000.0
+
+    def __call__(self, atoms=None):
+        """
+        Saves the current run to db if the energy is lower
+        """
+        if ( atoms is None ):
+            return
+
+        if ( atoms.get_potential_energy() < self.smallestEnergy ):
+            self.smallestEnergy = atoms.get_potential_energy()
+            key_value_pairs = self.db.get(name=self.name).key_value_pairs
+            del self.db[self.runID]
+            self.runID = self.db.write( atoms, key_value_pairs=key_value_pairs )
+
 def main( argv ):
     runID = int(argv[0])
     print ("Running job: %d"%(runID))
@@ -40,21 +60,21 @@ def main( argv ):
 
     logfile = "ceTest%d.log"%(runID)
     traj = "ceTest%d.traj"%(runID)
+    trajObj = Trajectory(traj, 'w', atoms )
+
+    storeBest = SaveToDB(db_name,runID,name)
 
     uf = UnitCellFilter(atoms)
-    #relaxer = PreconLBFGS( uf, logfile=logfile )
-    relaxer = BFGS( atoms, logfile=logfile )
-    trajObj = Trajectory(traj, 'w', atoms )
+    relaxer = PreconLBFGS( uf, logfile=logfile, use_armijo=False )
+    #relaxer = BFGS( atoms, logfile=logfile )
     relaxer.attach( trajObj )
+    relaxer.attach( storeBest, interval=1, atoms=atoms )
     relaxer.run( fmax=0.05 )
 
     energy = atoms.get_potential_energy()
-    db.update( runID, collapsed=False, converged=True )
+
+    db.update( storeBest.runID, collapsed=False, converged=True )
     print ("Energy: %.2E eV/atom"%(energy/len(atoms)) )
-    key_value_pairs = db.get(name=name).key_value_pairs
-    del db[runID]
-    newid = db.write( atoms, key_value_pairs=key_value_pairs )
-    print ("New ID: %d"%(newid))
 
 if __name__ == "__main__":
     main( sys.argv[1:] )
