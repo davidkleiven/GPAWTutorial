@@ -55,9 +55,9 @@ def main( argv ):
     atoms = db.get_atoms(id=runID)
 
     cnvg = {
-        "density":1E-2,
-        "eigenstates":5E-3,
-        "bands":-10
+        "density":1E-4,
+        "eigenstates":4E-8,
+        #"bands":-10
     }
     calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=(6,6,6), nbands=-10 )
     calc.set( convergence=cnvg )
