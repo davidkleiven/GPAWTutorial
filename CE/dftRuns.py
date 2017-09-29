@@ -51,7 +51,8 @@ def main( argv ):
     con.close()
 
     # Update the databse
-    db.update( runID, started=True, converged=False, collapsed=True )
+    db.update( runID, started=True, converged=False )
+
     atoms = db.get_atoms(id=runID)
 
     cnvg = {
@@ -70,8 +71,8 @@ def main( argv ):
     storeBest = SaveToDB(db_name,runID,name)
 
     try:
-        uf = UnitCellFilter(atoms)
-        relaxer = PreconLBFGS( uf, logfile=logfile, use_armijo=False )
+        #uf = UnitCellFilter(atoms)
+        relaxer = PreconLBFGS( atoms, logfile=logfile, use_armijo=True )
         #relaxer = BFGS( atoms, logfile=logfile )
         relaxer.attach( trajObj )
         relaxer.attach( storeBest, interval=1, atoms=atoms )
