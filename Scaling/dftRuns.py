@@ -17,6 +17,6 @@ def main( argv ):
 
     energy = atoms.get_potential_energy()
     print ("Energy: %.2E"%(energy))
-    
+
 if __name__ == "__main__":
     main( sys.argv[1:] )
