@@ -7,7 +7,7 @@ from ase.constraints import UnitCellFilter
 from ase.io.trajectory import Trajectory
 from ase.build import bulk
 import os
-from gpaw.utilities.tool import cutoff2gridspacing
+from gpaw.utilities.tools import cutoff2gridspacing
 
 def main( argv ):
     atoms = bulk("Al")
