@@ -19,7 +19,7 @@ def main( argv ):
         h = cutoff2gridspacing(e_cut)
         calc = gp.GPAW(mode="fd", h=h, xc="PBE", kpts=(6,6,6), nbands=-10 )
     else:
-        calc = gp.GPAW( mode=gp.PW(e_cuts), xc="PBE", kpts=(6,6,6), nbands=-10 )
+        calc = gp.GPAW( mode=gp.PW(e_cut), xc="PBE", kpts=(6,6,6), nbands=-10 )
     atoms.set_calculator( calc )
 
     energy = atoms.get_potential_energy()
