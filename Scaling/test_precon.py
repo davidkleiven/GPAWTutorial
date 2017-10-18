@@ -8,11 +8,11 @@ from ase.build import bulk
 def main( argv ):
     n_mg = int(argv[0])
     atoms = bulk("Al")
-    atoms = atoms*(3,3,3)
+    atoms = atoms*(4,4,4)
     for i in range(n_mg):
         atoms[i].symbol = "Mg"
 
-    atoms.rattle()
+    atoms.rattle( stddev=0.005 )
 
     calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=(4,4,4), nbands="120%" )
     atoms.set_calculator( calc )
@@ -24,7 +24,7 @@ def main( argv ):
     relaxer = PreconLBFGS( atoms, logfile=logfile, use_armijo=True )
     relaxer.attach( trajObj )
     try:
-        relaxer.run( fmax=0.001 )
+        relaxer.run( fmax=0.05 )
     except:
         pass
     print ("Mu: %.2E"%(relaxer.precon.mu))
