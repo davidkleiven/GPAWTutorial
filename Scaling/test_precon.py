@@ -14,7 +14,7 @@ def main( argv ):
 
     atoms.rattle()
 
-    calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=(6,6,6), nbands="120%" )
+    calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=(4,4,4), nbands="120%" )
     atoms.set_calculator( calc )
 
     logfile = "preconTest%d.log"%(n_mg)
