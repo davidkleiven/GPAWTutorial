@@ -12,7 +12,7 @@ def main( argv ):
     for i in range(n_mg):
         atoms[i].symbol = "Mg"
 
-    atoms.rattle( stddev=0.005 )
+    atoms.rattle( stdev=0.005 )
 
     calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=(4,4,4), nbands="120%" )
     atoms.set_calculator( calc )
