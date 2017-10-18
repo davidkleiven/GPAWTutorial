@@ -16,7 +16,7 @@ def main( argv ):
 
     e_cut = 500
     if ( mode == "fd" ):
-        h = cutoff2gridspacing(e_cut)
+        h = 0.2
         calc = gp.GPAW(mode="fd", h=h, xc="PBE", kpts=(6,6,6), nbands=-10 )
     else:
         calc = gp.GPAW( mode=gp.PW(e_cut), xc="PBE", kpts=(6,6,6), nbands=-10 )
