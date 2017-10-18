@@ -9,7 +9,7 @@ def main( argv ):
     atoms = atoms*(n_atoms,n_atoms,n_atoms)
     mode = "fd"
 
-    calc = gp.GPAW(mode="fd", h=0.25, xc="PBE", kpts=(kpt,kpt,kpt), nbands=-10 )
+    calc = gp.GPAW(mode="fd", h=0.25, xc="PBE", kpts=(kpt,kpt,kpt), nbands="120%" )
     atoms.set_calculator( calc )
 
     energy = atoms.get_potential_energy()
