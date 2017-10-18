@@ -8,7 +8,7 @@ from ase.build import bulk
 def main( argv ):
     n_mg = int(argv[0])
     atoms = bulk("Al")
-    atoms = atoms*(2,2,2)
+    atoms = atoms*(3,3,3)
     for i in range(n_mg):
         atoms[i].symbol = "Mg"
 
