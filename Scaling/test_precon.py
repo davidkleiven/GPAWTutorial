@@ -23,7 +23,10 @@ def main( argv ):
 
     relaxer = PreconLBFGS( atoms, logfile=logfile, use_armijo=True )
     relaxer.attach( trajObj )
-    relaxer.run( fmax=0.001 )
+    try:
+        relaxer.run( fmax=0.001 )
+    except:
+        pass
     print ("Mu: %.2E"%(relaxer.precon.mu))
 
 if __name__ == "__main__":
