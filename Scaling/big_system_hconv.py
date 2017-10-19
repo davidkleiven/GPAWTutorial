@@ -6,11 +6,11 @@ def main( argv ):
     atoms = bulk("Al")
     kpt = int(argv[0])
     n_atoms = int(argv[1])
-    h = float(argv[0])
+    h = float(argv[2])
     atoms = atoms*(n_atoms,n_atoms,n_atoms)
     mode = "fd"
 
-    calc = gp.GPAW(mode="fd", h=0.25, xc="PBE", kpts=(kpt,kpt,kpt), nbands="120%" )
+    calc = gp.GPAW(mode="fd", h=h, xc="PBE", kpts=(kpt,kpt,kpt), nbands="120%" )
     atoms.set_calculator( calc )
 
     energy = atoms.get_potential_energy()
