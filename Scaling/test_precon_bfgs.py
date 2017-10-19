@@ -18,8 +18,8 @@ def main( argv ):
     calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=(4,4,4), nbands="120%" )
     atoms.set_calculator( calc )
 
-    logfile = "preconTest%d.log"%(n_mg)
-    traj = "preconTest%d.traj"%(n_mg)
+    logfile = "bfgsTest%d.log"%(n_mg)
+    traj = "bfgsTest%d.traj"%(n_mg)
     trajObj = Trajectory(traj, 'w', atoms )
 
     relaxer = BFGS( atoms, logfile=logfile )
