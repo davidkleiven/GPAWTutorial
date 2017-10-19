@@ -30,8 +30,8 @@ def main( argv ):
     relaxer.attach( trajObj )
     try:
         relaxer.run( fmax=0.05 )
-    except:
-        pass
+    except Exception as exc:
+        print(exc)
 
 if __name__ == "__main__":
     main( sys.argv[1:] )
