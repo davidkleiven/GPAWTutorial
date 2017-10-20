@@ -7,18 +7,15 @@ from ase.build import bulk
 from ase.visualize import view
 
 def main( argv ):
-    atoms = bulk("Al",cubic=True)
-    atoms = atoms*(3,3,3)
+    atoms = bulk("Al")
+    atoms = atoms*(6,6,6)
     for i in range(int(len(atoms)/5)):
         atoms[i].symbol = "Mg"
 
+
     atoms.rattle( stdev=0.005 )
 
-    parallel = {
-        "order":"dkb",
-        "domain":(4,4,4)
-    }
-    calc = gp.GPAW( mode="fd", h=0.2, xc="PBE", kpts=(3,3,3), nbands="120%", parallel=parallel )
+    calc = gp.GPAW( mode="fd", h=0.2, xc="PBE", kpts=(2,2,2), nbands="120%" )
     atoms.set_calculator( calc )
 
     logfile = "relax250.log"
