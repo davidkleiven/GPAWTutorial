@@ -7,15 +7,15 @@ from ase.build import bulk
 from ase.visualize import view
 
 def main():
-    atoms = bulk("Al")
-    atoms = atoms*(6,6,6)
+    atoms = bulk("Al",cubic=True)
+    atoms = atoms*(3,3,3)
     for i in range(int(len(atoms)/5)):
         atoms[i].symbol = "Mg"
 
 
     atoms.rattle( stdev=0.005 )
 
-    calc = gp.GPAW( mode="fd", h=0.2, xc="PBE", kpts=(2,2,2), nbands="120%" )
+    calc = gp.GPAW( mode="fd", h=0.2, xc="PBE", kpts=(3,3,3), nbands="120%" )
     atoms.set_calculator( calc )
 
     logfile = "relax250.log"
@@ -23,8 +23,8 @@ def main():
     trajObj = Trajectory(traj, 'w', atoms )
 
     precon = Exp(mu=1)
-    #relaxer = PreconLBFGS( atoms, logfile=logfile, use_armijo=True, precon=precon, memory=50 )
-    relaxer = PreconFIRE( atoms, logfile=logfile, use_armijo=True, precon=precon )
+    relaxer = PreconLBFGS( atoms, logfile=logfile, use_armijo=True, precon=precon, memory=50 )
+    #relaxer = PreconFIRE( atoms, logfile=logfile, use_armijo=True, precon=precon )
     relaxer.attach( trajObj )
     try:
         relaxer.run( fmax=0.05 )
