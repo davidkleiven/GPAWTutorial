@@ -23,7 +23,7 @@ def main():
     trajObj = Trajectory(traj, 'w', atoms )
 
     precon = Exp(mu=1)
-    relaxer = PreconLBFGS( atoms, logfile=logfile, use_armijo=True, precon=precon )
+    relaxer = PreconLBFGS( atoms, logfile=logfile, use_armijo=True, precon=precon, memory=50 )
     relaxer.attach( trajObj )
     try:
         relaxer.run( fmax=0.05 )
