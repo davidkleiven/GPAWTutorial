@@ -6,9 +6,8 @@ from ase.io.trajectory import Trajectory
 from ase.build import bulk
 from ase.visualize import view
 
-def main( argv ):
+def main():
     atoms = bulk("Al")
-    n = int(argv[0])
     atoms = atoms*(6,6,6)
     for i in range(int(len(atoms)/5)):
         atoms[i].symbol = "Mg"
@@ -32,4 +31,4 @@ def main( argv ):
         print(exc)
 
 if __name__ == "__main__":
-    main( sys.argv[1:] )
+    main()
