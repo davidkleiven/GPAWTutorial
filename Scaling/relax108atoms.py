@@ -1,4 +1,4 @@
-import sys
+:qimport sys
 import gpaw as gp
 from ase.optimize.precon import PreconLBFGS, PreconFIRE
 from ase.optimize.precon.precon import Exp
@@ -23,7 +23,7 @@ def main():
     trajObj = Trajectory(traj, 'w', atoms )
 
     precon = Exp(mu=1)
-    relaxer = PreconLBFGS( atoms, logfile=logfile, use_armijo=True, precon=precon, memory=50 )
+    relaxer = PreconLBFGS( atoms, logfile=logfile, use_armijo=True, precon=precon, memory=10 )
     #relaxer = PreconFIRE( atoms, logfile=logfile, use_armijo=True, precon=precon )
     relaxer.attach( trajObj )
     try:
