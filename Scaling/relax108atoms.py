@@ -1,4 +1,4 @@
-:qimport sys
+import sys
 import gpaw as gp
 from ase.optimize.precon import PreconLBFGS, PreconFIRE
 from ase.optimize.precon.precon import Exp
