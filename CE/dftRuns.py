@@ -7,6 +7,7 @@ from ase.constraints import UnitCellFilter
 from ase.io.trajectory import Trajectory
 import os
 import sqlite3 as sq
+from ase.optimize.precon.precon import Exp
 
 class SaveToDB(object):
     def __init__(self, db_name, runID, name):
@@ -55,13 +56,7 @@ def main( argv ):
 
     atoms = db.get_atoms(id=runID)
 
-    cnvg = {
-        "density":1E-4,
-        "eigenstates":4E-8,
-        #"bands":-10
-    }
-    calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=(6,6,6), nbands=-10 )
-    calc.set( convergence=cnvg )
+    calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=(4,4,4), nbands="120%" )
     atoms.set_calculator( calc )
 
     logfile = "ceTest%d.log"%(runID)
@@ -71,15 +66,12 @@ def main( argv ):
     storeBest = SaveToDB(db_name,runID,name)
 
     try:
-        #uf = UnitCellFilter(atoms)
+        precon = Exp(mu=1)
         relaxer = PreconLBFGS( atoms, logfile=logfile, use_armijo=True )
-        #relaxer = BFGS( atoms, logfile=logfile )
         relaxer.attach( trajObj )
         relaxer.attach( storeBest, interval=1, atoms=atoms )
         relaxer.run( fmax=0.05 )
-
         energy = atoms.get_potential_energy()
-
         db.update( storeBest.runID, converged=True )
         print ("Energy: %.2E eV/atom"%(energy/len(atoms)) )
     except Exception as exc:
