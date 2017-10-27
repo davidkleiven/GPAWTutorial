@@ -30,6 +30,11 @@ def main():
     molecule.set_calculator( calc )
     print ("Solving hydrogen molecule...")
     e2 = molecule.get_potential_energy()
+
+    # Test if it recalculates everytime
+    for i in range(10):
+        e2 = molecule.get_potential_energy()
+        print (e2)
     calc.write("H2.gpw")
 
     print ( "Hydrogen atom energy: %.2f eV"%(e1) )

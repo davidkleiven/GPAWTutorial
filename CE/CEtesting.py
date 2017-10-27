@@ -8,14 +8,21 @@ from ase.build import bulk
 from ase.ce.newStruct import GenerateStructures
 from ase.ce.evaluateL1min import EvaluateL1min
 from ase.ce.evaluate import Evaluate
+from ase.ce.convergence import ConvergenceCheck
+import matplotlib as mpl
+mpl.rcParams["svg.fonttype"]="none"
+mpl.rcParams["font.size"] = 18
+mpl.rcParams["axes.unicode_minus"] = False
 from matplotlib import pyplot as plt
+import pickle
 
+SELECTED_ECI= "selectedEci.pkl"
 def main( argv ):
-    db_name = "ceTest.db"
+    db_name = "ce_fixed_cell.db"
     option = argv[0]
     if ( option == "generateNew" ):
         conc_args = {
-            "conc_ratio_min_1":[[52,12]],
+            "conc_ratio_min_1":[[20,44]],
             "conc_ratio_max_1":[[64,0]],
         }
         atoms = bulk( "Al" )
@@ -23,9 +30,8 @@ def main( argv ):
         atoms = atoms*(N,N,N)
 
         ceBulk = BulkCrystal( "fcc", 4.05, [N,N,N], 1, [["Al","Mg"]], conc_args, db_name, max_cluster_size=4 )
-        print (ceBulk.cluster_names)
 
-        struc_generator = GenerateStructures( ceBulk, struct_per_gen=6 )
+        struc_generator = GenerateStructures( ceBulk )
 
         struc_generator.generate()
     elif ( option == "evaluate" ):
@@ -34,12 +40,16 @@ def main( argv ):
 
 
 def evalCE( db_name ):
-    evaluator = EvaluateL1min( db_name, threshold=0.001, alpha=0.001, use_scipy_linprog=False )
+    evaluator = EvaluateL1min( db_name, threshold=0.001, alpha=0.001 )
     eci = evaluator.get_eci()
-    print (evaluator.selected_cluster_names)
     evaluator.plot_energy()
     evaluator.plot_selected_eci()
-    evaluator.plot_energy()
+
+    convCheck = ConvergenceCheck( evaluator )
+    print ( convCheck.converged() )
+    convCheck.plot_cv_score()
+    convCheck.plot_energy_with_gen_info()
+    plt.show()
 
 if __name__ == "__main__":
     main( sys.argv[1:] )
