@@ -1,14 +1,15 @@
 import sys
 sys.path.insert(1,"/home/davidkl/Documents/aseJin")
+sys.path.insert(1,"/home/davidkl/Documents/GPAWTutorial/CE_extensions")
 sys.path.append("/usr/local/lib/python2.7/dist-packages/pymatgen/cli/")
 import ase
 print (ase.__file__)
 from ase.ce.settings import BulkCrystal
 from ase.build import bulk
 from ase.ce.newStruct import GenerateStructures
-from ase.ce.evaluateL1min import EvaluateL1min
+from evaluateL1min import EvaluateL1min
 from ase.ce.evaluate import Evaluate
-from ase.ce.convergence import ConvergenceCheck
+from convergence import ConvergenceCheck
 import matplotlib as mpl
 mpl.rcParams["svg.fonttype"]="none"
 mpl.rcParams["font.size"] = 18
