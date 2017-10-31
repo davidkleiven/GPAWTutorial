@@ -23,7 +23,7 @@ def main( argv ):
     option = argv[0]
     if ( option == "generateNew" ):
         conc_args = {
-            "conc_ratio_min_1":[[20,44]],
+            "conc_ratio_min_1":[[0,64]],
             "conc_ratio_max_1":[[64,0]],
         }
         atoms = bulk( "Al" )
