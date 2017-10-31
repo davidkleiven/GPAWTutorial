@@ -1,3 +1,5 @@
+import sys
+sys.path.insert(1,"/home/davidkl/Documents/aseJin")
 from ase.ce.evaluate import Evaluate
 import copy
 import numpy as np

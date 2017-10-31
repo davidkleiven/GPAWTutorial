@@ -1,3 +1,5 @@
+import sys
+sys.path.insert(1,"/home/davidkl/Documents/aseJin")
 from ase.ce.evaluate import Evaluate # This requires the ase repo with CE developed by Jin Chang at DTU
 from sklearn import linear_model
 from scipy.optimize import minimize
