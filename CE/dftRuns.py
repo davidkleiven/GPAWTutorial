@@ -67,10 +67,11 @@ def main( argv ):
 
     try:
         precon = Exp(mu=1)
-        relaxer = PreconLBFGS( atoms, logfile=logfile, use_armijo=True )
+        uf = UnitCellFilter( atoms, hydrostatic_strain=True )
+        relaxer = PreconLBFGS( uf, logfile=logfile, use_armijo=True )
         relaxer.attach( trajObj )
         relaxer.attach( storeBest, interval=1, atoms=atoms )
-        relaxer.run( fmax=0.05 )
+        relaxer.run( fmax=0.025, smax=0.003 )
         energy = atoms.get_potential_energy()
         db.update( storeBest.runID, converged=True )
         print ("Energy: %.2E eV/atom"%(energy/len(atoms)) )
