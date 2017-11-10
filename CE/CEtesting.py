@@ -22,7 +22,7 @@ from plot_eci import ECIPlotter
 
 SELECTED_ECI= "selectedEci.pkl"
 def main( argv ):
-    db_name = "ce_fixed_cell.db"
+    db_name = "ce_hydrostatic.db"
     option = argv[0]
     conc_args = {
         "conc_ratio_min_1":[[60,4]],
@@ -42,11 +42,11 @@ def main( argv ):
         evalCE( ceBulk )
 
 def evalCE( BC):
-    evaluator = Evaluate( BC, lamb=1E-4, penalty="l1", select_cond=["conc1>0.6"] )
+    evaluator = Evaluate( BC, lamb=9E-4, penalty="l1" )
     eci_name = evaluator.get_cluster_name_eci_dict
     evaluator.plot_energy()
     plotter = ECIPlotter(eci_name)
-    plotter.plot()
+    plotter.plot( tight=True )
     plt.show()
 
     #evaluator.plot_selected_eci()
