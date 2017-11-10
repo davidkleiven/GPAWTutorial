@@ -75,6 +75,9 @@ def main( argv ):
         energy = atoms.get_potential_energy()
         db.update( storeBest.runID, converged=True )
         print ("Energy: %.2E eV/atom"%(energy/len(atoms)) )
+        print ("Preconditioner parameters")
+        print ("Mu:", precon.mu)
+        print ("Mu_c:", precon.mu_c)
     except Exception as exc:
         print (exc)
 
