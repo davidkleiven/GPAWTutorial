@@ -66,9 +66,9 @@ def main( argv ):
     storeBest = SaveToDB(db_name,runID,name)
 
     try:
-        precon = Exp(mu=1)
+        precon = Exp(mu=None)
         uf = UnitCellFilter( atoms, hydrostatic_strain=True )
-        relaxer = PreconLBFGS( uf, logfile=logfile, use_armijo=True )
+        relaxer = PreconLBFGS( uf, logfile=logfile, use_armijo=True, precon=precon )
         relaxer.attach( trajObj )
         relaxer.attach( storeBest, interval=1, atoms=atoms )
         relaxer.run( fmax=0.025, smax=0.003 )
