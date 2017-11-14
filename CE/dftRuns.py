@@ -37,7 +37,7 @@ class SaveToDB(object):
 def main( argv ):
     runID = int(argv[0])
     print ("Running job: %d"%(runID))
-    db_paths = ["/home/ntnu/davidkl/GPAWTutorial/CE/ce_hydrostatic.db", "ce_hydrostatic.db"]
+    db_paths = ["/home/ntnu/davidkl/GPAWTutorial/CE/ce_hydrostatic.db", "ce_hydrostatic.db","/home/davidkl/GPAWTutorial/CE/ce_hydrostatic.db"]
     for path in db_paths:
         if ( os.path.isfile(path) ):
             db_name = path
