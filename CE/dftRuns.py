@@ -56,7 +56,11 @@ def main( argv ):
 
     atoms = db.get_atoms(id=runID)
 
-    calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=(4,4,4), nbands="120%" )
+    convergence = {
+        "density":1E-5
+        "eigenstates":4E-10
+    }
+    calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=(4,4,4), nbands="120%", conv=convergence )
     atoms.set_calculator( calc )
 
     logfile = "ceTest%d.log"%(runID)
