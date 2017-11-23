@@ -34,8 +34,26 @@ class SaveToDB(object):
             del self.db[self.runID]
             self.runID = self.db.write( atoms, key_value_pairs=key_value_pairs )
 
+def change_cell_composition_AlMg( atoms ):
+    # Count Mg atoms
+    counter = 0
+    for atom in atoms:
+        if ( atom.symbol == "Mg" ):
+            counter += 1
+    mg_conc = float(counter)/len(atoms)
+    if ( mg_conc < 0.06 ):
+        return atoms
+    a = 4.0483 + 0.45006*mg_conc # Experimental data
+    a0 = 4.05
+    scaling = a/a0
+    cell = atoms.get_cell()
+    cell *= scaling
+    atoms.set_cell(cell)
+    return atoms
+
 def main( argv ):
     relaxCell=False
+    system = "AlMg"
     runID = int(argv[0])
     print ("Running job: %d"%(runID))
     db_paths = ["/home/ntnu/davidkl/GPAWTutorial/CE/ce_hydrostatic.db", "ce_hydrostatic.db","/home/davidkl/GPAWTutorial/CE/ce_hydrostatic.db"]
@@ -52,10 +70,13 @@ def main( argv ):
     name = cur.fetchone()[0]
     con.close()
 
+    new_run = not db.select( id=runID ).started
     # Update the databse
     db.update( runID, started=True, converged=False )
 
     atoms = db.get_atoms(id=runID)
+    if ( system == "AlMg" and new_run==False ):
+        atoms = change_cell_composition_AlMg(atoms)
 
     convergence = {
         "density":1E-4,
@@ -76,7 +97,7 @@ def main( argv ):
             uf = UnitCellFilter( atoms, hydrostatic_strain=True )
             relaxer = PreconLBFGS( uf, logfile=logfile, use_armijo=True, precon=precon )
         else:
-            realxer = BFGS( atoms, logfile=logfile )
+            relaxer = BFGS( atoms, logfile=logfile )
         relaxer.attach( trajObj )
         relaxer.attach( storeBest, interval=1, atoms=atoms )
         if ( relaxCell ):
