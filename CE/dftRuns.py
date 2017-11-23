@@ -58,8 +58,8 @@ def main( argv ):
     atoms = db.get_atoms(id=runID)
 
     convergence = {
-        "density":1E-5,
-        "eigenstates":4E-10
+        "density":1E-4,
+        "eigenstates":4E-8
     }
     calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=(4,4,4), nbands="120%", convergence=convergence )
     atoms.set_calculator( calc )
@@ -79,7 +79,10 @@ def main( argv ):
             realxer = BFGS( atoms, logfile=logfile )
         relaxer.attach( trajObj )
         relaxer.attach( storeBest, interval=1, atoms=atoms )
-        relaxer.run( fmax=0.025, smax=0.003 )
+        if ( relaxCell ):
+            relaxer.run( fmax=0.025, smax=0.003 )
+        else:
+            relaxer.run( fmax=0.025 )
         energy = atoms.get_potential_energy()
         db.update( storeBest.runID, converged=True )
         print ("Energy: %.2E eV/atom"%(energy/len(atoms)) )
