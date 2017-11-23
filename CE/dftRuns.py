@@ -35,6 +35,7 @@ class SaveToDB(object):
             self.runID = self.db.write( atoms, key_value_pairs=key_value_pairs )
 
 def main( argv ):
+    relaxCell=False
     runID = int(argv[0])
     print ("Running job: %d"%(runID))
     db_paths = ["/home/ntnu/davidkl/GPAWTutorial/CE/ce_hydrostatic.db", "ce_hydrostatic.db","/home/davidkl/GPAWTutorial/CE/ce_hydrostatic.db"]
@@ -70,9 +71,12 @@ def main( argv ):
     storeBest = SaveToDB(db_name,runID,name)
 
     try:
-        precon = Exp(mu=1.0,mu_c=1.0)
-        uf = UnitCellFilter( atoms, hydrostatic_strain=True )
-        relaxer = PreconLBFGS( uf, logfile=logfile, use_armijo=True, precon=precon )
+        if ( relaxCell ):
+            precon = Exp(mu=1.0,mu_c=1.0)
+            uf = UnitCellFilter( atoms, hydrostatic_strain=True )
+            relaxer = PreconLBFGS( uf, logfile=logfile, use_armijo=True, precon=precon )
+        else:
+            realxer = BFGS( atoms, logfile=logfile )
         relaxer.attach( trajObj )
         relaxer.attach( storeBest, interval=1, atoms=atoms )
         relaxer.run( fmax=0.025, smax=0.003 )
