@@ -70,7 +70,7 @@ def main( argv ):
     name = cur.fetchone()[0]
     con.close()
 
-    new_run = not db.select( id=runID ).started
+    new_run = not db.get( id=runID ).key_value_pairs["started"]
     # Update the databse
     db.update( runID, started=True, converged=False )
 
