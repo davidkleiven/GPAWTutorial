@@ -12,6 +12,7 @@ class WangLandauSGC( object ):
         self.atoms = atoms
         self.site_types = site_types
         self.site_elements = site_elements
+        self.possible_swaps = []
         self.chem_pot = chemical_potentials
         self.histogram = np.zeros(Nbins, dtype=np.int32)
         self.dos = np.zeros(Nbins)
@@ -62,6 +63,17 @@ class WangLandauSGC( object ):
             else:
                 self.atoms_count[atom.symbol] = 1
 
+        if ( len(self.possible_swaps) == 0 ):
+            self.possible_swaps = []
+            for i in range(len(self.site_elements)):
+                self.possible_swaps.append({})
+                for element in self.site_elements[i]:
+                    self.possible_swaps[-1][element] = []
+                    for e in self.site_elements[i]:
+                        if ( e == element ):
+                            continue
+                        self.possible_swaps[-1][element].append(e)
+
     def get_bin( self, energy ):
         return int( (energy-self.Emin)*self.Nbins/(self.Emax-self.Emin) )
 
@@ -76,11 +88,10 @@ class WangLandauSGC( object ):
         symb = self.atoms[indx].symbol
 
         site_type = self.site_types[indx]
-        possible_elements = self.site_elements[site_type]
-        new_symbol = symb
+        possible_elements = self.possible_swaps[site_type][symb]
+
         # This is slow and should be optimized
-        while ( new_symbol == symb ):
-            new_symbol = possible_elements[np.random.randint(low=0,high=len(possible_elements))]
+        new_symbol = possible_elements[np.random.randint(low=0,high=len(possible_elements))]
         system_changes = [(indx,new_symbol)]
         self.atoms[indx].symbol = new_symbol
         energy = self.atoms.get_potential_energy()
@@ -107,11 +118,12 @@ class WangLandauSGC( object ):
             self.atoms_count[symb] -= 1
             self.atoms_count[new_symbol] += 1
             self.atoms[indx].symbol = new_symbol
-
-            # Store this object
-            self.structures[selected_bin] = self.atoms.copy()
         else:
             self.atoms[indx].symbol = symb
+
+        if ( self.structures[self.current_bin] is None ):
+            # Store the atoms if it has no structure in this bin from before
+            self.structures[self.current_bin] = self.atoms.copy()
 
         self.histogram[self.current_bin] += 1
         self.entropy[self.current_bin] += self.f
@@ -196,6 +208,13 @@ class WangLandauSGC( object ):
         self.E = new_E
         self.histogram = np.floor(new_hist).astype(np.int32)
         self.entropy = new_logdos
+        for i in range(len(self.histogram)):
+            if ( self.histogram[i] == 0 ):
+                # Set the DOS to 1 if the histogram indicates that it has never been visited
+                # This just an artifact of the interpolation and setting it low will make
+                # sure that these parts of the space gets explored
+                self.entropy[i] = 0.0
+
         self.Emin = Emin
         self.Emax = Emax
         new_structs = [None for _ in range(self.Nbins)]
@@ -218,8 +237,8 @@ class WangLandauSGC( object ):
             if ( self.is_flat() ):
                 self.histogram[:] = 0
                 self.f *= 0.5
-                self.entropy -= np.max(self.entropy)
-                self.entropy[self.entropy<-40] = -40 # Reset ti a vanishingly small number
+                #self.entropy -= np.max(self.entropy)
+                #self.entropy[self.entropy<-40] = -40 # Reset ti a vanishingly small number
 
             if ( i%low_struct == 0 and i > 0 ):
                 print ("Resetting to a low entropy structure")
