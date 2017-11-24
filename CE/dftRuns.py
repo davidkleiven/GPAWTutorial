@@ -82,7 +82,7 @@ def main( argv ):
         "density":1E-4,
         "eigenstates":4E-8
     }
-    calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=(4,4,4), nbands="200%", convergence=convergence )
+    calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=(4,4,4), nbands="150%", convergence=convergence )
     atoms.set_calculator( calc )
 
     logfile = "ceTest%d.log"%(runID)
