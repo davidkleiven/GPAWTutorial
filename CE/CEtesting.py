@@ -19,6 +19,10 @@ from matplotlib import pyplot as plt
 import pickle
 from ase.visualize import view
 from plot_eci import ECIPlotter
+from ceext import evaluate_prior as ep
+from ceext import penalization as pen
+import numpy as np
+from plot_corr_matrix import CovariancePlot
 
 SELECTED_ECI= "selectedEci.pkl"
 def main( argv ):
@@ -42,22 +46,31 @@ def main( argv ):
         evalCE( ceBulk )
 
 def evalCE( BC):
-    evaluator = Evaluate( BC, lamb=9E-4, penalty="l1" )
+    lambs = np.logspace(-7,-1,num=50)
+    print (lambs)
+    cvs = []
+    for i in range(len(lambs)):
+        print (lambs[i])
+        evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1" )
+        cvs.append(evaluator._cv_loo())
+    indx = np.argmin(cvs)
+    evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1" )
+    #evaluator = ep.EvaluatePrior(BC, selection={"nclusters":5} )
+    #cnames = evaluator.cluster_names
+    #l1 = pen.L1(9E-4)
+    #evaluator.add_penalization( [pen.volume_penalization(1E-14,cnames,penalization="l2"),pen.number_atoms_penalization(1E-14,cnames,penalization="l2")] )
+    #evaluator.add_penalization( [pen.number_atoms_penalization(0.0001,cnames)] )
+    #evaluator.estimate_hyper_params()
     eci_name = evaluator.get_cluster_name_eci_dict
+    print (eci_name)
     evaluator.plot_energy()
     plotter = ECIPlotter(eci_name)
-    plotter.plot( tight=True )
+    plotter.plot( tight=False )
+
+    cov_plotter = CovariancePlot(evaluator, constant_term_column=0)
+    cov_plotter.plot()
     plt.show()
 
-    #evaluator.plot_selected_eci()
-
-    """
-    convCheck = ConvergenceCheck( evaluator )
-    print ( convCheck.converged() )
-    convCheck.plot_cv_score()
-    convCheck.plot_energy_with_gen_info()
-    plt.show()
-    """
 
 if __name__ == "__main__":
     main( sys.argv[1:] )
