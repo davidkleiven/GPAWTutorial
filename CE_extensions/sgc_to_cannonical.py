@@ -8,10 +8,37 @@ class SGCToCanonicalConverter(object):
         self.composition = None
         self.chemical_potentials = None
         self.sgc_potentials = None
+        self.all_chem_pots = None
+
+    def hyper_surface_in_chemical_potential_space( self, T, points ):
+        """
+        Generates a hyper surface representing the SGC potential
+        """
+        if ( self.sgc_potentials is None or self.all_chem_pots is None ):
+            all_chem_pots = []
+            # Find all symbols in the simulation
+            symbs = self.wl_simulations[0].chem_pots.keys()
+            indx = {key:i for i in range(symbs)}
+
+            # Extract chemical potentials
+            sgc_pots = []
+            for wl in self.wl_simulations:
+                chem_pots = np.zeros(len(len(symbs)))
+                for symb in symbs:
+                    chem_pots[indx[symb]] = wl.chem_pots[symb]
+                all_chem_pots.append(chem_pots)
+                sgc_pots.append(wl.sgc_potential(T))
+            self.sgc_potentials = sgc_pots
+
+            # Build surface
+            self.all_chem_pots = np.array(all_chem_pots)
+        
+        sgc_pot_surface = interpolate.griddata( self.all_chem_pots, self.sgc_potentials, points, method="cubic" )
+        return sgc_pot_surface
 
     def get_composition_one_element( self, T, element, spline_order=3, n_chem_pots=50 ):
         """
-        Computes the compositions
+        Computes the compositions. DOES NOT WORK AT THE MOMENT, HAS TO USE hyper_surface_in_chemical_potential_space
         """
         chem_pots = []
         thermo_potentials = []

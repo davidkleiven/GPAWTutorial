@@ -158,6 +158,16 @@ class WangLandauSGC( object ):
         self.Emin = Emin
         self.Emax = Emax
 
+    def optimize_bins( self ):
+        """
+        Optimize the binning to have more equal number of visits
+        """
+        mean_visits = np.mean(self.histogram)
+        bins = []
+        for i in range(0,len(self.histogram)):
+            n_splits = int(np.log2(self.histogram[i]/mean_visits))
+
+
     def run( self, maxsteps=10000000 ):
         f_small_enough = False
         update_bounds_every = 30
@@ -176,6 +186,7 @@ class WangLandauSGC( object ):
 
         # Avoid overflow because large entropy, scale down by a factor so subtract of the mean
         # before exponentiating
+        print ("Current f: {}".format(self.f))
         self.dos = np.exp(self.entropy - np.mean(self.entropy))
         #self.dos = np.exp(self.entropy)
 
