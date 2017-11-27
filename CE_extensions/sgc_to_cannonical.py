@@ -1,6 +1,7 @@
 from scipy.stats import linregress
 from scipy import interpolate
 import numpy as np
+from scipy.misc import derivative
 
 class SGCToCanonicalConverter(object):
     def __init__( self, wl_simulations ):
@@ -62,14 +63,18 @@ class SGCToCanonicalConverter(object):
         sorted_thermo_pots = [thermo_potentials[indx] for indx in sort_arg]
         if ( np.allclose(sorted_chem_pots, 0.0) ):
             # This is the reference element
-            return sorted_chem_pots, [], []
+            return sorted_chem_pots, [], [], [], []
 
         interpolator = interpolate.interp1d(sorted_chem_pots,sorted_thermo_pots,kind="cubic")
-        interpolator = interpolate.BSpline( sorted_chem_pots, sorted_thermo_pots, 1 )
+        #interpolator = interpolate.UnivariateSpline( sorted_chem_pots, sorted_thermo_pots )
         new_chem_pots = np.linspace(np.min(sorted_chem_pots), np.max(sorted_chem_pots), n_chem_pots)
-        x = interpolate.splev(new_chem_pots,interpolator,der=1)/self.n_atoms
-        phi = interpolate.splev(new_chem_pots,interpolator)
-        return new_chem_pots, x, phi
+        d_mu = new_chem_pots[1]-new_chem_pots[0]
+        x = np.zeros(len(new_chem_pots))
+        x[1:-1] = -derivative(interpolator, new_chem_pots[1:-1], d_mu )/self.n_atoms
+        x[0] = x[1]
+        x[-1] = x[-2]
+        phi = interpolator(new_chem_pots)
+        return new_chem_pots, x, phi, sorted_chem_pots, sorted_thermo_pots
 
     def get_compositions( self, T, spline_order=3, n_chem_pots=50 ):
         """
@@ -83,12 +88,14 @@ class SGCToCanonicalConverter(object):
         comp = {}
         sgc_pot = {}
         chem_pot = {}
+        chem_pot_raw = {}
+        sgc_pot_raw = {}
         for symbol in elms:
-            chem_pot[symbol], comp[symbol], sgc_pot[symbol] = self.get_composition_one_element( T, symbol, spline_order=spline_order )
+            chem_pot[symbol], comp[symbol], sgc_pot[symbol], chem_pot_raw[symbol], sgc_pot_raw[symbol] = self.get_composition_one_element( T, symbol, spline_order=spline_order )
         self.composition = comp
         self.sgc_potentials = sgc_pot
         self.chemical_potentials = chem_pot
-        return chem_pot, comp, sgc_pot
+        return chem_pot, comp, sgc_pot, chem_pot_raw, sgc_pot_raw
 
     def free_energy( self, T, composition ):
         """

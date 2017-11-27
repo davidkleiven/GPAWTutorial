@@ -79,12 +79,12 @@ class WangLandauDBManger( object ):
 
         conn = sq.connect( self.db_name )
         cur = conn.cursor()
-        cur.execute( "insert into simulations set id=?, initial_f=?, current_f=?, flatness=?, fmin=?", (newID, initial_f,initial_f,flatness,fmin) )
+        cur.execute( "insert into simulations set id=?, initial_f=?, current_f=?, flatness=?, fmin=?, queued=?", (newID, initial_f,initial_f,flatness,fmin,0) )
         cur.commit()
 
         # Update the chemical potentials
         for key,value in chem_pot.iteritems():
-            cur.execute( "insert into chemical_potentials set uid=?, element=?, potential=?", (newUID,key,value))
+            cur.execute( "insert into chemical_potentials set uid=?, element=?, potential=?, id=?", (newUID,key,value,newID) )
             newUID += 1
         cur.commit()
         conn.close()

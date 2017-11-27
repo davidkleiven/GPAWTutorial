@@ -25,17 +25,20 @@ def analyze():
             wl_objs.append( pkl.load(infile) )
     analyzer = SGCToCanonicalConverter(wl_objs)
     T = [100,200,300,400,500,800,1000]
-    chem_pot, comp, sgc_pots = analyzer.get_compositions(T[0])
+    chem_pot, comp, sgc_pots, chem_pot_raw, sgc_pots_raw = analyzer.get_compositions(T[2])
     print (chem_pot)
 
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
-    ax.plot( chem_pot["Ag"], sgc_pots["Ag"] )
+    ax.plot( chem_pot["Ag"], sgc_pots["Ag"], label="Free energy" )
+    ax.plot( chem_pot_raw["Ag"], sgc_pots_raw["Ag"], 'o', mfc="none" )
     ax.set_xlabel( "Chemical potential" )
     ax.set_ylabel( "SGC potential" )
     ax2 = ax.twinx()
-    ax2.plot( chem_pot["Ag"], comp["Ag"] )
+    ax2.plot( chem_pot["Ag"], comp["Ag"], color="#fdbf6f" )
+    ax.plot( [],[], color="#fdbf6f", label="Conc")
     ax2.set_ylabel( "Concentration Ag" )
+    ax.legend( loc="best", frameon=False )
     plt.show()
 
     print (chem_pot)

@@ -8,7 +8,7 @@ import copy
 from matplotlib import pyplot as plt
 
 class EvaluateL1min( Evaluate ):
-    def __init__( self, db_name, cluster_names=None, lamb=0.0, eci=None, threshold=0.01, alpha=0.01):
+    def __init__( self, BC, cluster_names=None, lamb=0.0, threshold=0.01, alpha=0.01):
         """
         Class that computes the ECIs based on minimizing the l1 norm of the ECI vector
 
@@ -21,7 +21,7 @@ class EvaluateL1min( Evaluate ):
         """
         self.threshold = threshold
         self.alpha = alpha
-        Evaluate.__init__( self, db_name, cluster_names=cluster_names, lamb=lamb, eci=eci )
+        Evaluate.__init__( self, BC, cluster_names=cluster_names, lamb=lamb, penalty="l1" )
         self.selected_cluster_names = []
         self.selected_features = None
         self.find_optimal_alpha()

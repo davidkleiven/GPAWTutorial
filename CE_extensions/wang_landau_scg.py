@@ -379,7 +379,7 @@ class WangLandauSGC( object ):
         """
         The thermodynamic potential in the SGC ensemble
         """
-        return -units.kB*T*np.log(self.sgc_partition_function(T))
+        return -units.kB*T*( np.log(self.sgc_partition_function(T)) - np.min(self.E)/(units.kB*T) )
 
     def plot_dos( self ):
         fig = plt.figure()
