@@ -5,9 +5,12 @@ import ase.units as units
 from matplotlib import pyplot as plt
 from scipy import interpolate
 import copy
+import json
+import sqlite3 as sq
+import io
 
 class WangLandauSGC( object ):
-    def __init__( self, atoms, calc, chemical_potentials={}, site_types=None, site_elements=None, Nbins=100, initial_f=2.71,
+    def __init__( self, atoms, calc, db_name, db_id, site_types=None, site_elements=None, Nbins=100, initial_f=2.71,
     flatness_criteria=0.8, fmin=1E-8, Emin=None, Emax=None ):
         self.atoms = atoms
         self.site_types = site_types
@@ -31,6 +34,9 @@ class WangLandauSGC( object ):
         self.current_bin = 0
         self.fmin = 1E-8
         self.structures = [None for _ in range(self.Nbins)]
+        self.db_name = db_name
+        self.current_id = db_id
+        self.chem_pot_db_uid = {}
 
         if (len(self.atoms) != len(self.site_types )):
             raise ValueError( "A site type for each site has to be specified!" )
@@ -74,10 +80,43 @@ class WangLandauSGC( object ):
                             continue
                         self.possible_swaps[-1][element].append(e)
 
+    def read_params( self ):
+        """
+        Reads the entries from a database
+        """
+        conn = sq.connect( self.db_name )
+        cur = conn.cursor()
+
+        cur.execute( "SELECT energy,dos,histogram,fmin,current_f,initial_f,queued from simulations where id=?", self.db_id )
+        entries = cur.fetchone()
+        cur.execute( "SELECT uid,elements,potential from chemical_potentials where id=?", self.db_id )
+        chem_pot_entry = entries.fetchall()
+        conn.close()
+
+        queued = entries[6]
+        if ( queued != 0 ):
+            self.E = convert_array(entries[0])
+            self.dos = convert_array(entries[1])
+            self.histogram = convert_array(entries[2])
+        self.fmin = float( entries[3] )
+        self.f = float( entries[4] )
+        self.f0 = float( entries[5] )
+
+        # Read the chemical potentials
+        for entry in chem_pot_entry:
+            self.chem_pot[entry[1]] = float(entry[2])
+            self.chem_pot_db_uid[entry[1]] = int(entry[0])
+
     def get_bin( self, energy ):
+        """
+        Returns the binning corresponding to the energy
+        """
         return int( (energy-self.Emin)*self.Nbins/(self.Emax-self.Emin) )
 
     def get_energy( self, indx ):
+        """
+        Returns the energy corresponding to a given bin
+        """
         return self.Emin + (self.Emax-self.Emin )*indx/self.Nbins
 
     def _step( self ):
@@ -102,8 +141,12 @@ class WangLandauSGC( object ):
         #selected_bin = self.get_bin(energy)
 
         if ( energy < self.Emin ):
+            if ( self.f < self.f0 ):
+                return
             self.redistribute_hist(energy,self.Emax)
         elif ( energy >= self.Emax ):
+            if ( self.f < self.f0 ):
+                return
             self.redistribute_hist(self.Emin,energy)
         selected_bin = self.get_bin(energy)
 
@@ -129,6 +172,11 @@ class WangLandauSGC( object ):
         self.entropy[self.current_bin] += self.f
 
     def is_flat( self ):
+        """
+        Checks if the histogram is flat.
+        Note that if the histogram contains less than 100 entries,
+        it will return False
+        """
         if ( np.sum(self.histogram) < 100 ):
             return False
 
@@ -142,10 +190,60 @@ class WangLandauSGC( object ):
         return np.min(self.histogram[mask]) > self.flatness_criteria*mean
 
     def save( self, fname ):
+        """
+        Saves the object as a pickle file
+        """
         with open(fname,'wb') as ofile:
             pkl.dump(self,ofile)
 
+        base = fname.split(".")[0]
+        jsonfname = base+".json"
+        self.save_results(jsonfname)
+
+    def save_results( self, fname ):
+        """
+        Saves the DOS to a JSON file
+        """
+        data = {}
+        data["dos"] = self.dos.astype(float).tolist()
+        data["sgc_energy"] = self.E.astype(float).tolist()
+        data["f"] = float( self.f )
+        data["initial_f"] = float( self.f0 )
+        data["flatness_criteria"] = self.flatness_criteria
+        data["histogram"] = self.histogram.astype(int).tolist()
+        data["fmin"] = float( self.fmin )
+        data["converged"] = int( (self.f < self.fmin ) )
+        data["chem_pot"] = self.chem_pot
+
+        with open( fname, 'w' ) as outfile:
+            str_ = json.dumps(data, indent=4, sort_keys=True, separators=(",",":"), ensure_ascii=False )
+            outfile.write(str_)
+
+    def save_db( self ):
+        """
+        Updates the database with the entries
+        """
+        conn = sq.connect( self.db_name )
+        cur = conn.cursor()
+        sql = "update simulations set energy="
+        cur.execute( "update simulations set energy=?", adapt_array(self.E) )
+        cur.execute( "update simulations set dos=?", adapt_array(self.dos) )
+        cur.execute( "update simulations set histogram=?", adapt_array(self.histogram))
+        conv = int(self.f < self.fmin)
+        cur.execute( "update simulations set fmin=?, current_f=?, initial_f=?, converged=? where id=?", (self.fmin,self.f,self.f0,conv,self.db_id) )
+        conn.commit()
+
+        # Update the chemical potentials
+        for key,value in self.chem_pot:
+            cur.execute( "update chemical_potentials set element=?, potential=? where uid=?", (key, value, chem_pot_db_uid[key]) )
+        conn.comit()
+        conn.close()
+
     def set_number_of_bins( self, N ):
+        """
+        Changes the number of bins
+        TODO: Does not work yet...
+        """
         self.Nbins = N
         self.redistribute_hist(self.Emin,self.Emax)
 
@@ -249,7 +347,6 @@ class WangLandauSGC( object ):
                 break
         self.dos = np.exp(self.entropy - np.mean(self.entropy))
         print ("Current f: {}".format(self.f))
-        print (self.structures)
 
     def sgc_partition_function( self, T ):
         """
@@ -258,6 +355,9 @@ class WangLandauSGC( object ):
         return np.sum( self.dos*self._boltzmann_factor(T) )
 
     def _boltzmann_factor( self, T ):
+        """
+        Returns the boltzmann factor
+        """
         E0 = np.min(self.E)
         return np.exp( -(self.E-E0)/(units.kB*T) )
 
@@ -286,10 +386,26 @@ class WangLandauSGC( object ):
         ax = fig.add_subplot(1,1,1)
         ax.plot( self.E, self.dos, ls="steps" )
         ax.set_yscale("log")
+        ax.set_xlabel( "SGC energy (eV)" )
+        ax.set_ylabel( "Density of states" )
         return fig
 
     def plot_histogram( self ):
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
         ax.plot( self.E, self.histogram, ls="steps" )
+        ax.set_xlabel( "SGC energy (eV)" )
+        ax.set_ylabel( "Number of times visited")
         return fig
+
+# Helper functions for numpy arrays to SQL database
+def adapt_array(arr):
+    out = io.BytesIO()
+    np.save(out,arr)
+    out.seek(0)
+    return sq.Binary(out.read())
+
+def convert_array(text):
+    out = io.BytesIO(text)
+    out.seek(0)
+    return np.load(out)
