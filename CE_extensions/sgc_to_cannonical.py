@@ -65,14 +65,10 @@ class SGCToCanonicalConverter(object):
             # This is the reference element
             return sorted_chem_pots, [], [], [], []
 
-        interpolator = interpolate.interp1d(sorted_chem_pots,sorted_thermo_pots,kind="cubic")
-        #interpolator = interpolate.UnivariateSpline( sorted_chem_pots, sorted_thermo_pots )
+        interpolator = interpolate.interp1d(sorted_chem_pots,sorted_thermo_pots,kind="linear", bounds_error=False, fill_value="extrapolate")
         new_chem_pots = np.linspace(np.min(sorted_chem_pots), np.max(sorted_chem_pots), n_chem_pots)
         d_mu = new_chem_pots[1]-new_chem_pots[0]
-        x = np.zeros(len(new_chem_pots))
-        x[1:-1] = -derivative(interpolator, new_chem_pots[1:-1], d_mu )/self.n_atoms
-        x[0] = x[1]
-        x[-1] = x[-2]
+        x = -derivative(interpolator, new_chem_pots, d_mu )/self.n_atoms
         phi = interpolator(new_chem_pots)
         return new_chem_pots, x, phi, sorted_chem_pots, sorted_thermo_pots
 
