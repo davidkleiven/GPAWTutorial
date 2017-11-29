@@ -39,9 +39,7 @@ def main( argv ):
     ceBulk = BulkCrystal( "fcc", 4.05, [N,N,N], 1, [["Al","Mg"]], conc_args, db_name, max_cluster_size=4, reconf_db=False)
     if ( option == "generateNew" ):
         struc_generator = GenerateStructures( ceBulk, struct_per_gen=5 )
-        view(atoms)
-        exit()
-        struc_generator.generate_probe_structure( num_steps=1000 )
+        struc_generator.generate_probe_structure( num_steps=100 )
     elif ( option == "evaluate" ):
         evalCE( ceBulk )
 
