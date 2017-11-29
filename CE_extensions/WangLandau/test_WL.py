@@ -1,11 +1,14 @@
+import sys
 from ase.calculators.emt import EMT
 from ase.build import bulk
 from wang_landau_scg import WangLandauSGC
 from matplotlib import pyplot as plt
 import pickle as pkl
 from sgc_to_cannonical import SGCToCanonicalConverter
-import sys
+from wang_landau_db_manger import WangLandauDBManger
+import numpy as np
 
+db_name = "/home/davidkl/Documents/GPAWTutorial/CE_extensions/WangLandau/wang_landau_ag_au_fixed_f.db"
 def plot_probablility_distribution(wl):
     T = [100,200,300,400,500,800,1000,1200]
     fig = plt.figure()
@@ -16,16 +19,30 @@ def plot_probablility_distribution(wl):
     ax.set_yscale("log")
     return fig
 
+def initialize_db():
+    manager = WangLandauDBManger( db_name )
+    ag_chem_pot = np.linspace( 0.0,0.32/64, 20 )
+    for i in range(len(ag_chem_pot) ):
+        chem_pot = {
+        "Ag":ag_chem_pot[i],
+        "Au":0.0
+        }
+        manager.insert( chem_pot, initial_f=1.6, Nbins=100 )
+
+def update_groups():
+    manager = WangLandauDBManger( db_name )
+    for group in range(manager.get_new_group()):
+        for _ in range(20):
+            manager.add_run_to_group(group)
+
+
 def analyze():
-    wls = ["wang_landau_ag_au_converged_0.pkl", "wang_landau_ag_au_converged_8.pkl","wang_landau_ag_au_16.pkl",
-    "wang_landau_ag_au_24.pkl", "wang_landau_ag_au_32.pkl", "wang_landau_ag_au_064.pkl"]
-    wl_objs = []
-    for fname in wls:
-        with open(fname,'rb') as infile:
-            wl_objs.append( pkl.load(infile) )
-    analyzer = SGCToCanonicalConverter(wl_objs)
+    db_manager = WangLandauDBManger( db_name )
+    analyzers = db_manager.get_analyzer_all_groups()
+    analyzers[-1].plot_dos()
+    analyzer = SGCToCanonicalConverter(analyzers,64)
     T = [100,200,300,400,500,800,1000]
-    chem_pot, comp, sgc_pots, chem_pot_raw, sgc_pots_raw = analyzer.get_compositions(T[2])
+    chem_pot, comp, sgc_pots, chem_pot_raw, sgc_pots_raw = analyzer.get_compositions(T[0])
     print (chem_pot)
 
     fig = plt.figure()
@@ -41,10 +58,7 @@ def analyze():
     ax.legend( loc="best", frameon=False )
     plt.show()
 
-    print (chem_pot)
-
-def main():
-    new_run = False
+def main( runID ):
     atoms = bulk("Ag")
     atoms = atoms*(4,4,4)
     calc = EMT()
@@ -53,22 +67,23 @@ def main():
     atoms[0].symbol = "Au"
     site_types = [0 for _ in range(len(atoms))]
     site_elements = [["Ag","Au"]]
-    if ( new_run ):
-        wl = WangLandauSGC( atoms, calc, chemical_potentials=chem_pot, site_types=site_types, site_elements=site_elements, Nbins=50 )
-    else:
-        with open("wang_landau_ag_au_064.pkl", "rb") as infile:
-            wl = pkl.load(infile)
-    wl.run( maxsteps=10000 )
-    #wl.set_number_of_bins(40)
-    wl.save("wang_landau_ag_au_064.pkl")
-    wl.plot_dos()
-    wl.plot_histogram()
-    plot_probablility_distribution(wl)
-    plt.show()
+    wl = WangLandauSGC( atoms, calc, db_name, runID, site_types=site_types, site_elements=site_elements, Nbins=100, scheme="fixed_f", conv_check="histstd" )
+    wl.run( maxsteps=100000 )
+    wl.save_db()
+    #wl.plot_dos()
+    #wl.plot_histogram()
+    #wl.plot_growth_fluctuation()
+    #plot_probablility_distribution(wl)
+    #plt.show()
 
 if __name__ == "__main__":
     opt = sys.argv[1]
     if ( opt == "analyze" ):
         analyze()
     elif ( opt == "run" ):
-        main()
+        runID = int(sys.argv[2] )
+        main(runID)
+    elif ( opt == "init" ):
+        initialize_db()
+    elif ( opt == "add" ):
+        update_groups()

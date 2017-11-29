@@ -4,47 +4,46 @@ import numpy as np
 from scipy.misc import derivative
 
 class SGCToCanonicalConverter(object):
-    def __init__( self, wl_simulations ):
-        self.wl_simulations = wl_simulations
-        self.n_atoms = len(self.wl_simulations[0].atoms) # Should be the same in all WLs
+    def __init__( self, wl_analyzers, natoms ):
+        self.wl_analyzers = wl_analyzers
+        self.n_atoms = natoms
         self.composition = None
         self.chemical_potentials = None
-        self.sgc_potentials = None
+        self.free_energies = None
         self.all_chem_pots = None
-
         self.normalize_dos()
 
     def normalize_dos( self ):
         """
         Normalize the DOS in each wl_simulation
         """
-        for wl in self.wl_simulations:
+        for wl in self.wl_analyzers:
             wl.dos *= self.n_atoms/np.sum(wl.dos)
 
     def hyper_surface_in_chemical_potential_space( self, T, points ):
         """
         Generates a hyper surface representing the SGC potential
         """
-        if ( self.sgc_potentials is None or self.all_chem_pots is None ):
+        if ( self.free_energies is None or self.all_chem_pots is None ):
             all_chem_pots = []
             # Find all symbols in the simulation
-            symbs = self.wl_simulations[0].chem_pots.keys()
+            symbs = self.wl_analyzers[0].chem_pots.keys()
             indx = {key:i for i in range(symbs)}
 
             # Extract chemical potentials
             sgc_pots = []
-            for wl in self.wl_simulations:
+            for wl in self.wl_analyzers:
                 chem_pots = np.zeros(len(len(symbs)))
                 for symb in symbs:
                     chem_pots[indx[symb]] = wl.chem_pots[symb]
                 all_chem_pots.append(chem_pots)
-                sgc_pots.append(wl.sgc_potential(T))
-            self.sgc_potentials = sgc_pots
+                sgc_pots.append(wl.free_energy(T))
+            self.free_energies = sgc_pots
 
             # Build surface
             self.all_chem_pots = np.array(all_chem_pots)
 
-        sgc_pot_surface = interpolate.griddata( self.all_chem_pots, self.sgc_potentials, points, method="cubic" )
+        sgc_pot_surface = interpolate.griddata( self.all_chem_pots, self.free_energies, points, method="cubic" )
         return sgc_pot_surface
 
     def get_composition_one_element( self, T, element, spline_order=3, n_chem_pots=50 ):
@@ -53,9 +52,9 @@ class SGCToCanonicalConverter(object):
         """
         chem_pots = []
         thermo_potentials = []
-        for wl in self.wl_simulations:
+        for wl in self.wl_analyzers:
             chem_pots.append(wl.chem_pot[element])
-            thermo_potentials.append( wl.sgc_potential(T) )
+            thermo_potentials.append( wl.free_energy(T) )
 
         # Sort the chemical potentials
         sort_arg = np.argsort(chem_pots)
@@ -80,7 +79,7 @@ class SGCToCanonicalConverter(object):
         The proper composition of this element is 1 minus the composition
         of all the others
         """
-        elms = self.wl_simulations[0].atoms_count.keys()
+        elms = self.wl_analyzers[0].chem_pot.keys()
         comp = {}
         sgc_pot = {}
         chem_pot = {}
@@ -89,7 +88,7 @@ class SGCToCanonicalConverter(object):
         for symbol in elms:
             chem_pot[symbol], comp[symbol], sgc_pot[symbol], chem_pot_raw[symbol], sgc_pot_raw[symbol] = self.get_composition_one_element( T, symbol, spline_order=spline_order )
         self.composition = comp
-        self.sgc_potentials = sgc_pot
+        self.free_energies = sgc_pot
         self.chemical_potentials = chem_pot
         return chem_pot, comp, sgc_pot, chem_pot_raw, sgc_pot_raw
 
@@ -101,8 +100,8 @@ class SGCToCanonicalConverter(object):
             self.get_compositions()
 
         thermo_potentials = []
-        for wl in self.wl_simulations:
-            thermo_potentials.append( wl.sgc_potential(T) )
+        for wl in self.wl_analyzers:
+            thermo_potentials.append( wl.free_energy(T) )
             for key,value in self.compositions:
                 interpolator = interpolator.interp1d( value, self.chemical_potentials[key] )
                 thermo_potentials[-1] += interpolator(composition[key])*composition[key]
