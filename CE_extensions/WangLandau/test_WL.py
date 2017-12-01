@@ -8,7 +8,7 @@ from sgc_to_cannonical import SGCToCanonicalConverter
 from wang_landau_db_manger import WangLandauDBManger
 import numpy as np
 
-db_name = "/home/davidkl/Documents/GPAWTutorial/CE_extensions/WangLandau/wang_landau_ag_au_fixed_f.db"
+db_name = "/home/davidkl/Documents/GPAWTutorial/CE_extensions/WangLandau/wang_landau_au_cu_fixed_f.db"
 def plot_probablility_distribution(wl):
     T = [100,200,300,400,500,800,1000,1200]
     fig = plt.figure()
@@ -21,19 +21,26 @@ def plot_probablility_distribution(wl):
 
 def initialize_db():
     manager = WangLandauDBManger( db_name )
-    ag_chem_pot = np.linspace( 0.0,0.32/64, 20 )
-    for i in range(len(ag_chem_pot) ):
-        chem_pot = {
-        "Ag":ag_chem_pot[i],
-        "Au":0.0
-        }
-        manager.insert( chem_pot, initial_f=1.6, Nbins=100 )
+    ag_chem_pot = np.linspace( 0.0,0.0/64, 1 )
+    chem_pot = {
+    "Cu":0.8,
+    "Au":0.0
+    }
+    manager.insert( chem_pot, initial_f=1.6, Nbins=100 )
+    #for i in range(len(ag_chem_pot) ):
+    #    chem_pot = {
+    #    "Cu":ag_chem_pot[i],
+    #    "Au":0.0
+    #    }
+    #    manager.insert( chem_pot, initial_f=1.6, Nbins=100 )
 
 def update_groups():
     manager = WangLandauDBManger( db_name )
+    manager.add_run_to_group(5,n_entries=20)
+    manager.add_run_to_group(6,n_entries=20)
+    return
     for group in range(manager.get_new_group()):
-        for _ in range(20):
-            manager.add_run_to_group(group)
+        manager.add_run_to_group(group,n_entries=20)
 
 
 def analyze():
@@ -47,28 +54,29 @@ def analyze():
 
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
-    ax.plot( chem_pot["Ag"], sgc_pots["Ag"], label="Free energy" )
-    ax.plot( chem_pot_raw["Ag"], sgc_pots_raw["Ag"], 'o', mfc="none" )
+    ax.plot( chem_pot["Cu"], sgc_pots["Cu"], label="Free energy" )
+    ax.plot( chem_pot_raw["Cu"], sgc_pots_raw["Cu"], 'o', mfc="none" )
     ax.set_xlabel( "Chemical potential" )
     ax.set_ylabel( "SGC potential" )
     ax2 = ax.twinx()
-    ax2.plot( chem_pot["Ag"], comp["Ag"], color="#fdbf6f" )
+    ax2.plot( chem_pot["Cu"], comp["Cu"], color="#fdbf6f" )
     ax.plot( [],[], color="#fdbf6f", label="Conc")
-    ax2.set_ylabel( "Concentration Ag" )
+    ax2.set_ylabel( "Concentration Cu" )
     ax.legend( loc="best", frameon=False )
     plt.show()
 
 def main( runID ):
-    atoms = bulk("Ag")
+    atoms = bulk("Au")
     atoms = atoms*(4,4,4)
     calc = EMT()
     atoms.set_calculator(calc)
-    chem_pot = {"Ag":0.064/64,"Au":0.0}
-    atoms[0].symbol = "Au"
+    chem_pot = {"Cu":0.0/64,"Au":0.0}
+    atoms[0].symbol = "Cu"
     site_types = [0 for _ in range(len(atoms))]
-    site_elements = [["Ag","Au"]]
+    site_elements = [["Cu","Au"]]
     wl = WangLandauSGC( atoms, calc, db_name, runID, site_types=site_types, site_elements=site_elements, Nbins=100, scheme="fixed_f", conv_check="histstd" )
     wl.run( maxsteps=100000 )
+    #wl.explore_energy_space( nsteps=1000 )
     wl.save_db()
     #wl.plot_dos()
     #wl.plot_histogram()

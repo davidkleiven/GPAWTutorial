@@ -3,21 +3,23 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 class WangLandauSGCAnalyzer( object ):
-    def __init__( self, energy, dos, chem_pot ):
+    def __init__( self, energy, dos, chem_pot, gs_energy ):
         """
         Object for analyzing thermodynamics from the Density of States in the
         Semi Grand Cannonical Ensemble
         """
         self.E = energy
         self.dos = dos
-        self.E0 = np.min(self.E)
+        self.E0 = gs_energy
+        print (self.E0)
         self.chem_pot = chem_pot
 
     def partition_function( self, T ):
         """
         Computes the partition function in the SGC ensemble
         """
-        return np.sum( self.dos*self._boltzmann_factor(T) )
+        weight = np.abs(self.E0-np.min(self.E))/(self.E[1]-self.E[0])
+        return np.sum( self.dos*self._boltzmann_factor(T) ) + weight*self.dos[0]
 
     def _boltzmann_factor( self, T ):
         """

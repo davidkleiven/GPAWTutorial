@@ -14,7 +14,9 @@ class WangLandauDBManger( object ):
         Checks if the database has the correct format and updates it if not
         """
         required_fields = {
-        "simulations":["uid","dos","energy","histogram","fmin","current_f","initial_f","converged","queued","Nbins","flatness","groupID","growth_variance"],
+        "simulations":["uid","dos","energy","histogram","fmin","current_f","initial_f","converged",
+        "queued","Nbins","flatness","groupID","growth_variance","Emin","Emax","initialized","struct_file",
+        "gs_energy"],
         "chemical_potentials":["uid","element","id","potential"]
         }
         required_tables = ["simulations","chemical_potentials"]
@@ -33,7 +35,12 @@ class WangLandauDBManger( object ):
             "flatness":"float",
             "queued":"integer",
             "groupID":"integer",
-            "growth_variance":"blob"
+            "growth_variance":"blob",
+            "Emin":"float",
+            "Emax":"float",
+            "initialized":"integer",
+            "struct_file":"text",
+            "gs_energy":"float"
         }
 
         conn = sq.connect( self.db_name )
@@ -95,7 +102,7 @@ class WangLandauDBManger( object ):
             return 0
         return max(only_groups)+1
 
-    def insert( self, chem_pot, initial_f=2.71, fmin=1E-8, flatness=0.8, Nbins=50 ):
+    def insert( self, chem_pot, initial_f=2.71, fmin=1E-8, flatness=0.8, Nbins=50, energy_range="auto" ):
         """
         Insert a new entry into the database
         """
@@ -106,7 +113,18 @@ class WangLandauDBManger( object ):
         conn = sq.connect( self.db_name )
         cur = conn.cursor()
         cur.execute( "insert into simulations (uid,initial_f,current_f,flatness,fmin,queued,Nbins,groupID) values (?,?,?,?,?,?,?,?)", (newID, initial_f,initial_f,flatness,fmin,0,Nbins,group) )
+        cur.execute( "update simulations set initialized=? where uid=?", (0,newID) )
         conn.commit()
+
+        if ( isinstance(energy_range,list) or isinstance(energy_range,tuple) ):
+            if ( len(energy_range) == 2 ):
+                Emin = energy_range[0]
+                Emax = energy_range[1]
+                cur.execute( "update simulations set Emin=?, Emax=? where uid=?",(Emin,Emax,newID))
+                E = np.linspace( Emin,Emax+1E-8,Nbins )
+                cur.execute( "update simulations set energy=? where uid=?", (wltools.convert_array(E),newID) )
+                cur.execute( "update simulations set initialized=? where uid=?", (1,newID) )
+                conn.commit()
 
         # Update the chemical potentials
         for key,value in chem_pot.iteritems():
@@ -115,29 +133,32 @@ class WangLandauDBManger( object ):
         conn.commit()
         conn.close()
 
-    def add_run_to_group( self, groupID ):
+    def add_run_to_group( self, groupID, n_entries=1 ):
         """
         Adds a run to a group
         """
         conn = sq.connect( self.db_name )
         cur = conn.cursor()
-        cur.execute( "SELECT uid,initial_f,current_f,flatness,fmin,queued,Nbins FROM simulations WHERE groupID=?", (groupID,))
+        cur.execute( "SELECT uid,initial_f,current_f,flatness,fmin,queued,Nbins,groupID,Emin,Emax,initialized,energy,gs_energy FROM simulations WHERE groupID=?", (groupID,))
         entries = cur.fetchone()
         oldID = int(entries[0])
         newID = self.get_new_id()
         entries = list(entries)
-        entries[0] = newID
-        entries += [groupID]
-        entries[5] = 0 # Set queued flag to 0
-        entries = tuple(entries)
-        cur.execute( "INSERT INTO simulations (uid,initial_f,current_f,flatness,fmin,queued,Nbins,groupID) values (?,?,?,?,?,?,?,?)", entries )
-        conn.commit()
         cur.execute( "SELECT element,potential FROM chemical_potentials WHERE id=?", (oldID,) )
-        entries = cur.fetchall()
-        newUID = self.get_new_uid_chem_pot()
-        for entry in entries:
-            cur.execute( "INSERT INTO chemical_potentials (uid,element,potential,id) VALUES (?,?,?,?)", (newUID,entry[0],entry[1],newID) )
-            newUID += 1
+        chem_pot_entries = cur.fetchall()
+
+        for _ in range(n_entries):
+            entries[0] = newID
+            entries[7] = groupID
+            entries[5] = 0 # Set queued flag to 0
+            entries = tuple(entries)
+            cur.execute( "INSERT INTO simulations (uid,initial_f,current_f,flatness,fmin,queued,Nbins,groupID,Emin,Emax,initialized,energy,gs_energy) values (?,?,?,?,?,?,?,?,?,?,?,?,?)", entries )
+            newUID = self.get_new_uid_chem_pot()
+            for entry in chem_pot_entries:
+                cur.execute( "INSERT INTO chemical_potentials (uid,element,potential,id) VALUES (?,?,?,?)", (newUID,entry[0],entry[1],newID) )
+                newUID += 1
+            entries = list(entries)
+            newID += 1
         conn.commit()
         conn.close()
 
@@ -166,7 +187,7 @@ class WangLandauDBManger( object ):
         """
         conn = sq.connect( self.db_name )
         cur = conn.cursor()
-        cur.execute( "SELECT energy,dos,uid FROM simulations WHERE converged=1 AND groupID=?", (groupID,) )
+        cur.execute( "SELECT energy,dos,uid,gs_energy FROM simulations WHERE converged=1 AND groupID=?", (groupID,) )
         entries = cur.fetchall()
         conn.close()
         if ( len(entries) < min_number_of_converged ):
@@ -174,6 +195,11 @@ class WangLandauDBManger( object ):
         uid = int( entries[0][2] )
         energy = wltools.convert_array( entries[0][0] )
         logdos = np.log( wltools.convert_array( entries[0][1] ) )
+
+        # Normalize before averaging
+        all_sum = np.sum(np.exp(logdos))
+        logdos -= np.log(all_sum)
+        gs_energy = np.min( [entries[i][3] for i in range(0,len(entries))] )
         for i in range(1,len(entries)):
             logdos += np.log( wltools.convert_array( entries[i][1] ) )
 
@@ -185,11 +211,12 @@ class WangLandauDBManger( object ):
         cur = conn.cursor()
         cur.execute( "SELECT element,potential FROM chemical_potentials WHERE id=?", (uid,) )
         entries = cur.fetchall()
+
         conn.close()
         chem_pot = {}
         for entry in entries:
             chem_pot[entry[0]] = entry[1]
-        return WangLandauSGCAnalyzer( energy, dos, chem_pot )
+        return WangLandauSGCAnalyzer( energy, dos, chem_pot, gs_energy )
 
     def get_analyzer_all_groups( self, min_number_of_converged=1 ):
         """

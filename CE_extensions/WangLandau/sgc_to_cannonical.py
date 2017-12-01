@@ -18,7 +18,8 @@ class SGCToCanonicalConverter(object):
         Normalize the DOS in each wl_simulation
         """
         for wl in self.wl_analyzers:
-            wl.dos *= self.n_atoms/np.sum(wl.dos)
+            factor = np.exp(self.n_atoms*np.log(2.0))/wl.partition_function(1E100)
+            wl.dos *= factor
 
     def hyper_surface_in_chemical_potential_space( self, T, points ):
         """
@@ -64,7 +65,7 @@ class SGCToCanonicalConverter(object):
             # This is the reference element
             return sorted_chem_pots, [], [], [], []
 
-        interpolator = interpolate.interp1d(sorted_chem_pots,sorted_thermo_pots,kind="linear", bounds_error=False, fill_value="extrapolate")
+        interpolator = interpolate.interp1d(sorted_chem_pots,sorted_thermo_pots,kind="cubic", bounds_error=False, fill_value="extrapolate")
         new_chem_pots = np.linspace(np.min(sorted_chem_pots), np.max(sorted_chem_pots), n_chem_pots)
         d_mu = new_chem_pots[1]-new_chem_pots[0]
         x = -derivative(interpolator, new_chem_pots, d_mu )/self.n_atoms
