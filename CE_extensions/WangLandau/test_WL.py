@@ -70,23 +70,17 @@ def analyze():
     plt.show()
 
 def main( runID ):
-    atoms = bulk("Au")
-    atoms = atoms*(4,4,4)
-    calc = EMT()
-    atoms.set_calculator(calc)
-    chem_pot = {"Cu":0.0/64,"Au":0.0}
-    atoms[0].symbol = "Cu"
-    site_types = [0 for _ in range(len(atoms))]
+    site_types = [0 for _ in range(64)]
     site_elements = [["Cu","Au"]]
-    wl = WangLandauSGC( atoms, calc, db_name, runID, site_types=site_types, site_elements=site_elements, Nbins=100, scheme="fixed_f", conv_check="histstd" )
-    wl.run( maxsteps=100000 )
+    wl = WangLandauSGC( db_name, runID, site_types=site_types, site_elements=site_elements, Nbins=100, scheme="fixed_f", conv_check="histstd" )
+    wl.run( maxsteps=1000 )
     #wl.explore_energy_space( nsteps=1000 )
     wl.save_db()
-    #wl.plot_dos()
-    #wl.plot_histogram()
-    #wl.plot_growth_fluctuation()
+    wl.plot_dos()
+    wl.plot_histogram()
+    wl.plot_growth_fluctuation()
     #plot_probablility_distribution(wl)
-    #plt.show()
+    plt.show()
 
 if __name__ == "__main__":
     opt = sys.argv[1]

@@ -9,9 +9,10 @@ import json
 import sqlite3 as sq
 import io
 import wltools
+from ase.db import connect
 
 class WangLandauSGC( object ):
-    def __init__( self, atoms, calc, db_name, db_id, site_types=None, site_elements=None, Nbins=100, initial_f=2.71,
+    def __init__( self, db_name, db_id, site_types=None, site_elements=None, Nbins=100, initial_f=2.71,
     flatness_criteria=0.8, fmin=1E-8, Emin=0.0, Emax=1.0, conv_check="flathist", scheme="fixed_f", nsteps_per_update=10 ):
         """
         Class for running Wang Landau Simulations in the Semi Grand Cannonical Ensemble
@@ -42,7 +43,7 @@ class WangLandauSGC( object ):
                  fixed_f - Stop when the convergence criteria is met. This scheme typically have to be run multiple times
                            and then the results should be averaged
         """
-        self.atoms = atoms
+        self.atoms = None
         self.initialized = False
         self.site_types = site_types
         self.site_elements = site_elements
@@ -64,7 +65,6 @@ class WangLandauSGC( object ):
         self.f0 = initial_f
         self.flatness_criteria = flatness_criteria
         self.atoms_count = {}
-        self.calc = calc
         self.current_bin = 0
         self.fmin = 1E-8
         self.structures = [None for _ in range(self.Nbins)]
@@ -116,6 +116,7 @@ class WangLandauSGC( object ):
             self.site_elements = [symbols]
 
         # Count number of elements
+        self.atoms_count = {key:0 for key in self.chem_pot.keys()}
         for atom in self.atoms:
             if ( atom.symbol in self.atoms_count.keys() ):
                 self.atoms_count[atom.symbol] += 1
@@ -139,15 +140,14 @@ class WangLandauSGC( object ):
         """
         conn = sq.connect( self.db_name )
         cur = conn.cursor()
-        cur.execute( "SELECT energy,dos,histogram,fmin,current_f,initial_f,queued,flatness,growth_variance,initialized,struct_file,gs_energy from simulations where uid=?", (self.db_id,) )
+        cur.execute( "SELECT energy,dos,histogram,fmin,current_f,initial_f,queued,flatness,growth_variance,initialized,struct_file,gs_energy,atomID from simulations where uid=?", (self.db_id,) )
         entries = cur.fetchone()
-        cur.execute( "SELECT uid,element,potential from chemical_potentials where id=?", (self.db_id,) )
-        chem_pot_entry = cur.fetchall()
         conn.close()
 
         queued = entries[6]
         self.initialized = entries[9]
         self.struct_file = entries[10]
+        atomID = int(entries[12])
 
         if ( self.initialized != 0 ):
             self.E = wltools.convert_array(entries[0])
@@ -167,20 +167,19 @@ class WangLandauSGC( object ):
         self.Nbins = len(self.E)
         self.flatness_criteria = float(entries[7])
 
-        if (( len(self.E) != self.Nbins ) or ( len(self.histogram) != self.Nbins ) or ( len(self.entropy) != self.Nbins )):
+        if (( len(self.E) != self.Nbins ) ):
             raise IOError("Something went wrong when reading from the database.")
+        self.histogram = np.zeros(len(self.E), dtype=int)
+        self.dos = np.ones(len(self.E))
+        self.entropy = np.zeros(len(self.E))
+        self.cummulated_variance = np.zeros(len(self.E))
 
-        # Read the chemical potentials
-        for entry in chem_pot_entry:
-            self.chem_pot[entry[1]] = float(entry[2])
-            self.chem_pot_db_uid[entry[1]] = int(entry[0])
-        try:
-            with open(self.struct_file,"rb") as infile:
-                self.struct_file = pkl.load(infile)
-        except:
-            print ("Warning! Could not read structures from file!")
-            self.structures = [None for _ in range(self.Nbins)]
-        print (self.chem_pot)
+        db = connect( self.db_name )
+        self.atoms = db.get_atoms( id=atomID, attach_calculator=True )
+        row = db.get( id=atomID )
+        elms = row.data.elements
+        chem_pot = row.data.chemical_potentials
+        self.chem_pot = wltools.key_value_lists_to_dict(elms,chem_pot)
 
     def reset( self ):
         """
@@ -240,11 +239,13 @@ class WangLandauSGC( object ):
         if ( energy < self.Emin ):
             if ( ignore_out_of_range ):
                 self.rejected_below += 1
+                self.atoms[indx].symbol = symb
                 return
             self.redistribute_hist(energy,self.Emax)
         elif ( energy >= self.Emax ):
             if ( ignore_out_of_range ):
                 self.rejected_above += 1
+                self.atoms[indx].symbol = symb
                 return
             self.redistribute_hist(self.Emin,energy)
 
@@ -518,7 +519,7 @@ class WangLandauSGC( object ):
             self._step( ignore_out_of_range=True )
             if ( i%low_struct == 0 and i > 0 ):
                 print ("Resetting to a low entropy structure")
-                self.goto_lowest_entropy_structure()
+                #self.goto_lowest_entropy_structure()
 
             if ( i%self.check_convergence_every == 0 ):
                 if ( self.has_converged() ):
