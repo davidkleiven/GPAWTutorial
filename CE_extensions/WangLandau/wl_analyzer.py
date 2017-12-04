@@ -1,6 +1,7 @@
 from ase import units
 import numpy as np
 from matplotlib import pyplot as plt
+from scipy.stats import linregress
 
 class WangLandauSGCAnalyzer( object ):
     def __init__( self, energy, dos, chem_pot, gs_energy ):
@@ -11,15 +12,29 @@ class WangLandauSGCAnalyzer( object ):
         self.E = energy
         self.dos = dos
         self.E0 = gs_energy
-        print (self.E0)
         self.chem_pot = chem_pot
+        self.extend_dos_by_extraploation()
+
+    def extend_dos_by_extraploation( self ):
+        """
+        Extends the DOS by fitting a linear curve to the smallest points
+        """
+        slope,interscept,rvalue,pvalue,stderr = linregress( self.E[:3], np.log(self.dos[:3]) )
+        dE = self.E[1]-self.E[0]
+        low_energies = np.arange(self.E0,self.E[0],dE)
+        if ( len(low_energies) == 0 ):
+            return
+
+        low_energy_dos = np.exp(interscept+slope*low_energies )
+        self.E = np.append(low_energies,self.E)
+        self.dos = np.append(low_energy_dos,self.dos)
 
     def partition_function( self, T ):
         """
         Computes the partition function in the SGC ensemble
         """
         weight = np.abs(self.E0-np.min(self.E))/(self.E[1]-self.E[0])
-        return np.sum( self.dos*self._boltzmann_factor(T) ) + weight*self.dos[0]
+        return np.sum( self.dos*self._boltzmann_factor(T) )
 
     def _boltzmann_factor( self, T ):
         """
@@ -53,8 +68,22 @@ class WangLandauSGCAnalyzer( object ):
         """
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
-        ax.plot( self.E, self.dos, ls="steps" )
-        ax.set_yscale("log")
+        ax.plot( self.E, np.log(self.dos), ls="steps" )
         ax.set_xlabel( "Energy (eV/atom)" )
         ax.set_ylabel( "Density of states" )
+        return fig
+
+    def plot_degree_of_contribution( self, temps ):
+        """
+        Gives an estimate plot on how much each bin contributes to the partition
+        function for each contribution
+        """
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1)
+        for T in temps:
+            ax.plot(self.E, self.dos*self._boltzmann_factor(T), label="T={}K".format(T), ls="steps" )
+        ax.legend( loc="best", frameon=False )
+        ax.set_xlabel( "Energy (eV)" )
+        ax.set_ylabel( "Distribution" )
+        ax.set_yscale("log")
         return fig

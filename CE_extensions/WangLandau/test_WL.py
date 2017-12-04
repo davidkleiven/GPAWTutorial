@@ -7,6 +7,7 @@ import pickle as pkl
 from sgc_to_cannonical import SGCToCanonicalConverter
 from wang_landau_db_manger import WangLandauDBManger
 import numpy as np
+from sa_sgc import SimmualtedAnnealingSGC
 
 db_name = "/home/davidkl/Documents/GPAWTutorial/CE_extensions/WangLandau/wang_landau_au_cu_fixed_f.db"
 def plot_probablility_distribution(wl):
@@ -21,18 +22,20 @@ def plot_probablility_distribution(wl):
 
 def initialize_db():
     manager = WangLandauDBManger( db_name )
-    ag_chem_pot = np.linspace( 0.0,0.0/64, 1 )
+    manager.prepare_from_ground_states( 900.0, initial_f=1.6, Nbins=50 )
+
+def find_GS():
+    atoms = bulk("Au")
+    atoms = atoms*(4,4,4)
+    calc = EMT()
+    atoms.set_calculator(calc)
     chem_pot = {
-    "Cu":0.8,
+    "Cu":0.7,
     "Au":0.0
     }
-    manager.insert( chem_pot, initial_f=1.6, Nbins=100 )
-    #for i in range(len(ag_chem_pot) ):
-    #    chem_pot = {
-    #    "Cu":ag_chem_pot[i],
-    #    "Au":0.0
-    #    }
-    #    manager.insert( chem_pot, initial_f=1.6, Nbins=100 )
+
+    gs_finder = SimmualtedAnnealingSGC( atoms, chem_pot, db_name )
+    gs_finder.run( n_steps=1000 )
 
 def update_groups():
     manager = WangLandauDBManger( db_name )
@@ -46,9 +49,10 @@ def update_groups():
 def analyze():
     db_manager = WangLandauDBManger( db_name )
     analyzers = db_manager.get_analyzer_all_groups()
-    analyzers[-1].plot_dos()
+    T = [100,200,300,400,500,800,1000,5000]
+    analyzers[0].plot_dos()
+    analyzers[0].plot_degree_of_contribution(T)
     analyzer = SGCToCanonicalConverter(analyzers,64)
-    T = [100,200,300,400,500,800,1000]
     chem_pot, comp, sgc_pots, chem_pot_raw, sgc_pots_raw = analyzer.get_compositions(T[0])
     print (chem_pot)
 
@@ -95,3 +99,5 @@ if __name__ == "__main__":
         initialize_db()
     elif ( opt == "add" ):
         update_groups()
+    elif ( opt == "gs" ):
+        find_GS()

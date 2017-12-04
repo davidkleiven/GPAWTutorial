@@ -224,7 +224,7 @@ class WangLandauSGC( object ):
         #self.calc.calculate( self.atoms, properties=["energy"], system_changes=system_changes )
         chem_pot_change = self.chem_pot[symb]*(self.atoms_count[symb]-1) + self.chem_pot[new_symbol]*(self.atoms_count[new_symbol]+1)
         #energy = self.calc.results["energy"]-chem_pot_change
-        energy -= chem_pot_change
+        energy -= (self.chem_pot[new_symbol] - self.chem_pot[symb])
         #selected_bin = self.get_bin(energy)
 
         # Important to Track these because when the histogram is redistributed
