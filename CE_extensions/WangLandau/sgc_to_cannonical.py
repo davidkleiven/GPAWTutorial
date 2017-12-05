@@ -5,6 +5,8 @@ from scipy.misc import derivative
 
 class SGCToCanonicalConverter(object):
     def __init__( self, wl_analyzers, natoms ):
+        if ( len(wl_analyzers) < 3 ):
+            raise ValueError( "DOS for at least 3 chemical potentials has to be provided" )
         self.wl_analyzers = wl_analyzers
         self.n_atoms = natoms
         self.composition = None

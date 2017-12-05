@@ -210,22 +210,21 @@ class WangLandauDBManger( object ):
         dos = np.exp(logdos)
 
         # Extract chemical potentials
-        conn = sq.connect( self.db_name )
-        cur = conn.cursor()
-        cur.execute( "SELECT element,potential FROM chemical_potentials WHERE id=?", (uid,) )
-        entries = cur.fetchall()
-
-        conn.close()
-        chem_pot = {}
-        for entry in entries:
-            chem_pot[entry[0]] = entry[1]
+        db = connect( self.db_name )
+        row = db.get( id=atomID )
+        elms = row.data.elements
+        pots = row.data.chemical_potentials
+        chem_pot = wltools.key_value_lists_to_dict( elms, pots )
         return WangLandauSGCAnalyzer( energy, dos, chem_pot, gs_energy )
 
     def get_analyzer_all_groups( self, min_number_of_converged=1 ):
         """
         Returns a list of analyzer objects
         """
-        pass
-        analyzers = [self.get_analyzer(i,min_number_of_converged=min_number_of_converged) for i in range(maxgroup)]
-        filtered = [entry for entry in analyzers if not entry is None] # Remove non converged entries
+        analyzers = []
+        db = connect( self.db_name )
+        for row in db.select():
+            new_analyzer = self.get_analyzer( row.id, min_number_of_converged=min_number_of_converged )
+            analyzers.append( new_analyzer )
+        filtered = [entry for entry in analyzers if not entry is None] # Remove non-converged entries
         return filtered
