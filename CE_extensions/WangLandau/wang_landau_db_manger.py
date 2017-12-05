@@ -148,8 +148,6 @@ class WangLandauDBManger( object ):
         oldID = int(entries[0])
         newID = self.get_new_id()
         entries = list(entries)
-        cur.execute( "SELECT element,potential FROM chemical_potentials WHERE id=?", (oldID,) )
-        chem_pot_entries = cur.fetchall()
 
         for _ in range(n_entries):
             entries[0] = newID
@@ -157,9 +155,6 @@ class WangLandauDBManger( object ):
             entries[5] = 0 # Set queued flag to 0
             entries = tuple(entries)
             cur.execute( "INSERT INTO simulations (uid,initial_f,current_f,flatness,fmin,queued,Nbins,atomID,Emin,Emax,initialized,energy,gs_energy) values (?,?,?,?,?,?,?,?,?,?,?,?,?)", entries )
-            for entry in chem_pot_entries:
-                cur.execute( "INSERT INTO chemical_potentials (uid,element,potential,id) VALUES (?,?,?,?)", (newUID,entry[0],entry[1],newID) )
-                newUID += 1
             entries = list(entries)
             newID += 1
         conn.commit()

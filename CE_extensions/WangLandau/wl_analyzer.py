@@ -81,8 +81,15 @@ class WangLandauSGCAnalyzer( object ):
         """
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
+        low = None
+        high = None
         for T in temps:
-            ax.plot(self.E, self.dos*self._boltzmann_factor(T), label="T={}K".format(T), ls="steps" )
+            dist = self.dos*self._boltzmann_factor(T)
+            ax.plot(self.E, dist, label="T={}K".format(T), ls="steps" )
+            new_low = min([dist[0],dist[-1]])
+            if ( low is None or new_low < low ):
+                low = new_low
+        ax.set_ylim(ymin=low)
         ax.legend( loc="best", frameon=False )
         ax.set_xlabel( "Energy (eV)" )
         ax.set_ylabel( "Distribution" )

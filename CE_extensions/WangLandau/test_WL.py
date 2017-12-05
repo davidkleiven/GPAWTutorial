@@ -39,11 +39,7 @@ def find_GS():
 
 def update_groups():
     manager = WangLandauDBManger( db_name )
-    manager.add_run_to_group(5,n_entries=20)
-    manager.add_run_to_group(6,n_entries=20)
-    return
-    for group in range(manager.get_new_group()):
-        manager.add_run_to_group(group,n_entries=20)
+    manager.add_run_to_group(7,n_entries=10)
 
 
 def analyze():
@@ -76,11 +72,11 @@ def main( runID ):
     wl.run( maxsteps=100000 )
     #wl.explore_energy_space( nsteps=1000 )
     wl.save_db()
-    wl.plot_dos()
-    wl.plot_histogram()
-    wl.plot_growth_fluctuation()
+    #wl.plot_dos()
+    #wl.plot_histogram()
+    #wl.plot_growth_fluctuation()
     #plot_probablility_distribution(wl)
-    plt.show()
+    #plt.show()
 
 if __name__ == "__main__":
     opt = sys.argv[1]
