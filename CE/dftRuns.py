@@ -8,7 +8,7 @@ from ase.io.trajectory import Trajectory
 import os
 import sqlite3 as sq
 from ase.optimize.precon.precon import Exp
-from ase.optimize.precon import preconFIRE
+from ase.optimize.precon import PreconFIRE
 
 class SaveToDB(object):
     def __init__(self, db_name, runID, name):
