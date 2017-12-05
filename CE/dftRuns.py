@@ -8,6 +8,7 @@ from ase.io.trajectory import Trajectory
 import os
 import sqlite3 as sq
 from ase.optimize.precon.precon import Exp
+from ase.optimize.precon import preconFIRE
 
 class SaveToDB(object):
     def __init__(self, db_name, runID, name):
@@ -52,7 +53,7 @@ def change_cell_composition_AlMg( atoms ):
     return atoms
 
 def main( argv ):
-    relaxCell=True
+    relaxCell=False
     system = "AlMg"
     runID = int(argv[0])
     print ("Running job: %d"%(runID))
@@ -92,12 +93,12 @@ def main( argv ):
     storeBest = SaveToDB(db_name,runID,name)
 
     try:
+        precon = Exp(mu=1.0,mu_c=1.0)
         if ( relaxCell ):
-            precon = Exp(mu=1.0,mu_c=1.0)
             uf = UnitCellFilter( atoms, hydrostatic_strain=True )
             relaxer = PreconLBFGS( uf, logfile=logfile, use_armijo=True, precon=precon )
         else:
-            relaxer = BFGS( atoms, logfile=logfile )
+            relaxer = PreconFIRE( atoms, logfile=logfile, precon=precon )
         relaxer.attach( trajObj )
         relaxer.attach( storeBest, interval=1, atoms=atoms )
         if ( relaxCell ):
