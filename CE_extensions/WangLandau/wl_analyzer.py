@@ -12,8 +12,9 @@ class WangLandauSGCAnalyzer( object ):
         self.E = energy
         self.dos = dos
         self.E0 = gs_energy
+        self.E0 = np.min(self.E)
         self.chem_pot = chem_pot
-        self.extend_dos_by_extraploation()
+        #self.extend_dos_by_extraploation()
 
     def extend_dos_by_extraploation( self ):
         """

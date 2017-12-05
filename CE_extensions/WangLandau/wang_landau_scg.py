@@ -10,6 +10,7 @@ import sqlite3 as sq
 import io
 import wltools
 from ase.db import connect
+from ase.visualize import view
 
 class WangLandauSGC( object ):
     def __init__( self, db_name, db_id, site_types=None, site_elements=None, Nbins=100, initial_f=2.71,
@@ -154,13 +155,13 @@ class WangLandauSGC( object ):
             eps = 1E-8
             self.Emin = np.min(self.E)
             self.Emax = np.max(self.E)+eps
-            self.smallest_energy_ever = entries[11]
+            #self.smallest_energy_ever = entries[11]
 
-        if ( queued != 0 ):
-            self.dos = wltools.convert_array(entries[1])
-            self.entropy = np.log(self.dos)
-            self.histogram = wltools.convert_array(entries[2])
-            self.cummulated_variance = wltools.convert_array(entries[8])
+        #if ( queued != 0 ):
+            #self.dos = wltools.convert_array(entries[1])
+            #self.entropy = np.log(self.dos)
+            #self.histogram = wltools.convert_array(entries[2])
+            #self.cummulated_variance = wltools.convert_array(entries[8])
         self.fmin = float( entries[3] )
         self.f = float( entries[4] )
         self.f0 = float( entries[5] )
@@ -223,7 +224,8 @@ class WangLandauSGC( object ):
         #self.calc.calculate( self.atoms, properties=["energy"], system_changes=system_changes )
         chem_pot_change = self.chem_pot[symb]*(self.atoms_count[symb]-1) + self.chem_pot[new_symbol]*(self.atoms_count[new_symbol]+1)
         #energy = self.calc.results["energy"]-chem_pot_change
-        energy -= (self.chem_pot[new_symbol] - self.chem_pot[symb])
+        #energy -= (self.chem_pot[new_symbol] - self.chem_pot[symb])
+        energy -= chem_pot_change
         #selected_bin = self.get_bin(energy)
 
         # Important to Track these because when the histogram is redistributed

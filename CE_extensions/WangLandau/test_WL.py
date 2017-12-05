@@ -73,7 +73,7 @@ def main( runID ):
     site_types = [0 for _ in range(64)]
     site_elements = [["Cu","Au"]]
     wl = WangLandauSGC( db_name, runID, site_types=site_types, site_elements=site_elements, Nbins=100, scheme="fixed_f", conv_check="histstd" )
-    wl.run( maxsteps=1000 )
+    wl.run( maxsteps=100000 )
     #wl.explore_energy_space( nsteps=1000 )
     wl.save_db()
     wl.plot_dos()
