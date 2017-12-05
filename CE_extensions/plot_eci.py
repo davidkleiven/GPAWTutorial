@@ -31,7 +31,7 @@ class ECIPlotter( object ):
             indx_srt = np.argsort(np.abs(value))[::-1]
             new_list = [value[indx] for indx in indx_srt]
             eci_values[key] = new_list
-            new_list = [eci_names[indx] for indx in indx_srt]
+            new_list = [eci_names[key][indx] for indx in indx_srt]
             eci_names[key] = new_list
         return eci_names, eci_values
 
