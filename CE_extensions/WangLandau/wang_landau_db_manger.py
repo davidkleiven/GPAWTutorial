@@ -192,14 +192,19 @@ class WangLandauDBManger( object ):
             return None
         uid = int( entries[0][2] )
         energy = wltools.convert_array( entries[0][0] )
-        logdos = np.log( wltools.convert_array( entries[0][1] ) )
+        logdos = wltools.convert_array( entries[0][1] )
 
+        normalization = 10.0 # Have all logdos be normalized
         # Normalize before averaging
         all_sum = np.sum(np.exp(logdos))
-        logdos -= np.log(all_sum)
+        logdos *= normalization/np.sum(logdos)
+
+        #logdos /= np.sum(logdos)
         gs_energy = np.min( [entries[i][3] for i in range(0,len(entries))] )
         for i in range(1,len(entries)):
-            logdos += np.log( wltools.convert_array( entries[i][1] ) )
+            newdos = np.log( wltools.convert_array( entries[i][1] ) )
+            newdos *= normalization/np.sum(newdos)
+            logdos += newdos
 
         logdos /= len(entries)
         dos = np.exp(logdos)

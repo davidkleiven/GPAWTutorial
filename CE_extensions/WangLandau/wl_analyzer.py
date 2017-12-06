@@ -53,8 +53,8 @@ class WangLandauSGCAnalyzer( object ):
         """
         Computes the heat capacity in the SGC ensemble
         """
-        e_mean = internal_energy()
-        esq = np.sum(self.E**2 *self._boltzmann_factor(T) )/self.partition_function(T)
+        e_mean = self.internal_energy(T)
+        esq = np.sum(self.E**2 *self.dos*self._boltzmann_factor(T) )/self.partition_function(T)
         return (esq-e_mean**2)/(units.kB*T**2)
 
     def free_energy( self, T ):

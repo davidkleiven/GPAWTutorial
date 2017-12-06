@@ -174,6 +174,7 @@ class WangLandauSGC( object ):
         self.dos = np.ones(len(self.E))
         self.entropy = np.zeros(len(self.E))
         self.cummulated_variance = np.zeros(len(self.E))
+        self.structures = [None for _ in range(len(self.E))]
 
         db = connect( self.db_name )
         self.atoms = db.get_atoms( id=atomID, attach_calculator=True )
@@ -338,7 +339,7 @@ class WangLandauSGC( object ):
         conn = sq.connect( self.db_name )
         cur = conn.cursor()
         cur.execute( "update simulations set energy=? WHERE uid=?", (wltools.adapt_array(self.E),self.db_id)  )
-        cur.execute( "update simulations set dos=? WHERE uid=?", (wltools.adapt_array(self.dos),self.db_id)  )
+        cur.execute( "update simulations set dos=? WHERE uid=?", (wltools.adapt_array(self.entropy),self.db_id)  )
         cur.execute( "update simulations set histogram=? WHERE uid=?", (wltools.adapt_array(self.histogram),self.db_id) )
         cur.execute( "update simulations set growth_variance=? WHERE uid=?", (wltools.adapt_array(self.cummulated_variance),self.db_id))
         cur.execute( "update simulations set fmin=?, current_f=?, initial_f=?, converged=? where uid=?", (self.fmin,self.f,self.f0,self.converged,self.db_id) )
