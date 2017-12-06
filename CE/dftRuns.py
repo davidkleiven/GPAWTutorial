@@ -9,6 +9,7 @@ import os
 import sqlite3 as sq
 from ase.optimize.precon.precon import Exp
 from ase.optimize.precon import PreconFIRE
+from ase.optimize.sciopt import SciPyFminCG
 
 class SaveToDB(object):
     def __init__(self, db_name, runID, name):
@@ -99,6 +100,7 @@ def main( argv ):
             relaxer = PreconLBFGS( uf, logfile=logfile, use_armijo=True, precon=precon )
         else:
             relaxer = PreconFIRE( atoms, logfile=logfile, precon=precon )
+            relaxer = SciPyFminCG( atoms, logfile=logfile )
         relaxer.attach( trajObj )
         relaxer.attach( storeBest, interval=1, atoms=atoms )
         if ( relaxCell ):
