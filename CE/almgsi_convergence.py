@@ -34,7 +34,7 @@ def prepare_db():
 def main( runID ):
     db = ase.db.connect( db_name() )
     atoms = db.get_atoms( id=runID )
-    row = db.select( id=runID )
+    row = db.get( id=runID )
     n_kpt = row.n_kpt
     cutoff = row.cutoff
 
