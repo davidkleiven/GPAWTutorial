@@ -482,13 +482,20 @@ class WangLandauSGC( object ):
             return False
 
         growth_fluct = self.get_growth_fluctuation()
+        converged = True
+        tot_number = 0
+        number_of_converged = 0
         for i in range(len(self.histogram)):
             if ( self.structures[i] is None ):
                 # Ignore bins that has not been visited during the round
                 continue
             if ( self.histogram[i] <= factor*growth_fluct[i] ):
-                return False
-        return True
+                converged = False
+            else:
+                number_of_converged += 1
+            tot_number += 1
+        print ( "%d of %d bins (with known structures) has converged"%(number_of_converged,tot_number))
+        return converged
 
     def explore_energy_space( self, nsteps=200 ):
         """
@@ -521,7 +528,8 @@ class WangLandauSGC( object ):
         for i in range(1,maxsteps):
             self._step( ignore_out_of_range=True )
             if ( i%low_struct == 0 and i > 0 ):
-                print ("Resetting to a low entropy structure")
+                pass
+                #print ("Resetting to a low entropy structure")
                 #self.goto_lowest_entropy_structure()
 
             if ( i%self.check_convergence_every == 0 ):
