@@ -2,6 +2,7 @@ from scipy.stats import linregress
 from scipy import interpolate
 import numpy as np
 from scipy.misc import derivative
+from matplotlib import pyplot as plt
 
 class SGCToCanonicalConverter(object):
     def __init__( self, wl_analyzers, natoms ):
@@ -19,9 +20,12 @@ class SGCToCanonicalConverter(object):
         """
         Normalize the DOS in each wl_simulation
         """
+        factor = 1.0/self.wl_analyzers[0].dos[0]
+        print (self.wl_analyzers[0].chem_pot)
         for wl in self.wl_analyzers:
-            factor = np.exp(self.n_atoms*np.log(2.0))/wl.partition_function(1E100)
+            #factor = 1.0
             wl.dos *= factor
+
 
     def hyper_surface_in_chemical_potential_space( self, T, points ):
         """
@@ -47,6 +51,7 @@ class SGCToCanonicalConverter(object):
             self.all_chem_pots = np.array(all_chem_pots)
 
         sgc_pot_surface = interpolate.griddata( self.all_chem_pots, self.free_energies, points, method="cubic" )
+        sgc_pot_surface = interpolate.LinearNDInterpolator( self.all_chem_pots, self.free_energies )
         return sgc_pot_surface
 
     def get_composition_one_element( self, T, element, spline_order=3, n_chem_pots=50 ):
@@ -65,12 +70,18 @@ class SGCToCanonicalConverter(object):
         sorted_thermo_pots = [thermo_potentials[indx] for indx in sort_arg]
         if ( np.allclose(sorted_chem_pots, 0.0) ):
             # This is the reference element
-            return sorted_chem_pots, [], [], [], []
+            x = np.zeros(n_chem_pots)
+            phi = np.zeros(n_chem_pots)
+            new_chem_pots = np.zeros(n_chem_pots)
+            return new_chem_pots, x, phi, sorted_chem_pots, sorted_thermo_pots
 
-        interpolator = interpolate.interp1d(sorted_chem_pots,sorted_thermo_pots,kind="cubic", bounds_error=False, fill_value="extrapolate")
+        interpolator = interpolate.interp1d(sorted_chem_pots,sorted_thermo_pots,kind="linear", bounds_error=False, fill_value="extrapolate")
+        #interpolator = interpolate.PchipInterpolator(sorted_chem_pots,sorted_thermo_pots,extrapolate=True)
         new_chem_pots = np.linspace(np.min(sorted_chem_pots), np.max(sorted_chem_pots), n_chem_pots)
         d_mu = new_chem_pots[1]-new_chem_pots[0]
         x = -derivative(interpolator, new_chem_pots, d_mu )/self.n_atoms
+        #x[x<0.0] = 0.0
+        #x[x>1.0] = 1.0
         phi = interpolator(new_chem_pots)
         return new_chem_pots, x, phi, sorted_chem_pots, sorted_thermo_pots
 
@@ -95,20 +106,52 @@ class SGCToCanonicalConverter(object):
         self.chemical_potentials = chem_pot
         return chem_pot, comp, sgc_pot, chem_pot_raw, sgc_pot_raw
 
-    def free_energy( self, T, composition ):
+    def free_energy( self, T ):
         """
         Return the Helmholtz free energy
         """
-        if ( self.composition is None ):
-            self.get_compositions()
 
-        thermo_potentials = []
-        for wl in self.wl_analyzers:
-            thermo_potentials.append( wl.free_energy(T) )
-            for key,value in self.compositions:
-                interpolator = interpolator.interp1d( value, self.chemical_potentials[key] )
-                thermo_potentials[-1] += interpolator(composition[key])*composition[key]
-        # All the SGC potentials + the contribution to from chemical potentials
-        # should be the same, but use the mean to reduce inaccuracies due to numerical errors, inaccuracies in the DOS etc.
-        free_energy = np.mean( thermo_potentials )
-        return free_energy
+        self.get_compositions(T)
+
+        helmholtz_free_energy = []
+        interpolators = {elm:interpolate.interp1d(self.composition[elm], self.chemical_potentials[elm]) for elm in self.chemical_potentials.keys()}
+
+        # TODO: This is really a hyper surface so it should be a multidimensional surface
+        free_eng_interp = interpolate.interp1d( self.composition["Cu"], self.free_energies["Cu"] )
+
+        for comp in self.composition["Cu"]:
+            helmholtz_free_energy.append( free_eng_interp(comp)/self.n_atoms )
+            helmholtz_free_energy[-1] += interpolators["Cu"]( comp )*comp
+        return self.composition["Cu"], helmholtz_free_energy
+
+    def binary_diagram( self, T, elm1, elm2, use_inverse_for_elm2=True ):
+        """
+        Plots a binary phase diagram
+        """
+        helm_holtz_energies = {}
+        comps = []
+        free_energies = []
+        all_temps = []
+        for temp in T:
+            self.get_compositions(temp)
+            comps += list(self.composition[elm1])
+            c,h = self.free_energy(temp)
+            free_energies += list(h)
+            all_temps += [temp for _ in range(len(self.composition[elm1]))]
+
+        comps = np.array( comps )
+        all_temps = np.array(all_temps)
+        free_energies = np.array( free_energies )
+        print (len(comps),len(all_temps),len(free_energies))
+        comp = np.linspace(0.0,1.0,100)
+        temperatures = np.linspace(np.min(all_temps),np.max(all_temps),100)
+        X,Y = np.meshgrid(comp,temperatures)
+        points = np.vstack((comps,all_temps)).T
+        free_eng = interpolate.griddata( points, free_energies, (X,Y), method="cubic" )
+
+        # Plot iso-curves for the Free energy
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1)
+        im = ax.contour( X, Y, free_eng, 20 )
+        fig.colorbar(im)
+        return fig

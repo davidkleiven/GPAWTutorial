@@ -5,6 +5,7 @@ from wl_analyzer import WangLandauSGCAnalyzer
 import wltools
 from ase.db import connect
 import ase.units
+from scipy import special
 
 class WangLandauDBManger( object ):
     def __init__( self, db_name ):
@@ -193,21 +194,24 @@ class WangLandauDBManger( object ):
         uid = int( entries[0][2] )
         energy = wltools.convert_array( entries[0][0] )
         logdos = wltools.convert_array( entries[0][1] )
+        logdos -= np.mean(logdos) # Avoid overflow
+        ref_e0 = logdos[0]
+        dos = np.exp(logdos)
 
-        normalization = 10.0 # Have all logdos be normalized
-        # Normalize before averaging
-        all_sum = np.sum(np.exp(logdos))
-        logdos *= normalization/np.sum(logdos)
-
-        #logdos /= np.sum(logdos)
         gs_energy = np.min( [entries[i][3] for i in range(0,len(entries))] )
         for i in range(1,len(entries)):
-            newdos = np.log( wltools.convert_array( entries[i][1] ) )
-            newdos *= normalization/np.sum(newdos)
+            newdos = wltools.convert_array( entries[i][1] )
+            newdos -= np.mean(newdos)
+            #diff = newdos[0]-ref_e0
+            #newdos -= diff
+            dos += np.exp(newdos)
             logdos += newdos
 
         logdos /= len(entries)
-        dos = np.exp(logdos)
+        dos /= len(entries)
+
+        # TODO: Need to find the normalization factor to get absolute DOS
+        #dos = np.exp(logdos)
 
         # Extract chemical potentials
         db = connect( self.db_name )
@@ -215,6 +219,8 @@ class WangLandauDBManger( object ):
         elms = row.data.elements
         pots = row.data.chemical_potentials
         chem_pot = wltools.key_value_lists_to_dict( elms, pots )
+        gs_atoms = db.get_atoms( id=atomID )
+        count = wltools.element_count(gs_atoms)
         return WangLandauSGCAnalyzer( energy, dos, chem_pot, gs_energy )
 
     def get_analyzer_all_groups( self, min_number_of_converged=1 ):
