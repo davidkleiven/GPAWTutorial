@@ -23,10 +23,11 @@ from ceext import evaluate_prior as ep
 from ceext import penalization as pen
 import numpy as np
 from plot_corr_matrix import CovariancePlot
+from convex_hull_plotter import QHull
 
 SELECTED_ECI= "selectedEci.pkl"
+db_name = "ce_hydrostatic.db"
 def main( argv ):
-    db_name = "ce_hydrostatic.db"
     option = argv[0]
     conc_args = {
         "conc_ratio_min_1":[[60,4]],
@@ -67,6 +68,9 @@ def evalCE( BC):
 
     cov_plotter = CovariancePlot(evaluator, constant_term_column=0)
     cov_plotter.plot()
+
+    #qhull = QHull( db_name )
+    #qhull.plot( "Al" )
     plt.show()
 
 
