@@ -13,30 +13,12 @@ from ase.optimize.precon.precon import Exp
 from ase.optimize.precon import PreconFIRE
 from ase.optimize.sciopt import SciPyFminCG
 from save_to_db import SaveToDB
-
-def change_cell_composition_AlMg( atoms ):
-    # Count Mg atoms
-    counter = 0
-    for atom in atoms:
-        if ( atom.symbol == "Mg" ):
-            counter += 1
-    mg_conc = float(counter)/len(atoms)
-    if ( mg_conc < 0.06 ):
-        return atoms
-    a = 4.0483 + 0.45006*mg_conc # Experimental data
-    a0 = 4.05
-    scaling = a/a0
-    cell = atoms.get_cell()
-    cell *= scaling
-    atoms.set_cell(cell)
-    return atoms
-
 def main( argv ):
     relaxCell=False
     system = "AlMg"
     runID = int(argv[0])
     print ("Running job: %d"%(runID))
-    db_paths = ["/home/ntnu/davidkl/GPAWTutorial/CE/ce_hydrostatic.db", "ce_hydrostatic.db","/home/davidkl/GPAWTutorial/CE/ce_hydrostatic.db"]
+    db_paths = ["/home/ntnu/davidkl/GPAWTutorial/CE/almgsi_ce.db", "almgsi_ce.db.db","/home/davidkl/GPAWTutorial/CE/almgsi_ce.db.db"]
     for path in db_paths:
         if ( os.path.isfile(path) ):
             db_name = path
@@ -55,18 +37,12 @@ def main( argv ):
     db.update( runID, started=True, converged=False )
 
     atoms = db.get_atoms(id=runID)
-    if ( system == "AlMg" and new_run==False ):
-        atoms = change_cell_composition_AlMg(atoms)
 
-    convergence = {
-        "density":1E-4,
-        "eigenstates":4E-8
-    }
-    calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=(4,4,4), nbands="120%", convergence=convergence )
+    calc = gp.GPAW( mode=gp.PW(600), xc="PBE", kpts=(4,4,4), nbands="120%" )
     atoms.set_calculator( calc )
 
-    logfile = "ceTest%d.log"%(runID)
-    traj = "ceTest%d.traj"%(runID)
+    logfile = "almgsi%d.log"%(runID)
+    traj = "almgsi%d.traj"%(runID)
     trajObj = Trajectory(traj, 'w', atoms )
 
     storeBest = SaveToDB(db_name,runID,name)
@@ -77,7 +53,6 @@ def main( argv ):
             uf = UnitCellFilter( atoms, hydrostatic_strain=True )
             relaxer = PreconLBFGS( uf, logfile=logfile, use_armijo=True, precon=precon )
         else:
-            relaxer = PreconFIRE( atoms, logfile=logfile, precon=precon )
             relaxer = SciPyFminCG( atoms, logfile=logfile )
         relaxer.attach( trajObj )
         relaxer.attach( storeBest, interval=1, atoms=atoms )
@@ -87,10 +62,6 @@ def main( argv ):
             relaxer.run( fmax=0.025 )
         energy = atoms.get_potential_energy()
         db.update( storeBest.runID, converged=True )
-        print ("Energy: %.2E eV/atom"%(energy/len(atoms)) )
-        print ("Preconditioner parameters")
-        print ("Mu:", precon.mu)
-        print ("Mu_c:", precon.mu_c)
     except Exception as exc:
         print (exc)
 
