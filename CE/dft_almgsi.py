@@ -18,7 +18,7 @@ def main( argv ):
     system = "AlMg"
     runID = int(argv[0])
     print ("Running job: %d"%(runID))
-    db_paths = ["/home/ntnu/davidkl/GPAWTutorial/CE/almgsi_ce.db", "almgsi_ce.db.db","/home/davidkl/GPAWTutorial/CE/almgsi_ce.db.db"]
+    db_paths = ["/home/ntnu/davidkl/GPAWTutorial/CE/almgsi.db", "almgsi.db","/home/davidkl/GPAWTutorial/CE/almgsi.db"]
     for path in db_paths:
         if ( os.path.isfile(path) ):
             db_name = path
