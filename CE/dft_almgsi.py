@@ -14,7 +14,7 @@ from ase.optimize.precon import PreconFIRE
 from ase.optimize.sciopt import SciPyFminCG
 from save_to_db import SaveToDB
 def main( argv ):
-    relaxCell=True
+    relaxCell=False
     system = "AlMg"
     runID = int(argv[0])
     print ("Running job: %d"%(runID))
