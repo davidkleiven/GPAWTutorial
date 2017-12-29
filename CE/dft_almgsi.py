@@ -5,7 +5,7 @@ import gpaw as gp
 import ase.db
 from ase.optimize.precon import PreconLBFGS
 from ase.optimize import BFGS
-from ase.constraints import UnitCellFilter
+from ase.constraints import UnitCellFilter,StrainFilter
 from ase.io.trajectory import Trajectory
 import os
 import sqlite3 as sq
@@ -14,7 +14,7 @@ from ase.optimize.precon import PreconFIRE
 from ase.optimize.sciopt import SciPyFminCG
 from save_to_db import SaveToDB
 def main( argv ):
-    relaxCell=False
+    relax_mode = "atoms" # both, volume, atoms
     system = "AlMg"
     runID = int(argv[0])
     print ("Running job: %d"%(runID))
@@ -46,22 +46,36 @@ def main( argv ):
     trajObj = Trajectory(traj, 'w', atoms )
 
     storeBest = SaveToDB(db_name,runID,name)
+    volume = atoms.get_volume()
 
     try:
         precon = Exp(mu=1.0,mu_c=1.0)
-        if ( relaxCell ):
+        fmax = 0.025
+        smax = 0.003
+        if ( relax_mode == "both" ):
             uf = UnitCellFilter( atoms, hydrostatic_strain=True )
             relaxer = PreconLBFGS( uf, logfile=logfile, use_armijo=True, precon=precon )
-        else:
+        elif ( relax_mode == "atoms" ):
             relaxer = SciPyFminCG( atoms, logfile=logfile )
+        elif ( relax_mode == "volume" ):
+            str_f = StrainFilter( atoms, mask=[1,1,1,0,0,0] )
+            relaxer = SciPyFminCG( str_f, logfile=logfile )
+            fmax=smax*volume
+
         relaxer.attach( trajObj )
         relaxer.attach( storeBest, interval=1, atoms=atoms )
-        if ( relaxCell ):
-            relaxer.run( fmax=0.025, smax=0.003 )
+        if ( relax_mode == "both" ):
+            relaxer.run( fmax=fmax, smax=smax )
         else:
-            relaxer.run( fmax=0.025 )
+            relaxer.run( fmax=fmax )
         energy = atoms.get_potential_energy()
         db.update( storeBest.runID, converged=True )
+        if ( relax_mode == "atoms" ):
+            db.update( storeBest.runID, converged_force=True )
+        elif ( relax_mode == "volume" ):
+            db.update( storeBest.runID, converged_stress=True )
+        else:
+            db.update( storeBest.runID, converged_stress=True, converged_force=True )
     except Exception as exc:
         print (exc)
 
