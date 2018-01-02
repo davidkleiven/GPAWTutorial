@@ -14,7 +14,7 @@ from ase.optimize.precon import PreconFIRE
 from ase.optimize.sciopt import SciPyFminCG
 from save_to_db import SaveToDB
 def main( argv ):
-    relax_mode = "atoms" # both, volume, atoms
+    relax_mode = "volume" # both, volume, atoms
     system = "AlMg"
     runID = int(argv[0])
     print ("Running job: %d"%(runID))
@@ -23,7 +23,7 @@ def main( argv ):
         if ( os.path.isfile(path) ):
             db_name = path
             break
-    #db_name = "/home/ntnu/davidkl/Documents/GPAWTutorials/ceTest.db"
+    db_name = "test_db.db"
     db = ase.db.connect( db_name )
 
     con = sq.connect( db_name )
@@ -69,13 +69,19 @@ def main( argv ):
         else:
             relaxer.run( fmax=fmax )
         energy = atoms.get_potential_energy()
-        db.update( storeBest.runID, converged=True )
+
         if ( relax_mode == "atoms" ):
             db.update( storeBest.runID, converged_force=True )
         elif ( relax_mode == "volume" ):
             db.update( storeBest.runID, converged_stress=True )
         else:
             db.update( storeBest.runID, converged_stress=True, converged_force=True )
+
+        row = db.get( id=runID )
+        conv_force = row.get( "converged_force", default=False )
+        conv_stress = row.get( "converged_stress", default=False )
+        if ( conv_force and conv_stress ):
+            db.update( storeBest.runID, converged=True )
     except Exception as exc:
         print (exc)
 
