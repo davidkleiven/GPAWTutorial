@@ -11,6 +11,7 @@ import os
 import sqlite3 as sq
 from ase.optimize.precon.precon import Exp
 from ase.optimize.precon import PreconFIRE
+from ase.optimize import BFGS
 from ase.optimize.sciopt import SciPyFminCG
 from save_to_db import SaveToDB
 def main( argv ):
@@ -56,7 +57,8 @@ def main( argv ):
             uf = UnitCellFilter( atoms, hydrostatic_strain=True )
             relaxer = PreconLBFGS( uf, logfile=logfile, use_armijo=True, precon=precon )
         elif ( relax_mode == "atoms" ):
-            relaxer = SciPyFminCG( atoms, logfile=logfile )
+            #relaxer = SciPyFminCG( atoms, logfile=logfile )
+            relaxer = BFGS( atoms, logfile=logfile )
         elif ( relax_mode == "volume" ):
             str_f = StrainFilter( atoms, mask=[1,1,1,0,0,0] )
             relaxer = SciPyFminCG( str_f, logfile=logfile )
