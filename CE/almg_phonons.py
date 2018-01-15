@@ -14,7 +14,8 @@ from save_to_db import SaveToDB
 import sqlite3 as sq
 from ase.constraints import UnitCellFilter
 
-db_name = "almg_phonons.db"
+#db_name = "almg_phonons.db"
+db_name = "/home/davidkl/GPAWTutorial/CE/almg_phonons.db"
 def main():
     conc_args = {
         "conc_ratio_min_1":[[0,1]],
