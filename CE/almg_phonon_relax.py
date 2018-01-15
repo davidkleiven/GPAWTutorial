@@ -1,5 +1,6 @@
 import sys
 sys.path.insert(1,"/home/davidkl/Documents/aseJin")
+sys.path.append("/home/davidkl/GPAWTutorial/CE")
 from ase.build import bulk
 import gpaw as gp
 from matplotlib import pyplot as plt
