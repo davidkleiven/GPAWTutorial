@@ -1,11 +1,13 @@
 import sys
 sys.path.insert(1,"/home/davidkl/Documents/aseJin")
+sys.path.insert(1,"/home/dkleiven/Documents/aseJin")
 sys.path.append("/home/davidkl/Documents/GPAWTutorial/CE_extensions")
+sys.path.append("/home/dkleiven/Documents/GPAWTutorials/CE_extensions")
 from ase.build import bulk
 from ase.ce.settings import BulkCrystal
 from ase.ce.newStruct import GenerateStructures
 from plot_corr_matrix import CovariancePlot
-from convex_hull_plotter import QHull
+#from convex_hull_plotter import QHull
 from ase.ce.evaluate import Evaluate
 from plot_eci import ECIPlotter
 import numpy as np

@@ -15,7 +15,7 @@ from ase.optimize import BFGS
 from ase.optimize.sciopt import SciPyFminCG
 from save_to_db import SaveToDB
 def main( argv ):
-    relax_mode = "atoms" # both, volume, atoms
+    relax_mode = "both" # both, volume, atoms
     system = "AlMg"
     runID = int(argv[0])
     print ("Running job: %d"%(runID))
@@ -80,9 +80,9 @@ def main( argv ):
             db.update( storeBest.runID, converged_stress=True, converged_force=True )
 
         row = db.get( id=runID )
-        conv_force = row.get( "converged_force", default=False )
-        conv_stress = row.get( "converged_stress", default=False )
-        if ( conv_force and conv_stress ):
+        conv_force = row.get( "converged_force", default=0 )
+        conv_stress = row.get( "converged_stress", default=0 )
+        if ( (conv_force==1) and (conv_stress==1) ):
             db.update( storeBest.runID, converged=True )
     except Exception as exc:
         print (exc)
