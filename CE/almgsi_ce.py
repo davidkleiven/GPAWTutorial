@@ -27,7 +27,7 @@ def main(argv):
     ceBulk = BulkCrystal( "fcc", 4.05, [N,N,N], 1, [["Al","Mg","Si"]], conc_args, db_name, max_cluster_size=4, reconf_db=False)
     if ( option == "generateNew" ):
         struc_generator = GenerateStructures( ceBulk, struct_per_gen=5 )
-        struc_generator.generate_probe_structure( num_steps=10 )
+        struc_generator.generate_probe_structure()
     elif ( option == "eval" ):
         evaluate(ceBulk)
 
@@ -43,7 +43,7 @@ def evaluate(BC):
     print (eci_name)
     evaluator.plot_energy()
     plotter = ECIPlotter(eci_name)
-    plotter.plot( tight=False )
+    plotter.plot()
 
     cov_plotter = CovariancePlot(evaluator, constant_term_column=0)
     cov_plotter.plot()

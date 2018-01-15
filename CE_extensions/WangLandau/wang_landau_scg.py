@@ -86,11 +86,16 @@ class WangLandauSGC( object ):
         self.nsteps_per_update = nsteps_per_update
         self.converged = False
         self.iter = 1
-        self.check_convergence_every = 100
+        self.check_convergence_every = 1000
         self.struct_file = "structures%d.pkl"%(np.random.randint(low=0,high=10000000000))
         self.rejected_below = 0
         self.rejected_above = 0
         self.is_first_step = True
+
+        # Some variables used to monitor the progress
+        self.prev_number_of_converged = 0
+        self.prev_number_of_known_bins = 0
+        self.n_steps_without_progress = 0
 
         if (len(self.atoms) != len(self.site_types )):
             raise ValueError( "A site type for each site has to be specified!" )
@@ -157,11 +162,24 @@ class WangLandauSGC( object ):
             self.Emax = np.max(self.E)+eps
             #self.smallest_energy_ever = entries[11]
 
-        #if ( queued != 0 ):
+        if ( queued != 0 ):
             #self.dos = wltools.convert_array(entries[1])
-            #self.entropy = np.log(self.dos)
-            #self.histogram = wltools.convert_array(entries[2])
-            #self.cummulated_variance = wltools.convert_array(entries[8])
+            self.entropy = wltools.convert_array(entries[1])
+            self.histogram = wltools.convert_array(entries[2])
+            self.cummulated_variance = wltools.convert_array(entries[8])
+        else:
+            self.histogram = np.zeros(len(self.E), dtype=int)
+            self.dos = np.ones(len(self.E))
+            self.entropy = np.zeros(len(self.E))
+            self.cummulated_variance = np.zeros(len(self.E))
+
+
+        self.structures = [None for _ in range(len(self.E))]
+        self.histogram[0] += 1 # The ground state is read from file
+        self.entropy[0] += self.f
+        self.structures[0] = self.atoms
+        self.cummulated_variance[0] += (1.0-1.0/self.Nbins)**2
+
         self.fmin = float( entries[3] )
         self.f = float( entries[4] )
         self.f0 = float( entries[5] )
@@ -170,11 +188,6 @@ class WangLandauSGC( object ):
 
         if (( len(self.E) != self.Nbins ) ):
             raise IOError("Something went wrong when reading from the database.")
-        self.histogram = np.zeros(len(self.E), dtype=int)
-        self.dos = np.ones(len(self.E))
-        self.entropy = np.zeros(len(self.E))
-        self.cummulated_variance = np.zeros(len(self.E))
-        self.structures = [None for _ in range(len(self.E))]
 
         db = connect( self.db_name )
         self.atoms = db.get_atoms( id=atomID, attach_calculator=True )
@@ -475,7 +488,7 @@ class WangLandauSGC( object ):
 
     def std_check( self ):
         """
-        Check that all bins (with a known structure is larger than 10 times the standard deviation)
+        Check that all bins (with a known structure is larger than 1000 times the standard deviation)
         """
         factor = 1000.0
         if ( np.sum(self.histogram) < 20 ):
@@ -486,15 +499,23 @@ class WangLandauSGC( object ):
         tot_number = 0
         number_of_converged = 0
         for i in range(len(self.histogram)):
-            if ( self.structures[i] is None ):
-                # Ignore bins that has not been visited during the round
+            if ( self.histogram[i] == 0 ):
                 continue
+            #if ( self.structures[i] is None ):
+                # Ignore bins that has not been visited during the round
+            #    continue
             if ( self.histogram[i] <= factor*growth_fluct[i] ):
                 converged = False
             else:
                 number_of_converged += 1
             tot_number += 1
         print ( "%d of %d bins (with known structures) has converged"%(number_of_converged,tot_number))
+        if ( number_of_converged != 0 and number_of_converged == self.prev_number_of_converged and tot_number == self.prev_number_of_known_bins ):
+            self.n_steps_without_progress += 1
+        else:
+            self.n_steps_without_progress = 0
+            self.prev_number_of_converged = number_of_converged
+            self.prev_number_of_known_bins
         return converged
 
     def explore_energy_space( self, nsteps=200 ):

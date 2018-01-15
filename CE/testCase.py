@@ -4,13 +4,11 @@ import numpy as np
 from ase.visualize import view
 
 def main():
-    atoms = bulk("Al",crystalstructure="fcc", a=4.6, cubic=True)
+    atoms = bulk("Al",crystalstructure="fcc", a=4.6, cubic=False)
     atoms = atoms*(2,2,2)
     print (len(atoms))
-    view(atoms, viewer="Avogadro")
-    exit()
-    db = ase.db.connect("ceTest.db")
-    tid = db.write(atoms, name="testCase%d"%(np.random.randint(0,1000000000)))
+    db = ase.db.connect("test_db.db")
+    tid = db.write(atoms, name="testCase%d"%(np.random.randint(0,1000000000)),started=False,queued=False)
     print ("Test ID: %d"%(tid))
 
 if __name__ == "__main__":
