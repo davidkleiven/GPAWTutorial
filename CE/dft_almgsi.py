@@ -13,9 +13,10 @@ from ase.optimize.precon.precon import Exp
 from ase.optimize.precon import PreconFIRE
 from ase.optimize import BFGS
 from ase.optimize.sciopt import SciPyFminCG
+from ase.optimize import QuasiNewton
 from save_to_db import SaveToDB
 def main( argv ):
-    relax_mode = "both" # both, volume, atoms
+    relax_mode = "positions" # both, cell, positions
     system = "AlMg"
     runID = int(argv[0])
     print ("Running job: %d"%(runID))
@@ -46,7 +47,7 @@ def main( argv ):
     traj = "almgsi%d.traj"%(runID)
     trajObj = Trajectory(traj, 'w', atoms )
 
-    storeBest = SaveToDB(db_name,runID,name)
+    storeBest = SaveToDB(db_name,runID,name,mode=relax_mode)
     volume = atoms.get_volume()
 
     try:
@@ -56,10 +57,10 @@ def main( argv ):
         if ( relax_mode == "both" ):
             uf = UnitCellFilter( atoms, hydrostatic_strain=True )
             relaxer = PreconLBFGS( uf, logfile=logfile, use_armijo=True, precon=precon )
-        elif ( relax_mode == "atoms" ):
+        elif ( relax_mode == "positions" ):
             #relaxer = SciPyFminCG( atoms, logfile=logfile )
-            relaxer = BFGS( atoms, logfile=logfile )
-        elif ( relax_mode == "volume" ):
+            relaxer = QuasiNewton( atoms, logfile=logfile )
+        elif ( relax_mode == "cell" ):
             str_f = StrainFilter( atoms, mask=[1,1,1,0,0,0] )
             relaxer = SciPyFminCG( str_f, logfile=logfile )
             fmax=smax*volume
@@ -72,9 +73,9 @@ def main( argv ):
             relaxer.run( fmax=fmax )
         energy = atoms.get_potential_energy()
 
-        if ( relax_mode == "atoms" ):
+        if ( relax_mode == "positions" ):
             db.update( storeBest.runID, converged_force=True )
-        elif ( relax_mode == "volume" ):
+        elif ( relax_mode == "cell" ):
             db.update( storeBest.runID, converged_stress=True )
         else:
             db.update( storeBest.runID, converged_stress=True, converged_force=True )
