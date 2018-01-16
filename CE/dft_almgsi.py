@@ -25,7 +25,7 @@ def main( argv ):
         if ( os.path.isfile(path) ):
             db_name = path
             break
-    #db_name = "test_db.db"
+    db_name = "test_db.db"
     db = ase.db.connect( db_name )
 
     con = sq.connect( db_name )
@@ -80,7 +80,7 @@ def main( argv ):
         else:
             db.update( storeBest.runID, converged_stress=True, converged_force=True )
 
-        row = db.get( id=runID )
+        row = db.get( id=storeBest.runID )
         conv_force = row.get( "converged_force", default=0 )
         conv_stress = row.get( "converged_stress", default=0 )
         if ( (conv_force==1) and (conv_stress==1) ):

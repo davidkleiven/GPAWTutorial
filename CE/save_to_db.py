@@ -10,8 +10,8 @@ class SaveToDB(object):
         self.smallestEnergy = 1000.0
         self._is_first = True
         row = self.db.get( id=runID )
-        self.fmax = row.get( "fmax", default=None )
-        self.smax = row.get( "smax", default=None )
+        self.fmax = row.get( "fmax", default=-1.0 )
+        self.smax = row.get( "smax", default=-1.0 )
         self.mode = mode
 
     def __call__(self, atoms=None):
@@ -28,12 +28,7 @@ class SaveToDB(object):
         if ( atoms.get_potential_energy() < self.smallestEnergy ):
             self.smallestEnergy = atoms.get_potential_energy()
             key_value_pairs = self.db.get(name=self.name).key_value_pairs
+            key_value_pairs["init_fmax"] = self.fmax
+            key_value_pairs["init_smax"] = self.smax
             del self.db[self.runID]
             self.runID = self.db.write( atoms, key_value_pairs=key_value_pairs )
-
-            if ( (self.mode == "cell") and (not self.fmax is None) ):
-                # Keep the old fmax component if the object relaxes the cell
-                self.db.update(id=self.runID,max_force=self.fmax )
-            elif ( (self.mode == "positions") and  (not self.smax is None) ):
-                # Store the old maximum stress
-                self.db.update(id=self.runID,max_stress=self.smax)
