@@ -31,9 +31,9 @@ class SaveToDB(object):
             del self.db[self.runID]
             self.runID = self.db.write( atoms, key_value_pairs=key_value_pairs )
 
-            if ( (mode == "cell") and (not self.fmax is None) ):
+            if ( (self.mode == "cell") and (not self.fmax is None) ):
                 # Keep the old fmax component if the object relaxes the cell
                 self.db.update(id=self.runID,max_force=self.fmax )
-            elif ( (mode == "positions") and  (not self.smax is None) ):
+            elif ( (self.mode == "positions") and  (not self.smax is None) ):
                 # Store the old maximum stress
                 self.db.update(id=self.runID,max_stress=self.smax)
