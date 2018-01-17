@@ -64,7 +64,7 @@ def evalCE( BC):
     print (eci_name)
     evaluator.plot_energy()
     plotter = ECIPlotter(eci_name)
-    plotter.plot( tight=False )
+    plotter.plot( show_names=False )
 
     cov_plotter = CovariancePlot(evaluator, constant_term_column=0)
     cov_plotter.plot()
