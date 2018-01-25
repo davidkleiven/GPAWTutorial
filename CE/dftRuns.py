@@ -32,7 +32,7 @@ def change_cell_composition_AlMg( atoms ):
     return atoms
 
 def main( argv ):
-    relaxCell=True
+    relaxCell=False
     system = "AlMg"
     runID = int(argv[0])
     print ("Running job: %d"%(runID))
