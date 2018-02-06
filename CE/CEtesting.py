@@ -22,12 +22,18 @@ from plot_eci import ECIPlotter
 from ceext import evaluate_prior as ep
 from ceext import penalization as pen
 import numpy as np
-from plot_corr_matrix import CovariancePlot
+#from plot_corr_matrix import CovariancePlot
+from atomtools.ce.corrmatrix import CovariancePlot
 from convex_hull_plotter import QHull
 from ase.ce.corrFunc import CorrFunction
+import json
+from atomtools.ce.evaluate_deviation import EvaluateDeviation
+from atomtools.ce.phonon_ce_eval import PhononEval
+from atomtools.ce.population_variance import PopulationVariance
 
 SELECTED_ECI= "selectedEci.pkl"
 db_name = "ce_hydrostatic.db"
+#db_name = "ce_hydrostatic_phonons.db"
 def main( argv ):
     option = argv[0]
     conc_args = {
@@ -38,15 +44,21 @@ def main( argv ):
     N = 4
     atoms = atoms*(N,N,N)
 
-    ceBulk = BulkCrystal( "fcc", 4.05, [N,N,N], 1, [["Al","Mg"]], conc_args, db_name, max_cluster_size=4, reconf_db=False)
+    ceBulk = BulkCrystal( "fcc", 4.05, None, [N,N,N], 1, [["Al","Mg"]], conc_args, db_name, max_cluster_size=4, reconf_db=False)
     struc_generator = GenerateStructures( ceBulk, struct_per_gen=5 )
     if ( option == "generateNew" ):
-        struc_generator.generate_probe_structure( num_steps=100 )
+        struc_generator.generate_probe_structure()
     elif ( option == "evaluate" ):
         evalCE( ceBulk )
+        #eval_phonons( ceBulk )
+    elif ( option == "popstat" ):
+        find_pop_statistics( ceBulk )
     elif ( option == "insert" ):
         atoms = bulk("Mg","fcc",a=4.05)
         atoms = atoms*(N,N,N)
+        al_indices = np.random.randint(low=0,high=64,size=14)
+        for indx in al_indices:
+            atoms[indx].symbol = "Al"
         view(atoms)
         insert_specific_structure( ceBulk, struc_generator, atoms )
 
@@ -69,6 +81,7 @@ def evalCE( BC):
         evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1" )
         cvs.append(evaluator._cv_loo())
     indx = np.argmin(cvs)
+    print ("Selected penalization value: {}".format(lambs[indx]))
     evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1" )
     #evaluator = ep.EvaluatePrior(BC, selection={"nclusters":5} )
     #cnames = evaluator.cluster_names
@@ -80,15 +93,47 @@ def evalCE( BC):
     print (eci_name)
     evaluator.plot_energy()
     plotter = ECIPlotter(eci_name)
-    plotter.plot( show_names=False )
+    plotter.plot( show_names=True )
 
     cov_plotter = CovariancePlot(evaluator, constant_term_column=0)
     cov_plotter.plot()
+    cov_plotter.plot_corr_func_coverage()
+    eci_fname = "data/almg_eci.json"
+    with open( eci_fname, 'w') as outfile:
+        json.dump( eci_name, outfile )
+    print ("ECIs stored in %s"%(eci_fname))
 
     #qhull = QHull( db_name )
     #qhull.plot( "Al" )
     plt.show()
 
+def eval_phonons( ceBulk ):
+    lambs = np.logspace(-2,3,num=50)
+    temps = [800,700,600,500,400,300,200,100]
+    for T in temps:
+        cvs = []
+        for i in range(len(lambs)):
+            print ("%d of %d"%(i,len(lambs)) )
+            pce = PhononEval( ceBulk, lamb=lambs[i], penalty="l1" )
+            pce.T = T
+            cvs.append(pce._cv_loo() )
+        indx = np.argmin(cvs)
+        l = lambs[indx]
+        pce = PhononEval( ceBulk, lamb=l, penalty="l1" )
+        pce.T = T
+        eci_name = pce.get_cluster_name_eci_dict
+        pce.plot_energy()
+        plotter = ECIPlotter(eci_name)
+        plotter.plot( show_names=True )
+        eci_fname = "data/almg_eci_Fvib%d.json"%(T)
+        with open( eci_fname, 'w') as outfile:
+            json.dump( eci_name, outfile )
+        print ( "Phonon ECIs written to %s"%(eci_fname) )
+    plt.show()
+
+def find_pop_statistics( ceBulk ):
+    popvar = PopulationVariance( ceBulk )
+    cov, mean = popvar.estimate(  n_probe_structures=10000, fname="data/almg_covmean.json" )
 
 if __name__ == "__main__":
     main( sys.argv[1:] )

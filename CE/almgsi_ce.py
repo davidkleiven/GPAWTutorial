@@ -6,7 +6,7 @@ sys.path.append("/home/dkleiven/Documents/GPAWTutorials/CE_extensions")
 from ase.build import bulk
 from ase.ce.settings import BulkCrystal
 from ase.ce.newStruct import GenerateStructures
-from plot_corr_matrix import CovariancePlot
+from atomtools.ce.corrmatrix import CovariancePlot
 #from convex_hull_plotter import QHull
 from ase.ce.evaluate import Evaluate
 from plot_eci import ECIPlotter
@@ -26,7 +26,7 @@ def main(argv):
     N = 4
     atoms = atoms*(N,N,N)
 
-    ceBulk = BulkCrystal( "fcc", 4.05, [N,N,N], 1, [["Al","Mg","Si"]], conc_args, db_name, max_cluster_size=4, reconf_db=False)
+    ceBulk = BulkCrystal( "fcc", 4.05, None, [N,N,N], 1, [["Al","Mg","Si"]], conc_args, db_name, max_cluster_size=4, reconf_db=False)
     if ( option == "generateNew" ):
         struc_generator = GenerateStructures( ceBulk, struct_per_gen=5 )
         struc_generator.generate_probe_structure()
@@ -47,8 +47,9 @@ def evaluate(BC):
     plotter = ECIPlotter(eci_name)
     plotter.plot()
 
-    cov_plotter = CovariancePlot(evaluator, constant_term_column=0)
+    cov_plotter = CovariancePlot( evaluator, constant_term_column=0 )
     cov_plotter.plot()
+    cov_plotter.plot_corr_func_coverage()
 
     #qhull = QHull( db_name )
     #qhull.plot( "Al" )
