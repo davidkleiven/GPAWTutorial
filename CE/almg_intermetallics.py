@@ -43,6 +43,7 @@ def is_equal_permutation( list1, list2 ):
 
 def write_permutations_to_db( db_name, ref_xyz_file, symbols ):
     atoms = read( ref_xyz_file )
+    niggli_reduce(atoms)
     db = connect( db_name )
     for symb_set in symbols:
         for i,symb in enumerate(symb_set):
@@ -62,9 +63,10 @@ def create_convergence_database( db_name ):
     print ( "Convergence study written to {}".format(db_name))
 
 def main():
-    create_convergence_database( "almg_inter_conv.db" )
+    #create_convergence_database( "almg_inter_conv.db" )
     #structs = generate_all_configurations( 3,2 )
     #write_permutations_to_db( "data/al3mg2_intermetallic.db", "data/al3mg2_ref.xyz", structs )
+    pass
 
 if __name__ == "__main__":
     main()

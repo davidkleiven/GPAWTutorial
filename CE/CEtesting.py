@@ -30,10 +30,28 @@ import json
 from atomtools.ce.evaluate_deviation import EvaluateDeviation
 from atomtools.ce.phonon_ce_eval import PhononEval
 from atomtools.ce.population_variance import PopulationVariance
+from wanglandau.ce_calculator import CE
+from mcmc import montecarlo as mc
+from mcmc import mc_observers as mcobs
+from ase.io import write, read
+from ase.db import connect
+from ase.calculators.cluster_expansion.cluster_expansion import ClusterExpansion
 
 SELECTED_ECI= "selectedEci.pkl"
-db_name = "ce_hydrostatic.db"
 #db_name = "ce_hydrostatic_phonons.db"
+db_name = "ce_hydrostatic.db"
+#db_name = "almg_eam.db"
+
+class ExcludeHighMg(object):
+    def __init__( self, max_mg ):
+        self.max_mg = max_mg
+    def __call__(self, count ):
+        if ( not "Mg" in count.keys() ):
+            return True
+        if ( count["Mg"] > self.max_mg ):
+            return False
+        return True
+
 def main( argv ):
     option = argv[0]
     conc_args = {
@@ -45,7 +63,8 @@ def main( argv ):
     atoms = atoms*(N,N,N)
 
     ceBulk = BulkCrystal( "fcc", 4.05, None, [N,N,N], 1, [["Al","Mg"]], conc_args, db_name, max_cluster_size=4, reconf_db=False)
-    struc_generator = GenerateStructures( ceBulk, struct_per_gen=5 )
+    #struc_generator = GenerateStructures( ceBulk, struct_per_gen=5 )
+    struc_generator = GenerateStructures( ceBulk )
     if ( option == "generateNew" ):
         struc_generator.generate_probe_structure()
     elif ( option == "evaluate" ):
@@ -53,13 +72,16 @@ def main( argv ):
         #eval_phonons( ceBulk )
     elif ( option == "popstat" ):
         find_pop_statistics( ceBulk )
+    elif ( option == "gsstruct" ):
+        find_gs_structure( ceBulk, float(argv[1]) )
+    elif ( option == "formation" ):
+        enthalpy_of_formation( ceBulk )
     elif ( option == "insert" ):
-        atoms = bulk("Mg","fcc",a=4.05)
-        atoms = atoms*(N,N,N)
-        al_indices = np.random.randint(low=0,high=64,size=14)
-        for indx in al_indices:
-            atoms[indx].symbol = "Al"
-        view(atoms)
+        if ( len(argv) == 2 ):
+            fname = argv[1]
+        else:
+            raise ValueError( "No xyz filename given!" )
+        atoms = read(fname)
         insert_specific_structure( ceBulk, struc_generator, atoms )
 
 def insert_specific_structure( ceBulk, struct_gen, atoms ):
@@ -72,6 +94,108 @@ def insert_specific_structure( ceBulk, struct_gen, atoms ):
     kvp = struct_gen.get_kvp( atoms, kvp, conc[0], conc[1] )
     struct_gen.db.write(atoms,kvp)
 
+def enthalpy_of_formation( ceBulk ):
+    dft_energy = []
+    ce_energy = []
+    all_mg_conc = []
+    db = connect( db_name )
+    al_ref_energy = None
+    mg_ref_energy = None
+    with open( "data/almg_eci.json", 'r' ) as infile:
+        ecis = json.load(infile)
+    # Find reference structures
+    for row in db.select(converged=1):
+        if ( row.formula == "Al64" ):
+            try:
+                al_ref_energy = row.energy/64.0
+            except:
+                pass
+        elif ( row.formula == "Mg64" ):
+            mg_ref_energy = row.energy/64.0
+
+    ce_ase_calc = ClusterExpansion( ceBulk, cluster_name_eci=ecis )
+    atoms = bulk("Al")*(4,4,4)
+    atoms.set_calculator(ce_ase_calc)
+    ce_al_ref_energy = atoms.get_potential_energy()/64.0
+    for i in range(64):
+        atoms[i].symbol = "Mg"
+    ce_mg_ref_energy = atoms.get_potential_energy()/64.0
+
+    print ("Reference energies: Al: {}, Mg: {}".format( al_ref_energy, mg_ref_energy) )
+    print ("CE Reference energies: Al: {}, Mg: {}".format( ce_al_ref_energy, ce_mg_ref_energy) )
+    for row in db.select(converged=1):
+        count = row.count_atoms()
+        if ( "Mg" in count.keys() ):
+            mg_conc = count["Mg"]/64.0
+        else:
+            mg_conc = 0.0
+
+        dft_form = row.energy/64.0 - al_ref_energy*(1.0-mg_conc) - mg_ref_energy*mg_conc
+        n_mg = int( mg_conc*len(ceBulk.atoms) )
+        print( n_mg )
+        if ( (n_mg > 0) and (n_mg < 64) ):
+            min_energy = find_gs_structure( ceBulk, mg_conc )
+            ce_form = min_energy/64.0 - al_ref_energy*(1.0-mg_conc) - mg_ref_energy*mg_conc
+            ce_energy.append( ce_form )
+            all_mg_conc.append( mg_conc )
+            dft_energy.append( dft_form )
+
+        # Reset the atom in ceBulk
+        for i in range( len(ceBulk.atoms) ):
+            ceBulk.atoms[i].symbol = "Al"
+
+    # Read ECIs
+    with open("data/almg_eci.json", 'r') as infile:
+        eci_data = json.load(infile)
+
+    formation_res = {}
+    formation_res["eci"] = eci_data
+    formation_res["mg_conc"] = all_mg_conc
+    formation_res["ce_formation"] = ce_energy
+    formation_res["dft_formation"] = dft_energy
+    outfilename = "data/almg_formation_energy.json"
+    with open( outfilename, 'w') as outfile:
+        json.dump( formation_res, outfile, indent=2, sort_keys=True, separators=(",",":") )
+    print ( "Formation enthalpies written to {}".format( outfilename) )
+
+def find_gs_structure( ceBulk, mg_conc ):
+    with open( "data/almg_eci.json", 'r' ) as infile:
+        ecis = json.load(infile)
+    init_cf = {key:1.0 for key in ecis.keys()}
+    calc = CE( ceBulk, ecis, initial_cf=init_cf )
+    ceBulk.atoms.set_calculator( calc )
+    print ( ceBulk.basis_functions )
+
+    n_mg = int( mg_conc*len(ceBulk.atoms) )
+    for i in range(n_mg):
+        ceBulk.atoms._calc.update_cf( (i,"Al","Mg") )
+
+    ceBulk.atoms._calc.clear_history()
+    formula = ceBulk.atoms.get_chemical_formula()
+    temps = [800,700,500,300,200,100,50,20,19,18,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1]
+    n_steps_per = 1000
+    lowest_struct = mcobs.LowestEnergyStructure( calc, None )
+    for T in temps:
+        print ("Temperature {}".format(T) )
+        mc_obj = mc.Montecarlo( ceBulk.atoms, T )
+        lowest_struct.mc_obj = mc_obj
+        mc_obj.attach( lowest_struct )
+        mc_obj.runMC( steps=n_steps_per, verbose=False )
+        thermo = mc_obj.get_thermodynamic()
+        print ("Mean energy: {}".format(thermo["energy"]))
+    fname = "data/gs_structure%s.xyz"%(formula)
+    write( fname, lowest_struct.lowest_energy_atoms )
+    print ("Lowest energy found: {}".format( lowest_struct.lowest_energy))
+    print ("GS structure saved to %s"%(fname) )
+    fname = "data/cf_functions_gs%s.csv"%(formula)
+    cf = calc.get_cf()
+    with open(fname,'w') as outfile:
+        for key,value in cf.iteritems():
+            outfile.write( "{},{}\n".format(key,value))
+    print ("CFs saved to %s"%(fname))
+    return lowest_struct.lowest_energy
+
+
 def evalCE( BC):
     lambs = np.logspace(-7,-1,num=50)
     print (lambs)
@@ -83,6 +207,7 @@ def evalCE( BC):
     indx = np.argmin(cvs)
     print ("Selected penalization value: {}".format(lambs[indx]))
     evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1" )
+    print ( evaluator.cf_matrix[:,1] )
     #evaluator = ep.EvaluatePrior(BC, selection={"nclusters":5} )
     #cnames = evaluator.cluster_names
     #l1 = pen.L1(9E-4)
@@ -110,16 +235,20 @@ def evalCE( BC):
 def eval_phonons( ceBulk ):
     lambs = np.logspace(-2,3,num=50)
     temps = [800,700,600,500,400,300,200,100]
+    temps = [600]
+    cnames = ["c2_707_1_1","c2_1000_1_1","c2_1225_1_1"]
+    cnames = None
+    filters = [ExcludeHighMg(70)]
     for T in temps:
         cvs = []
         for i in range(len(lambs)):
             print ("%d of %d"%(i,len(lambs)) )
-            pce = PhononEval( ceBulk, lamb=lambs[i], penalty="l1" )
+            pce = PhononEval( ceBulk, lamb=lambs[i], penalty="l1", cluster_names=cnames, filters=filters )
             pce.T = T
             cvs.append(pce._cv_loo() )
         indx = np.argmin(cvs)
         l = lambs[indx]
-        pce = PhononEval( ceBulk, lamb=l, penalty="l1" )
+        pce = PhononEval( ceBulk, lamb=l, penalty="l1", cluster_names=cnames, filters=filters )
         pce.T = T
         eci_name = pce.get_cluster_name_eci_dict
         pce.plot_energy()
