@@ -1,4 +1,4 @@
-from ase.build import bulk
+from ase.build import bulk, niggli_reduce
 from ase.build import supercells as sc
 from ase.visualize import view
 from itertools import permutations
@@ -52,6 +52,7 @@ def write_permutations_to_db( db_name, ref_xyz_file, symbols ):
 
 def create_convergence_database( db_name ):
     atoms = read( "data/al3mg2_ref.xyz" )
+    niggli_reduce(atoms)
     atoms[0].symbol = "Mg"
     atoms[1].symbol = "Mg"
     db = connect( db_name )
