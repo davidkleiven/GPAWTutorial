@@ -16,7 +16,7 @@ def main( runID ):
     atoms.set_calculator( calc )
     precon = Exp(mu=1.0,mu_c=1.0)
     uf = UnitCellFilter( atoms, hydrostatic_strain=True )
-    logfile = "al3mg2%d.log"%(runID)
+    logfile = "al3mg2{}.log".format(runID)
     relaxer = PreconLBFGS( uf, logfile=logfile, use_armijo=True, precon=precon )
     relaxer.run( fmax=0.025, smax=0.003 )
     energy = atoms.get_potential_energy()
