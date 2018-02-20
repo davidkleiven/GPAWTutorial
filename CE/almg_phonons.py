@@ -21,6 +21,7 @@ from nnpotential.neural_network import NNPotential
 from ase.units import kB
 import numpy as np
 from atomtools.ce import ce_phonon_dos as cpd
+from ase.dft.kpoints import ibz_points, bandpath
 
 wrk = "/home/davidkl/Documents/GPAWTutorial/CE"
 db_name = wrk+"/"+"ce_hydrostatic.db"
@@ -67,7 +68,7 @@ def main():
     generator = GenerateStructures(cebulk,struct_per_gen=1)
     generator.generate_probe_structure( num_steps=1 )
 
-def phonon_run(runID):
+def phonon_run(runID, save_to_db=False, plot_bands=False ):
     print ("Running ID %d"%(runID))
     db = connect(db_name)
     atoms = db.get_atoms(id=runID)
@@ -84,17 +85,38 @@ def phonon_run(runID):
     #return
     ph.read( acoustic=True )
     omega_e, dos_e = ph.dos( kpts=(30,30,30), npts=1000, delta=5E-4 )
+    if ( plot_bands ):
+        points = ibz_points['fcc']
+        G = points['Gamma']
+        X = points['X']
+        W = points['W']
+        K = points['K']
+        L = points['L']
+        U = points['U']
+        point_names = ['$\Gamma$', 'X', 'U', 'L', '$\Gamma$', 'K']
+        path = [G, X, U, L, G, K]
 
-    # Store the results in the database
-    db.update( runID, has_dos=True )
+        path_kc, q, Q = bandpath(path, atoms.cell, 100)
+        omega_kn = 1000.0*ph.band_structure( path_kc )
 
-    manager = cpd.PhononDOS_DB(db_name)
+        figb = plt.figure()
+        axb = figb.add_subplot(1,1,1)
+        for n in range(len(omega_kn[0])):
+            omega_n = omega_kn[:,n]
+            axb.plot( q, omega_n )
+        plt.show()
 
-    # Extract relevant information from the atoms database
-    row = db.get(id=runID)
-    name = row.name
-    atID = row.id
-    manager.save( name=name, atID=atID, omega_e=omega_e, dos_e=dos_e )
+    if ( save_to_db ):
+        # Store the results in the database
+        db.update( runID, has_dos=True )
+
+        manager = cpd.PhononDOS_DB(db_name)
+
+        # Extract relevant information from the atoms database
+        row = db.get(id=runID)
+        name = row.name
+        atID = row.id
+        manager.save( name=name, atID=atID, omega_e=omega_e, dos_e=dos_e )
 
     #fig = plt.figure()
     #ax = fig.add_subplot(1,1,1)
@@ -105,5 +127,5 @@ def phonon_run(runID):
 
 if __name__ == "__main__":
     runID = int(sys.argv[1])
-    phonon_run(runID)
+    phonon_run(runID,plot_bands=False)
     #aucu_phonons()

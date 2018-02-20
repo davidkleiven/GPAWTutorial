@@ -4,11 +4,16 @@ from ase.visualize import view
 from itertools import permutations
 from ase.db import connect
 from ase.io import read
+from ase import Atoms
 
 def find_cell( tsize ):
-    atoms = bulk("Al")
+    #atoms = bulk("Al", crystalstructure="sc", a=5.0)
+    a = 10.0
+    atoms = Atoms( ["Al","Mg"], positions=[[0.0,0.0,0.0],[a/2.0,a/2.0,a/2.0]], cell=[a,a,a] )
+    view(atoms)
     trans = sc.find_optimal_cell_shape_pure_python( atoms.cell, tsize, "sc" )
     atoms = sc.make_supercell( atoms, trans )
+    print ( len(atoms) )
 
     #atoms.set_cell(cell)
     view(atoms)
@@ -63,6 +68,7 @@ def create_convergence_database( db_name ):
     print ( "Convergence study written to {}".format(db_name))
 
 def main():
+    find_cell(29)
     #create_convergence_database( "almg_inter_conv.db" )
     #structs = generate_all_configurations( 3,2 )
     #write_permutations_to_db( "data/al3mg2_intermetallic.db", "data/al3mg2_ref.xyz", structs )

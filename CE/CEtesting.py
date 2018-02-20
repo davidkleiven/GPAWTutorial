@@ -30,9 +30,9 @@ import json
 from atomtools.ce.evaluate_deviation import EvaluateDeviation
 from atomtools.ce.phonon_ce_eval import PhononEval
 from atomtools.ce.population_variance import PopulationVariance
-from wanglandau.ce_calculator import CE
-from mcmc import montecarlo as mc
-from mcmc import mc_observers as mcobs
+from cemc.wanglandau.ce_calculator import CE
+from cemc.mcmc import montecarlo as mc
+from cemc.mcmc import mc_observers as mcobs
 from ase.io import write, read
 from ase.db import connect
 from ase.calculators.cluster_expansion.cluster_expansion import ClusterExpansion
@@ -69,7 +69,8 @@ def main( argv ):
         struc_generator.generate_probe_structure()
     elif ( option == "evaluate" ):
         evalCE( ceBulk )
-        #eval_phonons( ceBulk )
+    elif ( option == "phonons" ):
+        eval_phonons( ceBulk )
     elif ( option == "popstat" ):
         find_pop_statistics( ceBulk )
     elif ( option == "gsstruct" ):
@@ -94,17 +95,36 @@ def insert_specific_structure( ceBulk, struct_gen, atoms ):
     kvp = struct_gen.get_kvp( atoms, kvp, conc[0], conc[1] )
     struct_gen.db.write(atoms,kvp)
 
-def enthalpy_of_formation( ceBulk ):
+def generate_exclusion_criteria( fname ):
+    """
+    Generate a selection critieria such that ids listed in the file given
+    gets excluded
+    """
+
+    with open( fname, 'r' ) as infile:
+        lines = infile.readlines()
+    lines = [line.rstrip() for line in lines]
+    ids = [int(line) for line in lines]
+    select_cond = []
+    for uid in ids:
+        select_cond.append( ("id","!=",uid) )
+    return select_cond
+
+def enthalpy_of_formation( ceBulk, mode="compare" ):
     dft_energy = []
     ce_energy = []
     all_mg_conc = []
+    dft_mg_conc = []
+    dft_ids = []
     db = connect( db_name )
     al_ref_energy = None
     mg_ref_energy = None
+    allowed_modes = ["compare", "CEGS"]
     with open( "data/almg_eci.json", 'r' ) as infile:
         ecis = json.load(infile)
     # Find reference structures
     for row in db.select(converged=1):
+        dft_ids.append( row.id )
         if ( row.formula == "Al64" ):
             try:
                 al_ref_energy = row.energy/64.0
@@ -132,13 +152,30 @@ def enthalpy_of_formation( ceBulk ):
 
         dft_form = row.energy/64.0 - al_ref_energy*(1.0-mg_conc) - mg_ref_energy*mg_conc
         n_mg = int( mg_conc*len(ceBulk.atoms) )
-        print( n_mg )
+        if( mg_conc in all_mg_conc ):
+            dft_energy.append( dft_form )
+            dft_mg_conc.append( mg_conc )
+            if ( mode == "compare" ):
+                atoms = db.get_atoms( id=row.id )
+                min_energy = atoms.get_potential_energy()
+                ce_form = min_energy/64.0 - al_ref_energy*(1.0-mg_conc) - mg_ref_energy*mg_conc
+                ce_energy.append( ce_form )
+                all_mg_conc.append( mg_conc )
+                continue
         if ( (n_mg > 0) and (n_mg < 64) ):
-            min_energy = find_gs_structure( ceBulk, mg_conc )
+            if ( mode == "CEGS" ):
+                min_energy = find_gs_structure( ceBulk, mg_conc )
+            else:
+                atoms = db.get_atoms( id=row.id )
+                min_energy = atoms.get_potential_energy()
             ce_form = min_energy/64.0 - al_ref_energy*(1.0-mg_conc) - mg_ref_energy*mg_conc
             ce_energy.append( ce_form )
             all_mg_conc.append( mg_conc )
             dft_energy.append( dft_form )
+            dft_mg_conc.append( mg_conc )
+        else:
+            dft_energy.append( dft_form )
+            dft_mg_conc.append( mg_conc )
 
         # Reset the atom in ceBulk
         for i in range( len(ceBulk.atoms) ):
@@ -153,6 +190,8 @@ def enthalpy_of_formation( ceBulk ):
     formation_res["mg_conc"] = all_mg_conc
     formation_res["ce_formation"] = ce_energy
     formation_res["dft_formation"] = dft_energy
+    formation_res["dft_mg_conc"] = dft_mg_conc
+    formation_res["dft_ids"] = dft_ids
     outfilename = "data/almg_formation_energy.json"
     with open( outfilename, 'w') as outfile:
         json.dump( formation_res, outfile, indent=2, sort_keys=True, separators=(",",":") )
@@ -169,7 +208,6 @@ def find_gs_structure( ceBulk, mg_conc ):
     n_mg = int( mg_conc*len(ceBulk.atoms) )
     for i in range(n_mg):
         ceBulk.atoms._calc.update_cf( (i,"Al","Mg") )
-
     ceBulk.atoms._calc.clear_history()
     formula = ceBulk.atoms.get_chemical_formula()
     temps = [800,700,500,300,200,100,50,20,19,18,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1]
@@ -198,15 +236,17 @@ def find_gs_structure( ceBulk, mg_conc ):
 
 def evalCE( BC):
     lambs = np.logspace(-7,-1,num=50)
+    fname = "data/exclude_set_1.txt"
+    scond = generate_exclusion_criteria( fname )
     print (lambs)
     cvs = []
     for i in range(len(lambs)):
         print (lambs[i])
-        evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1" )
+        evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1", select_cond=scond )
         cvs.append(evaluator._cv_loo())
     indx = np.argmin(cvs)
     print ("Selected penalization value: {}".format(lambs[indx]))
-    evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1" )
+    evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1", select_cond=scond )
     print ( evaluator.cf_matrix[:,1] )
     #evaluator = ep.EvaluatePrior(BC, selection={"nclusters":5} )
     #cnames = evaluator.cluster_names
@@ -234,30 +274,26 @@ def evalCE( BC):
 
 def eval_phonons( ceBulk ):
     lambs = np.logspace(-2,3,num=50)
-    temps = [800,700,600,500,400,300,200,100]
-    temps = [600]
-    cnames = ["c2_707_1_1","c2_1000_1_1","c2_1225_1_1"]
     cnames = None
-    filters = [ExcludeHighMg(70)]
-    for T in temps:
-        cvs = []
-        for i in range(len(lambs)):
-            print ("%d of %d"%(i,len(lambs)) )
-            pce = PhononEval( ceBulk, lamb=lambs[i], penalty="l1", cluster_names=cnames, filters=filters )
-            pce.T = T
-            cvs.append(pce._cv_loo() )
-        indx = np.argmin(cvs)
-        l = lambs[indx]
-        pce = PhononEval( ceBulk, lamb=l, penalty="l1", cluster_names=cnames, filters=filters )
+    cvs = []
+    T = 600 # Is not used when hte=True
+    for i in range(len(lambs)):
+        print ("%d of %d"%(i,len(lambs)) )
+        pce = PhononEval( ceBulk, lamb=lambs[i], penalty="l1", cluster_names=cnames, hte=True )
         pce.T = T
-        eci_name = pce.get_cluster_name_eci_dict
-        pce.plot_energy()
-        plotter = ECIPlotter(eci_name)
-        plotter.plot( show_names=True )
-        eci_fname = "data/almg_eci_Fvib%d.json"%(T)
-        with open( eci_fname, 'w') as outfile:
-            json.dump( eci_name, outfile )
-        print ( "Phonon ECIs written to %s"%(eci_fname) )
+        cvs.append(pce._cv_loo() )
+    indx = np.argmin(cvs)
+    l = lambs[indx]
+    pce = PhononEval( ceBulk, lamb=l, penalty="l1", cluster_names=cnames, filters=filters )
+    pce.T = T
+    eci_name = pce.get_cluster_name_eci_dict
+    pce.plot_energy()
+    plotter = ECIPlotter(eci_name)
+    plotter.plot( show_names=True )
+    eci_fname = "data/almg_eci_Fvib%d.json"%(T)
+    with open( eci_fname, 'w') as outfile:
+        json.dump( eci_name, outfile )
+    print ( "Phonon ECIs written to %s"%(eci_fname) )
     plt.show()
 
 def find_pop_statistics( ceBulk ):
