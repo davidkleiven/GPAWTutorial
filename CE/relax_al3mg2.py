@@ -10,7 +10,7 @@ def main( fname ):
     atoms = read( fname )
     #atoms = bulk("Al")
 
-    calc = gp.GPAW( mode=gp.PW(500), kpts=(4,4,4), xc="PBE", nbands="120%" )
+    calc = gp.GPAW( mode=gp.PW(500), kpts=(12,12,12), xc="PBE", nbands=-20 )
     atoms.set_calculator( calc )
     prc = Exp(mu=1.0,mu_c=1.0)
     relaxer = PreconLBFGS( atoms, logfile="al12mg17.log", precon=prc, use_armijo=True, variable_cell=True )
