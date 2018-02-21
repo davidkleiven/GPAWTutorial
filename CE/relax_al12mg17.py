@@ -5,6 +5,7 @@ from ase.optimize.precon import PreconLBFGS, Exp
 from ase.calculators.emt import EMT
 import gpaw as gp
 from ase.build import bulk
+from ase.io.trajectory import Trajectory
 
 def main( argv ):
     fname = argv[0]
@@ -19,6 +20,8 @@ def main( argv ):
     atoms.set_calculator( calc )
     prc = Exp(mu=1.0,mu_c=1.0)
     relaxer = PreconLBFGS( atoms, logfile="al12mg17.log", precon=prc, use_armijo=True, variable_cell=variable_cell )
+    trajObj = Trajectory("al3mg2.traj", 'w', atoms )
+    relaxer.attach( trajObj )
     if ( variable_cell ):
         relaxer.run( fmax=0.025, smax=0.003 )
     else:
