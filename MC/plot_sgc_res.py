@@ -8,6 +8,9 @@ mpl.rcParams["axes.unicode_minus"] = False
 from matplotlib import pyplot as plt
 from scipy.interpolate import UnivariateSpline
 from matplotlib import cm
+from ase.units import kB
+from scipy import integrate
+from cemc.tools import free_energy as fe
 
 def sort_based_on_temp( entry ):
     T = entry["temperature"]
@@ -23,62 +26,66 @@ def isochemical_potential( data,max_T, max_conc ):
     """
     Creates a color plot with over composition chemical potential
     """
-    chem_pot = []
-    T = []
-    conc = []
-    min_mu = np.inf
-    max_mu = -np.inf
-    for key,value in data.iteritems():
-        if ( value["mu"] < min_mu ):
-            min_mu = value["mu"]
+    try:
+        chem_pot = []
+        T = []
+        conc = []
+        min_mu = np.inf
+        max_mu = -np.inf
+        for key,value in data.iteritems():
+            if ( value["mu"] < min_mu ):
+                min_mu = value["mu"]
 
-        if ( value["mu"] > max_mu ):
-            max_mu = value["mu"]
+            if ( value["mu"] > max_mu ):
+                max_mu = value["mu"]
 
-    Z = [[0,0],[0,0]]
+        Z = [[0,0],[0,0]]
 
-    fig = plt.figure()
-    ax = fig.add_subplot(1,1,1)
-    all_mapped_mu = []
-    all_max_T = []
-    all_min_T = []
-    for key,value in data.iteritems():
-        value = sort_based_on_temp(value)
-        chem_pot.append( value["mu"] )
-        mapped_mu = (value["mu"]-min_mu)/(max_mu-min_mu)
-        all_mapped_mu.append( mapped_mu )
-        T = value["temperature"]
-        all_max_T.append( np.max(T) )
-        all_min_T.append( np.min(T) )
-        conc = value["singlets"]
-        conc = (np.array(conc)+1.0)/2.0
-        conc = 1.0-conc
-        ax.plot( conc, T, color=cm.nipy_spectral(mapped_mu), lw=5 )
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1)
+        all_mapped_mu = []
+        all_max_T = []
+        all_min_T = []
+        for key,value in data.iteritems():
+            value = sort_based_on_temp(value)
+            chem_pot.append( value["mu"] )
+            mapped_mu = (value["mu"]-min_mu)/(max_mu-min_mu)
+            all_mapped_mu.append( mapped_mu )
+            T = value["temperature"]
+            all_max_T.append( np.max(T) )
+            all_min_T.append( np.min(T) )
+            conc = value["singlets"]
+            conc = (np.array(conc)+1.0)/2.0
+            conc = 1.0-conc
+            ax.plot( conc, T, color=cm.nipy_spectral(mapped_mu), lw=5 )
 
-    max_conc = 1.0-np.array( max_conc )
-    srt_indx = np.argsort( max_conc )
-    max_conc = [max_conc[indx] for indx in srt_indx]
-    max_T = [max_T[indx] for indx in srt_indx]
+        max_conc = 1.0-np.array( max_conc )
+        srt_indx = np.argsort( max_conc )
+        max_conc = [max_conc[indx] for indx in srt_indx]
+        max_T = [max_T[indx] for indx in srt_indx]
 
-    filterered_max_conc = []
-    filtered_max_T = []
-    for i in range(len(max_T)):
-        if (( max_T[i] >= max(all_max_T) or ( max_T[i] <= min(all_min_T) ))):
-            continue
-        filtered_max_T.append( max_T[i] )
-        filterered_max_conc.append( max_conc[i] )
-    max_conc = filterered_max_conc
-    max_T = filtered_max_T
-    ax.plot( max_conc, max_T, lw=2, color="#de2d26", marker="o" )
-    chem_pot.sort()
-    fig_info = plt.figure()
-    ax_info = fig_info.add_subplot(1,1,1)
-    Cb_info = ax_info.contourf(Z,chem_pot, cmap="nipy_spectral")
-    cbar = fig.colorbar(Cb_info)
-    cbar.set_label( "Chemical potential (eV/atom)")
-    ax.set_xlabel( "Mg concentration" )
-    ax.set_ylabel( "Temperature (K)")
-    return fig
+        filterered_max_conc = []
+        filtered_max_T = []
+        for i in range(len(max_T)):
+            if (( max_T[i] >= max(all_max_T) or ( max_T[i] <= min(all_min_T) ))):
+                continue
+            filtered_max_T.append( max_T[i] )
+            filterered_max_conc.append( max_conc[i] )
+        max_conc = filterered_max_conc
+        max_T = filtered_max_T
+        ax.plot( max_conc, max_T, lw=2, color="#de2d26", marker="o" )
+        chem_pot.sort()
+        fig_info = plt.figure()
+        ax_info = fig_info.add_subplot(1,1,1)
+        Cb_info = ax_info.contourf(Z,chem_pot, cmap="nipy_spectral")
+        cbar = fig.colorbar(Cb_info)
+        cbar.set_label( "Chemical potential (eV/atom)")
+        ax.set_xlabel( "Mg concentration" )
+        ax.set_ylabel( "Temperature (K)")
+        return fig
+    except Exception as exc:
+        print (str(exc))
+        return None
 
 def mu_T_phase_diag( max_mu, max_T, Tmin, Tmax ):
     filtered_mu = []
@@ -97,6 +104,24 @@ def mu_T_phase_diag( max_mu, max_T, Tmin, Tmax ):
     ax.plot( filtered_mu, filtered_max_T, marker="o" )
     ax.set_xlabel( "Chemical potential (eV/atom)" )
     ax.set_ylabel( "Temperature (K)" )
+    return fig
+
+def free_energy( data ):
+    """
+    Computes the free energy by integrating along curves of constant chemical potential
+    """
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+    eng = fe.FreeEnergy()
+    for key,value in data.iteritems():
+        value = sort_based_on_temp(value)
+        T = np.array( value["temperature"] )
+        U = np.array( value["energy"] )/1000.0
+        mu = {"c1_1":value["mu"]}
+        sng = {"c1_1":value["singlets"]}
+        sgc_E = eng.get_sgc_energy( U, sng, mu )
+        res = eng.free_energy_isochemical( T=T, sgc_energy=sgc_E, nelem=2 )
+        ax.plot( res["temperature"], res["free_energy"], marker="o", label="{}".format(value["mu"]))
     return fig
 
 def main( argv ):
@@ -142,6 +167,7 @@ def main( argv ):
     ax[2].legend( frameon=False )
     isochemical_potential( data, max_T, max_conc )
     mu_T_phase_diag( mu, max_T, 200.0, 900.0 )
+    free_energy(data)
     plt.show()
 
 if __name__ == "__main__":

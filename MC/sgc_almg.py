@@ -6,8 +6,10 @@ from cemc.wanglandau.ce_calculator import CE
 import numpy as np
 from mpi4py import MPI
 from ase.visualize import view
+import dill as pck
 
-OUTFILE = "data/almg_15x15x15.json"
+OUTFILE = "data/almg_10x10x10_100000K.json"
+pck_file = "data/bc_10x10x10_100000K.pkl"
 db_name = "data/ce_hydrostatic.db"
 
 comm = MPI.COMM_WORLD
@@ -21,7 +23,7 @@ def run( mu, temps, save=False ):
                 "conc_ratio_min_1":[[1,0]],
                 "conc_ratio_max_1":[[0,1]],
             }
-    ceBulk = BulkCrystal( "fcc", 4.05, None, [21,21,21], 1, [["Al","Mg"]], conc_args, db_name, max_cluster_size=4, max_cluster_dia=1.414*4.05, reconf_db=True )
+    ceBulk = BulkCrystal( "fcc", 4.05, None, [10,10,10], 1, [["Al","Mg"]], conc_args, db_name, max_cluster_size=4, max_cluster_dia=1.414*4.05, reconf_db=True )
 
     eci_file = "/home/davidkl/Documents/GPAWTutorial/CE/data/almg_eci.json"
     with open( eci_file, 'r' ) as infile:
@@ -82,13 +84,19 @@ def run( mu, temps, save=False ):
             data[name]["energy"] = [entry["energy"] for entry in thermo]
             data[name]["heat_capacity"] = [entry["heat_capacity"] for entry in thermo]
             data[name]["mu"] = mu
-            with open( OUTFILE, 'w' ) as outfile:
-                json.dump( data, outfile, sort_keys=True, indent=2, separators=(",",":") )
-            print ( "Data written to {}".format(OUTFILE) )
+        with open( OUTFILE, 'w' ) as outfile:
+            json.dump( data, outfile, sort_keys=True, indent=2, separators=(",",":") )
+        print ( "Data written to {}".format(OUTFILE) )
 
     if ( comm.Get_size() == 1 ):
         print (ceBulk.atoms.get_chemical_formula() )
         view( ceBulk.atoms )
+
+    ceBulk.atoms.set_calculator(None)
+    with open( pck_file, 'wb') as outfile:
+        pck.dump( (ceBulk,calc.get_cf(),calc.eci), outfile )
+        print ( "Bulk crystal object pickled to {}".format(pck_file) )
+
 def main( argv ):
     maxT = None
     minT = None

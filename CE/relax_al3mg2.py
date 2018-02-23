@@ -19,8 +19,12 @@ def main( argv ):
     calc = gp.GPAW( mode=gp.PW(500), kpts=(12,12,12), xc="PBE", nbands=-20 )
     atoms.set_calculator( calc )
     prc = Exp(mu=1.0,mu_c=1.0)
-    relaxer = PreconLBFGS( atoms, logfile="al3mg2.log", precon=prc, use_armijo=True, variable_cell=variable_cell )
-    trajObj = Trajectory("al3mg2.traj", 'w', atoms )
+    outfname = fname.split("/")[-1]
+    outfname = outfname.split(".")[0]
+    logfile = outfname+".log"
+    traj_file = outfname+".traj"
+    relaxer = PreconLBFGS( atoms, logfile=logfile, precon=prc, use_armijo=True, variable_cell=variable_cell )
+    trajObj = Trajectory(traj_file, 'w', atoms )
     relaxer.attach( trajObj )
     if ( variable_cell ):
         relaxer.run( fmax=0.025, smax=0.003 )
