@@ -16,7 +16,7 @@ from ase.optimize.sciopt import SciPyFminCG
 from ase.optimize import QuasiNewton
 from save_to_db import SaveToDB
 def main( argv ):
-    relax_mode = "both" # both, cell, positions
+    relax_mode = "cell" # both, cell, positions
     system = "AlMg"
     runID = int(argv[0])
     print ("Running job: %d"%(runID))
