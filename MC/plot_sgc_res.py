@@ -128,7 +128,7 @@ def free_energy( data, bc ):
         sgc_E = eng.get_sgc_energy( U, sng, mu )
         eng_low_temp.chemical_potential = mu
         res = eng.free_energy_isochemical( T=T, sgc_energy=sgc_E/1000.0, nelem=2 )
-        res_low = eng_low_temp.free_energy_isochemical( T=T[3:], sgc_energy=sgc_E[3:]/1000.0, nelem=2 )
+        res_low = eng_low_temp.free_energy_isochemical( T=T, sgc_energy=sgc_E/1000.0, nelem=2 )
         beta_mf = np.linspace(1.0/(kB*T[0]), 1.0/(kB*T[-1]),100.0)
         mf_energy = mf.free_energy( beta_mf, chem_pot=mu )
         ax.plot( res["temperature"], res["free_energy"], marker="o", label="{}".format(value["mu"]))
