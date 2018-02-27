@@ -8,8 +8,8 @@ from mpi4py import MPI
 from ase.visualize import view
 import dill as pck
 
-OUTFILE = "data/almg_10x10x10_100000K.json"
-pck_file = "data/bc_10x10x10_100000K.pkl"
+OUTFILE = "data/almg_10x10x10_20000K.json"
+pck_file = "data/bc_10x10x10_20000K.pkl"
 db_name = "data/ce_hydrostatic.db"
 
 comm = MPI.COMM_WORLD

@@ -11,6 +11,10 @@ from matplotlib import cm
 from ase.units import kB
 from scipy import integrate
 from cemc.tools import free_energy as fe
+from cemc.mfa.mean_field_approx import MeanFieldApprox
+import pickle as pck
+from ase.calculators.cluster_expansion.cluster_expansion import ClusterExpansion
+from ase.visualize import view
 
 def sort_based_on_temp( entry ):
     T = entry["temperature"]
@@ -106,22 +110,33 @@ def mu_T_phase_diag( max_mu, max_T, Tmin, Tmax ):
     ax.set_ylabel( "Temperature (K)" )
     return fig
 
-def free_energy( data ):
+def free_energy( data, bc ):
     """
     Computes the free energy by integrating along curves of constant chemical potential
     """
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
     eng = fe.FreeEnergy()
+    mf = MeanFieldApprox(bc)
+    eng_low_temp = fe.FreeEnergy( limit="lte", mfa=mf )
     for key,value in data.iteritems():
         value = sort_based_on_temp(value)
         T = np.array( value["temperature"] )
-        U = np.array( value["energy"] )/1000.0
+        U = np.array( value["energy"] )
         mu = {"c1_1":value["mu"]}
         sng = {"c1_1":value["singlets"]}
         sgc_E = eng.get_sgc_energy( U, sng, mu )
-        res = eng.free_energy_isochemical( T=T, sgc_energy=sgc_E, nelem=2 )
+        eng_low_temp.chemical_potential = mu
+        res = eng.free_energy_isochemical( T=T, sgc_energy=sgc_E/1000.0, nelem=2 )
+        res_low = eng_low_temp.free_energy_isochemical( T=T[3:], sgc_energy=sgc_E[3:]/1000.0, nelem=2 )
+        beta_mf = np.linspace(1.0/(kB*T[0]), 1.0/(kB*T[-1]),100.0)
+        mf_energy = mf.free_energy( beta_mf, chem_pot=mu )
         ax.plot( res["temperature"], res["free_energy"], marker="o", label="{}".format(value["mu"]))
+        ax.plot( res_low["temperature"], res_low["free_energy"], marker="x" )
+        T_mf = 1.0/(kB*beta_mf)
+        ax.plot( T_mf, mf_energy )
+    ax.set_xlabel( "Temperature (K)" )
+    ax.set_ylabel( "Free energy (eV/atom)" )
     return fig
 
 def main( argv ):
@@ -167,7 +182,14 @@ def main( argv ):
     ax[2].legend( frameon=False )
     isochemical_potential( data, max_T, max_conc )
     mu_T_phase_diag( mu, max_T, 200.0, 900.0 )
-    free_energy(data)
+    pickle_name = fname.split(".")[0]+".pck"
+    pickle_name = "data/bc_10x10x10_20000K.pkl"
+    with open( pickle_name, 'rb' ) as infile:
+        bc,cf,eci = pck.load( infile )
+    calc = ClusterExpansion( bc, cluster_name_eci=eci, init_cf=cf, logfile=None )
+    bc.atoms.set_calculator(calc)
+    view(bc.atoms)
+    free_energy(data,bc)
     plt.show()
 
 if __name__ == "__main__":

@@ -5,10 +5,12 @@ from ase.calculators.cluster_expansion.cluster_expansion import ClusterExpansion
 from ase.units import kB
 import numpy as np
 from matplotlib import pyplot as plt
+from ase.visualize import view
 
 def main():
-    with open( "data/bc_10x10x10.pkl", 'rb' ) as infile:
+    with open( "data/bc_10x10x10_20000K.pkl", 'rb' ) as infile:
         bc,cf,eci = pck.load(infile)
+    view(bc.atoms)
     calc = ClusterExpansion( bc, cluster_name_eci=eci, init_cf=cf, logfile=None )
     bc.atoms.set_calculator(calc)
     chem_pot= {"c1_1":-1.072}
