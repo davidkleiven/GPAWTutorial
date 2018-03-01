@@ -61,7 +61,7 @@ def main( argv ):
             relaxer = QuasiNewton( atoms, logfile=logfile )
         elif ( relax_mode == "cell" ):
             str_f = StrainFilter( atoms )
-            relaxer = SciPyFminCG( str_f, logfile=logfile )
+            relaxer = QuasiNewton( str_f, logfile=logfile )
             fmax=smax*volume
 
         relaxer.attach( trajObj )
