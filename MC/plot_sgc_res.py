@@ -37,11 +37,11 @@ def isochemical_potential( data,max_T, max_conc ):
         min_mu = np.inf
         max_mu = -np.inf
         for key,value in data.iteritems():
-            if ( value["mu"] < min_mu ):
-                min_mu = value["mu"]
+            if ( value["mu_c1_1"] < min_mu ):
+                min_mu = value["mu_c1_1"]
 
-            if ( value["mu"] > max_mu ):
-                max_mu = value["mu"]
+            if ( value["mu_c1_1"] > max_mu ):
+                max_mu = value["mu_c1_1"]
 
         Z = [[0,0],[0,0]]
 
@@ -52,13 +52,13 @@ def isochemical_potential( data,max_T, max_conc ):
         all_min_T = []
         for key,value in data.iteritems():
             value = sort_based_on_temp(value)
-            chem_pot.append( value["mu"] )
-            mapped_mu = (value["mu"]-min_mu)/(max_mu-min_mu)
+            chem_pot.append( value["mu_c1_1"] )
+            mapped_mu = (value["mu_c1_1"]-min_mu)/(max_mu-min_mu)
             all_mapped_mu.append( mapped_mu )
             T = value["temperature"]
             all_max_T.append( np.max(T) )
             all_min_T.append( np.min(T) )
-            conc = value["singlets"]
+            conc = value["singlet_c1_1"]
             conc = (np.array(conc)+1.0)/2.0
             conc = 1.0-conc
             ax.plot( conc, T, color=cm.nipy_spectral(mapped_mu), lw=5 )
@@ -110,31 +110,33 @@ def mu_T_phase_diag( max_mu, max_T, Tmin, Tmax ):
     ax.set_ylabel( "Temperature (K)" )
     return fig
 
-def free_energy( data, bc ):
+def free_energy( data, bc, eci_gs ):
     """
     Computes the free energy by integrating along curves of constant chemical potential
     """
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
     eng = fe.FreeEnergy()
-    mf = MeanFieldApprox(bc)
-    eng_low_temp = fe.FreeEnergy( limit="lte", mfa=mf )
     for key,value in data.iteritems():
         value = sort_based_on_temp(value)
         T = np.array( value["temperature"] )
         U = np.array( value["energy"] )
-        mu = {"c1_1":value["mu"]}
-        sng = {"c1_1":value["singlets"]}
+        mf = MeanFieldApprox(bc,symbols=["Al","Mg"])
+        eng_low_temp = fe.FreeEnergy( limit="lte", mfa=mf )
+        mu = {"c1_1":value["mu_c1_1"][0]}
+        sng = {"c1_1":value["singlet_c1_1"]}
         sgc_E = eng.get_sgc_energy( U, sng, mu )
-        eng_low_temp.chemical_potential = mu
+        sgc_E_low = eng_low_temp.get_sgc_energy( U, sng, mu )
+        eng_low_temp.chemical_potential = mu # The low temperature expansion requires mu
         res = eng.free_energy_isochemical( T=T, sgc_energy=sgc_E/1000.0, nelem=2 )
         res_low = eng_low_temp.free_energy_isochemical( T=T, sgc_energy=sgc_E/1000.0, nelem=2 )
         beta_mf = np.linspace(1.0/(kB*T[0]), 1.0/(kB*T[-1]),100.0)
         mf_energy = mf.free_energy( beta_mf, chem_pot=mu )
-        ax.plot( res["temperature"], res["free_energy"], marker="o", label="{}".format(value["mu"]))
-        ax.plot( res_low["temperature"], res_low["free_energy"], marker="x" )
+        ax.plot( res["temperature"], res["free_energy"], marker="o", label="{}".format(value["mu_c1_1"][0]))
+        ax.plot( res_low["temperature"], res_low["free_energy"], marker="x", label="LTE" )
         T_mf = 1.0/(kB*beta_mf)
-        ax.plot( T_mf, mf_energy )
+        ax.plot( T_mf, mf_energy, label="MFA" )
+    ax.legend( loc="best", frameon=False )
     ax.set_xlabel( "Temperature (K)" )
     ax.set_ylabel( "Free energy (eV/atom)" )
     return fig
@@ -155,7 +157,7 @@ def main( argv ):
     for key,value in data.iteritems():
         value = sort_based_on_temp(value)
         color = colors[counter%len(colors)]
-        mu.append( value["mu"] )
+        mu.append( value["mu_c1_1"] )
         energy_interp = UnivariateSpline( value["temperature"], value["energy"], k=3, s=1 )
         ax[0].plot( value["temperature"], value["energy"], "o", mfc="none", color=color )
         T = np.linspace( np.min(value["temperature"]), np.max(value["temperature"]), 500)
@@ -163,9 +165,9 @@ def main( argv ):
         Cv = energy_interp.derivative()
         ax[1].plot( T, Cv(T), color=color )
 
-        singl = np.array( value["singlets"] )
+        singl = np.array( value["singlet_c1_1"] )
         x = 0.5*(1.0+singl)
-        ax[2].plot( value["temperature"], x, label="{}".format(value["mu"]), color=color, marker="o",mfc="none")
+        ax[2].plot( value["temperature"], x, label="{}".format(value["mu_c1_1"]), color=color, marker="o",mfc="none")
         counter += 1
         indx_max = np.argmax( Cv(T) )
         max_T.append( T[indx_max] )
@@ -181,15 +183,16 @@ def main( argv ):
     ax[2].set_ylabel( "Al conc.")
     ax[2].legend( frameon=False )
     isochemical_potential( data, max_T, max_conc )
-    mu_T_phase_diag( mu, max_T, 200.0, 900.0 )
+    #mu_T_phase_diag( mu, max_T, 200.0, 900.0 )
     pickle_name = fname.split(".")[0]+".pck"
-    pickle_name = "data/bc_10x10x10_20000K.pkl"
+    pickle_name = "data/bc_10x10x10_gsAl.pkl"
     with open( pickle_name, 'rb' ) as infile:
         bc,cf,eci = pck.load( infile )
+    print (cf)
     calc = ClusterExpansion( bc, cluster_name_eci=eci, init_cf=cf, logfile=None )
     bc.atoms.set_calculator(calc)
     view(bc.atoms)
-    free_energy(data,bc)
+    free_energy(data,bc,eci)
     plt.show()
 
 if __name__ == "__main__":

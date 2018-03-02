@@ -8,8 +8,8 @@ from mpi4py import MPI
 from ase.visualize import view
 import dill as pck
 
-OUTFILE = "data/almg_10x10x10_20000K.json"
-pck_file = "data/bc_10x10x10_20000K.pkl"
+OUTFILE = "data/almg_10x10x10_gsAl3Mg.json"
+pck_file = "data/bc_10x10x10_gsAl3Mg.pkl"
 db_name = "data/ce_hydrostatic.db"
 
 comm = MPI.COMM_WORLD
@@ -45,10 +45,11 @@ def run( mu, temps, save=False ):
     for T in my_temps:
         print ("{}: Current temperature {}".format(rank, T) )
         mc = sgc.SGCMonteCarlo( ceBulk.atoms, T, symbols=["Al","Mg"] )
-        mc.runMC( steps=n_burn, chem_potential=chem_pots )
+        #mc.runMC( steps=n_burn, chem_potential=chem_pots )
         mc.runMC( steps=n_sample, chem_potential=chem_pots )
         thermo_properties = mc.get_thermodynamic()
         thermo.append( thermo_properties )
+        mc.reset
 
     all_thermos = []
     all_thermos = comm.gather( thermo, root=0 )
@@ -68,10 +69,12 @@ def run( mu, temps, save=False ):
 
             if ( name in data.keys() ):
                 for i,entry in enumerate(thermo):
-                    data[name]["singlets"].append( entry["singlets"][0] )
-                    data[name]["energy"].append( entry["energy"] )
-                    data[name]["heat_capacity"].append( entry["heat_capacity"] )
-                    data[name]["temperature"].append( entry["temperature"] )
+                    for key,value in entry.iteritems():
+                        data[name][key].append( value )
+                    #data[name]["singlets"].append( entry["singlets"][0] )
+                    #data[name]["energy"].append( entry["energy"] )
+                    #data[name]["heat_capacity"].append( entry["heat_capacity"] )
+                    #data[name]["temperature"].append( entry["temperature"] )
                     data_written_to_file = True
         except Exception as exc:
             print (str(exc))
@@ -79,11 +82,14 @@ def run( mu, temps, save=False ):
 
         if ( not data_written_to_file ):
             data[name] = {}
-            data[name]["singlets"] = [entry["singlets"][0] for entry in thermo]
-            data[name]["temperature"] = list(temps)
-            data[name]["energy"] = [entry["energy"] for entry in thermo]
-            data[name]["heat_capacity"] = [entry["heat_capacity"] for entry in thermo]
-            data[name]["mu"] = mu
+            for key in thermo[0].keys():
+                for entry in thermo:
+                    data[name][key] = [entry[key] for entry in thermo]
+            #data[name]["singlets"] = [entry["singlets"][0] for entry in thermo]
+            #data[name]["temperature"] = list(temps)
+            #data[name]["energy"] = [entry["energy"] for entry in thermo]
+            #data[name]["heat_capacity"] = [entry["heat_capacity"] for entry in thermo]
+            #data[name]["mu"] = mu
         with open( OUTFILE, 'w' ) as outfile:
             json.dump( data, outfile, sort_keys=True, indent=2, separators=(",",":") )
         print ( "Data written to {}".format(OUTFILE) )
