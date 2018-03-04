@@ -26,6 +26,9 @@ def main():
         "eci":eci_al3mg,
         "cf":cf_al3mg
     }
+    view(bc_al.atoms)
+    view(bc_al3mg.atoms)
+    exit()
     boundary_tracker = PhaseBoundaryTracker( gs_al, gs_al3mg )
     zero_kelvin_separation = boundary_tracker.get_zero_temperature_mu_boundary()
     print ("0K phase boundary {}".format(zero_kelvin_separation) )
