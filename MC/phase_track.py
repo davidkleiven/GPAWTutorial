@@ -1,6 +1,9 @@
 from cemc.tools.phase_boundary_tracker import PhaseBoundaryTracker
 import pickle as pck
 from matplotlib import pyplot as plt
+from ase.visualize import view
+import json
+import numpy as np
 
 def main():
     mu_al = -1.06
@@ -28,8 +31,15 @@ def main():
     print ("0K phase boundary {}".format(zero_kelvin_separation) )
 
     # Construct common tangent construction
-    res = boundary_tracker.separation_line( 100.0, 600.0, nsteps=40 )
+    T = [200,250,300,310,320,330,340,350,360,361,362,363,364,365,366,367,368,369,370,371,372,373,374,375,376,377,378,379,380]
+    res = boundary_tracker.separation_line( np.array(T) )
+    with open("data/phase_boundary.json",'w') as outfile:
+        json.dump( res, outfile, sort_keys=True, indent=2, separators=(",",":") )
     print (res["msg"])
+    print (bc_al.atoms.get_chemical_formula())
+    print (bc_al3mg.atoms.get_chemical_formula())
+    view(bc_al.atoms)
+    view(bc_al3mg.atoms)
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
     ax.plot( res["temperature"], res["mu"] )

@@ -8,9 +8,9 @@ from ase.ce.settings import BulkCrystal
 from ase.ce.evaluate import Evaluate
 from ase.build import bulk
 from ase.ce.newStruct import GenerateStructures
-from evaluateL1min import EvaluateL1min
+#from evaluateL1min import EvaluateL1min
 from ase.ce.evaluate import Evaluate
-from convergence import ConvergenceCheck
+#from convergence import ConvergenceCheck
 import matplotlib as mpl
 mpl.rcParams["svg.fonttype"]="none"
 mpl.rcParams["font.size"] = 18
@@ -18,13 +18,14 @@ mpl.rcParams["axes.unicode_minus"] = False
 from matplotlib import pyplot as plt
 import pickle
 from ase.visualize import view
-from plot_eci import ECIPlotter
-from ceext import evaluate_prior as ep
-from ceext import penalization as pen
+#from plot_eci import ECIPlotter
+from atomtools.ce.eciplotter import ECIPlotter
+#from ceext import evaluate_prior as ep
+#from ceext import penalization as pen
 import numpy as np
 #from plot_corr_matrix import CovariancePlot
 from atomtools.ce.corrmatrix import CovariancePlot
-from convex_hull_plotter import QHull
+#from convex_hull_plotter import QHull
 from ase.ce.corrFunc import CorrFunction
 import json
 from atomtools.ce.evaluate_deviation import EvaluateDeviation
@@ -236,17 +237,17 @@ def find_gs_structure( ceBulk, mg_conc ):
 
 def evalCE( BC):
     lambs = np.logspace(-7,-1,num=50)
-    fname = "data/exclude_set_1.txt"
-    scond = generate_exclusion_criteria( fname )
+    #fname = "data/exclude_set_1.txt"
+    #scond = generate_exclusion_criteria( fname )
     print (lambs)
     cvs = []
     for i in range(len(lambs)):
         print (lambs[i])
-        evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1", select_cond=scond )
+        evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1" )
         cvs.append(evaluator._cv_loo())
     indx = np.argmin(cvs)
     print ("Selected penalization value: {}".format(lambs[indx]))
-    evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1", select_cond=scond )
+    evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1" )
     print ( evaluator.cf_matrix[:,1] )
     #evaluator = ep.EvaluatePrior(BC, selection={"nclusters":5} )
     #cnames = evaluator.cluster_names
