@@ -8,8 +8,8 @@ from mpi4py import MPI
 from ase.visualize import view
 import dill as pck
 
-OUTFILE = "data/almg_10x10x10_gsAl3Mg.json"
-pck_file = "data/bc_10x10x10_gsAl3Mg.pkl"
+OUTFILE = "data/almg_10x10x10_gsAl.json"
+pck_file = "data/bc_10x10x10_gsAl.pkl"
 db_name = "data/ce_hydrostatic.db"
 
 comm = MPI.COMM_WORLD
@@ -25,7 +25,7 @@ def run( mu, temps, save=False ):
             }
     ceBulk = BulkCrystal( "fcc", 4.05, None, [10,10,10], 1, [["Al","Mg"]], conc_args, db_name, max_cluster_size=4, max_cluster_dia=1.414*4.05, reconf_db=True )
 
-    eci_file = "/home/davidkl/Documents/GPAWTutorial/CE/data/almg_eci.json"
+    eci_file = "data/almg_eci.json"
     with open( eci_file, 'r' ) as infile:
         ecis = json.load( infile )
 
