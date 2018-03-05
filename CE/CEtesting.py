@@ -40,6 +40,7 @@ from ase.calculators.cluster_expansion.cluster_expansion import ClusterExpansion
 SELECTED_ECI= "selectedEci.pkl"
 #db_name = "ce_hydrostatic_phonons.db"
 db_name = "ce_hydrostatic.db"
+#db_name = "ce_hydrostatic_eam_relax_effect_ideal.db"
 #db_name = "almg_eam.db"
 
 class ExcludeHighMg(object):
@@ -238,6 +239,7 @@ def evalCE( BC):
     lambs = np.logspace(-7,-1,num=50)
     fname = "data/exclude_set_1.txt"
     scond = generate_exclusion_criteria( fname )
+    scond = None
     print (lambs)
     cvs = []
     for i in range(len(lambs)):
