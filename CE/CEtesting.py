@@ -37,6 +37,7 @@ from cemc.mcmc import mc_observers as mcobs
 from ase.io import write, read
 from ase.db import connect
 from ase.calculators.cluster_expansion.cluster_expansion import ClusterExpansion
+import pickle as pck
 
 SELECTED_ECI= "selectedEci.pkl"
 #db_name = "ce_hydrostatic_phonons.db"
@@ -65,6 +66,8 @@ def main( argv ):
     atoms = atoms*(N,N,N)
 
     ceBulk = BulkCrystal( "fcc", 4.05, None, [N,N,N], 1, [["Al","Mg"]], conc_args, db_name, max_cluster_size=4, reconf_db=False)
+    with open("bc_almg_fcc.pkl",'wb') as outfile:
+        pck.dump( ceBulk, outfile )
     #struc_generator = GenerateStructures( ceBulk, struct_per_gen=5 )
     struc_generator = GenerateStructures( ceBulk )
     if ( option == "generateNew" ):

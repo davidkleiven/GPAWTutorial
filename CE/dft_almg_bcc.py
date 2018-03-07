@@ -40,7 +40,8 @@ def main( argv ):
 
     atoms = db.get_atoms(id=runID)
 
-    calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=(4,4,4), nbands="200%" )
+    calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=(4,4,4), nbands="120%" )
+    #calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=(4,4,4), nbands=-10 )
     atoms.set_calculator( calc )
 
     logfile = "almg_bcc%d.log"%(runID)
@@ -58,10 +59,10 @@ def main( argv ):
             relaxer = PreconLBFGS( atoms, logfile=logfile, use_armijo=True, precon=precon, variable_cell=True )
         elif ( relax_mode == "positions" ):
             #relaxer = SciPyFminCG( atoms, logfile=logfile )
-            relaxer = QuasiNewton( atoms, logfile=logfile )
+            relaxer = BFGS( atoms, logfile=logfile )
         elif ( relax_mode == "cell" ):
-            str_f = StrainFilter( atoms )
-            relaxer = QuasiNewton( str_f, logfile=logfile )
+            str_f = StrainFilter( atoms, mask=[1,1,1,0,0,0] )
+            relaxer = BFGS( str_f, logfile=logfile )
             fmax=smax*volume
 
         relaxer.attach( trajObj )
