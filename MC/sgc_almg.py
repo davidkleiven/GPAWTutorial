@@ -7,23 +7,31 @@ import numpy as np
 from mpi4py import MPI
 from ase.visualize import view
 import dill as pck
+from cemc.mcmc.linear_vib_correction import LinearVibCorrection
 
-OUTFILE = "data/almg_10x10x10_gsAl.json"
-pck_file = "data/bc_10x10x10_gsAl.pkl"
+OUTFILE = "data/almg_10x10x10_linvib.json"
+pck_file = "data/bc_10x10x10_linvib.pkl"
 db_name = "data/ce_hydrostatic.db"
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
+
+vib_eci = {
+"c1_1":0.412917,
+"c2_707_1_1":-0.94181
+}
+
 def run( mu, temps, save=False ):
     chem_pots = {
         "c1_1":mu
     }
+    linvib = LinearVibCorrection(vib_eci)
 
     conc_args = {
                 "conc_ratio_min_1":[[1,0]],
                 "conc_ratio_max_1":[[0,1]],
             }
-    ceBulk = BulkCrystal( "fcc", 4.05, None, [10,10,10], 1, [["Al","Mg"]], conc_args, db_name, max_cluster_size=4, max_cluster_dia=1.414*4.05, reconf_db=True )
+    ceBulk = BulkCrystal( "fcc", 4.05, None, [16,16,16], 1, [["Al","Mg"]], conc_args, db_name, max_cluster_size=4, max_cluster_dia=1.414*4.05, reconf_db=True )
 
     eci_file = "data/almg_eci.json"
     with open( eci_file, 'r' ) as infile:
@@ -45,6 +53,7 @@ def run( mu, temps, save=False ):
     for T in my_temps:
         print ("{}: Current temperature {}".format(rank, T) )
         mc = sgc.SGCMonteCarlo( ceBulk.atoms, T, symbols=["Al","Mg"] )
+        mc.linear_vib_corretion = linvib
         #mc.runMC( steps=n_burn, chem_potential=chem_pots )
         mc.runMC( steps=n_sample, chem_potential=chem_pots )
         thermo_properties = mc.get_thermodynamic()

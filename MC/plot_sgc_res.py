@@ -8,7 +8,7 @@ mpl.rcParams["axes.unicode_minus"] = False
 from matplotlib import pyplot as plt
 from scipy.interpolate import UnivariateSpline
 from matplotlib import cm
-from ase.units import kB
+from ase.units import kB, kJ,mol
 from scipy import integrate
 from cemc.tools import free_energy as fe
 from cemc.mfa.mean_field_approx import MeanFieldApprox
@@ -121,24 +121,25 @@ def free_energy( data, bc, eci_gs ):
         value = sort_based_on_temp(value)
         T = np.array( value["temperature"] )
         U = np.array( value["energy"] )
-        mf = MeanFieldApprox(bc,symbols=["Al","Mg"])
-        eng_low_temp = fe.FreeEnergy( limit="lte", mfa=mf )
+        #mf = MeanFieldApprox(bc,symbols=["Al","Mg"])
+        #eng_low_temp = fe.FreeEnergy( limit="lte", mfa=mf )
         mu = {"c1_1":value["mu_c1_1"][0]}
         sng = {"c1_1":value["singlet_c1_1"]}
-        sgc_E = eng.get_sgc_energy( U, sng, mu )
-        sgc_E_low = eng_low_temp.get_sgc_energy( U, sng, mu )
-        eng_low_temp.chemical_potential = mu # The low temperature expansion requires mu
-        res = eng.free_energy_isochemical( T=T, sgc_energy=sgc_E/1000.0, nelem=2 )
-        res_low = eng_low_temp.free_energy_isochemical( T=T, sgc_energy=sgc_E/1000.0, nelem=2 )
-        beta_mf = np.linspace(1.0/(kB*T[0]), 1.0/(kB*T[-1]),100.0)
-        mf_energy = mf.free_energy( beta_mf, chem_pot=mu )
-        ax.plot( res["temperature"], res["free_energy"], marker="o", label="{}".format(value["mu_c1_1"][0]))
-        ax.plot( res_low["temperature"], res_low["free_energy"], marker="x", label="LTE" )
-        T_mf = 1.0/(kB*beta_mf)
-        ax.plot( T_mf, mf_energy, label="MFA" )
+        sgc_E = eng.get_sgc_energy( U/len(bc.atoms), sng, mu )
+        #sgc_E_low = eng_low_temp.get_sgc_energy( U, sng, mu )
+        #eng_low_temp.chemical_potential = mu # The low temperature expansion requires mu
+        res = eng.free_energy_isochemical( T=T, sgc_energy=sgc_E, nelem=2 )
+        #res_low = eng_low_temp.free_energy_isochemical( T=T, sgc_energy=sgc_E/1000.0, nelem=2 )
+        #beta_mf = np.linspace(1.0/(kB*T[0]), 1.0/(kB*T[-1]),100.0)
+        #mf_energy = mf.free_energy( beta_mf, chem_pot=mu )
+        G = np.array( res["free_energy"] )*mol/kJ
+        ax.plot( res["temperature"], G, marker="o", label="{}".format(value["mu_c1_1"][0]))
+        #ax.plot( res_low["temperature"], res_low["free_energy"], marker="x", label="LTE" )
+        #T_mf = 1.0/(kB*beta_mf)
+        #ax.plot( T_mf, mf_energy, label="MFA" )
     ax.legend( loc="best", frameon=False )
     ax.set_xlabel( "Temperature (K)" )
-    ax.set_ylabel( "Free energy (eV/atom)" )
+    ax.set_ylabel( "Free energy (kJ/mol)" )
     return fig
 
 def main( argv ):
@@ -146,9 +147,14 @@ def main( argv ):
     with open( fname, 'r' ) as infile:
         data = json.load(infile)
 
+    pickle_name = fname.split(".")[0]+".pck"
+    pickle_name = "data/bc_10x10x10_demo.pkl"
+    with open( pickle_name, 'rb' ) as infile:
+        bc,cf,eci = pck.load( infile )
+
     # Plot heat capacities
     gr_spec = {"hspace":0.0}
-    fig, ax = plt.subplots(nrows=3, sharex=True, gridspec_kw=gr_spec)
+    fig, ax = plt.subplots(nrows=2, sharex=True, gridspec_kw=gr_spec)
     colors = ['#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#fdbf6f','#ff7f00','#cab2d6']
     counter = 0
     mu = []
@@ -158,36 +164,30 @@ def main( argv ):
         value = sort_based_on_temp(value)
         color = colors[counter%len(colors)]
         mu.append( value["mu_c1_1"] )
-        energy_interp = UnivariateSpline( value["temperature"], value["energy"], k=3, s=1 )
-        ax[0].plot( value["temperature"], value["energy"], "o", mfc="none", color=color )
+        U = np.array(value["energy"])*mol/(len(bc.atoms)*kJ)
+        energy_interp = UnivariateSpline( value["temperature"], U, k=3, s=1 )
+        ax[0].plot( value["temperature"], U, "o", mfc="none", color=color )
         T = np.linspace( np.min(value["temperature"]), np.max(value["temperature"]), 500)
         ax[0].plot( T, energy_interp(T), color=color )
-        Cv = energy_interp.derivative()
-        ax[1].plot( T, Cv(T), color=color )
 
         singl = np.array( value["singlet_c1_1"] )
         x = 0.5*(1.0+singl)
-        ax[2].plot( value["temperature"], x, label="{}".format(value["mu_c1_1"]), color=color, marker="o",mfc="none")
+        ax[1].plot( value["temperature"], x, label="{}".format(value["mu_c1_1"]), color=color, marker="o",mfc="none")
         counter += 1
-        indx_max = np.argmax( Cv(T) )
-        max_T.append( T[indx_max] )
-        interp_conc = UnivariateSpline( value["temperature"], x, k=3, s=1 )
-        x_interp = interp_conc(T)
-        max_conc.append( x_interp[indx_max] )
+        #indx_max = np.argmax( Cv(T) )
+        #max_T.append( T[indx_max] )
+        #interp_conc = UnivariateSpline( value["temperature"], x, k=3, s=1 )
+        #x_interp = interp_conc(T)
+        #max_conc.append( x_interp[indx_max] )
 
 
     fig.subplots_adjust(wspace=0)
-    ax[2].set_xlabel( "Temperature (K)" )
-    ax[1].set_ylabel( "Heat capcacity" )
-    ax[0].set_ylabel( "Internal energy")
-    ax[2].set_ylabel( "Al conc.")
-    ax[2].legend( frameon=False )
+    ax[1].set_xlabel( "Temperature (K)" )
+    ax[0].set_ylabel( "Internal energy (kJ/mol)")
+    ax[1].set_ylabel( "Al conc.")
+    ax[1].legend( frameon=False )
     isochemical_potential( data, max_T, max_conc )
     #mu_T_phase_diag( mu, max_T, 200.0, 900.0 )
-    pickle_name = fname.split(".")[0]+".pck"
-    pickle_name = "data/bc_10x10x10_gsAl.pkl"
-    with open( pickle_name, 'rb' ) as infile:
-        bc,cf,eci = pck.load( infile )
     print (cf)
     calc = ClusterExpansion( bc, cluster_name_eci=eci, init_cf=cf, logfile=None )
     bc.atoms.set_calculator(calc)
