@@ -16,14 +16,14 @@ for name in db_names:
 
 def insert_structures():
     db = connect( db_name )
-    a = [3.9,4.0,4.1]
-    atoms = read( "data/al3mg_bulkmod.xyz" )
+    a = np.linspace(3.9,4.8,10)
+    atoms = read( "data/al4mg_layer.xyz" )
     ref_cell = atoms.get_cell()
     a0 = 4.05
     for i in range( len(a) ):
         new_cell = ref_cell*a[i]/a0
         atoms.set_cell( new_cell, scale_atoms=True )
-        db.write(atoms)
+        db.write(atoms,groupID=8)
 
 def main( runID ):
     db = connect( db_name )

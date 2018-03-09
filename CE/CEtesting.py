@@ -42,7 +42,7 @@ import pickle as pck
 SELECTED_ECI= "selectedEci.pkl"
 #db_name = "ce_hydrostatic_phonons.db"
 db_name = "ce_hydrostatic.db"
-db_name = "almg_bcc.db"
+#db_name = "almg_bcc.db"
 #db_name = "ce_hydrostatic_eam_relax_effect_ideal.db"
 #db_name = "almg_eam.db"
 

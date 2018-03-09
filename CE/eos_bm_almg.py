@@ -28,7 +28,8 @@ def eval_eci():
         eci_name = evaluator.get_cluster_name_eci_dict
         ecis["c1_1"].append( eci_name["c1_1"])
         ecis["c2_707_1_1"].append( eci_name["c2_707_1_1"] )
-    #evaluator.plot_energy()
+    print (ecis)
+    evaluator.plot_energy()
 
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
@@ -41,7 +42,7 @@ def eval_eci():
 
 def main():
     db = connect( db_name )
-    formula = "Al"
+    formula = "Mg"
     V = []
     E = []
     natoms = None
@@ -88,5 +89,5 @@ def main():
     plt.show()
 
 if __name__ == "__main__":
-    eval_eci()
-    #main()
+    #eval_eci()
+    main()
