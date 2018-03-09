@@ -42,6 +42,7 @@ import pickle as pck
 SELECTED_ECI= "selectedEci.pkl"
 #db_name = "ce_hydrostatic_phonons.db"
 db_name = "ce_hydrostatic.db"
+db_name = "almg_bcc.db"
 #db_name = "ce_hydrostatic_eam_relax_effect_ideal.db"
 #db_name = "almg_eam.db"
 
@@ -203,7 +204,8 @@ def enthalpy_of_formation( ceBulk, mode="compare" ):
     print ( "Formation enthalpies written to {}".format( outfilename) )
 
 def find_gs_structure( ceBulk, mg_conc ):
-    with open( "data/almg_eci.json", 'r' ) as infile:
+    fname = "data/{}.json".format(db_name.split(".")[0])
+    with open( fname, 'r' ) as infile:
         ecis = json.load(infile)
     init_cf = {key:1.0 for key in ecis.keys()}
     calc = CE( ceBulk, ecis, initial_cf=init_cf )
@@ -265,10 +267,10 @@ def evalCE( BC):
     plotter = ECIPlotter(eci_name)
     plotter.plot( show_names=True )
 
-    cov_plotter = CovariancePlot(evaluator, constant_term_column=0)
-    cov_plotter.plot()
-    cov_plotter.plot_corr_func_coverage()
-    eci_fname = "data/almg_eci.json"
+    #cov_plotter = CovariancePlot(evaluator, constant_term_column=0)
+    #cov_plotter.plot()
+    #cov_plotter.plot_corr_func_coverage()
+    eci_fname = "data/{}.json".format(db_name.split(".")[0])
     with open( eci_fname, 'w') as outfile:
         json.dump( eci_name, outfile )
     print ("ECIs stored in %s"%(eci_fname))

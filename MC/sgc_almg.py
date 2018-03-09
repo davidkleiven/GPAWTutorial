@@ -31,17 +31,17 @@ def run( mu, temps, save=False ):
                 "conc_ratio_min_1":[[1,0]],
                 "conc_ratio_max_1":[[0,1]],
             }
-    ceBulk = BulkCrystal( "fcc", 4.05, None, [16,16,16], 1, [["Al","Mg"]], conc_args, db_name, max_cluster_size=4, max_cluster_dia=1.414*4.05, reconf_db=True )
+    ceBulk = BulkCrystal( "fcc", 4.05, None, [10,10,10], 1, [["Al","Mg"]], conc_args, db_name, max_cluster_size=4, max_cluster_dia=1.414*4.05, reconf_db=True )
 
     eci_file = "data/almg_eci.json"
     with open( eci_file, 'r' ) as infile:
         ecis = json.load( infile )
-
+    print (ecis)
     calc = CE( ceBulk, ecis )
     ceBulk.atoms.set_calculator( calc )
 
     n_burn = 40000
-    n_sample = 100000
+    n_sample = 10000
     thermo = []
     size = comm.Get_size()
     n_per_proc = int( len(temps)/size )
@@ -53,9 +53,10 @@ def run( mu, temps, save=False ):
     for T in my_temps:
         print ("{}: Current temperature {}".format(rank, T) )
         mc = sgc.SGCMonteCarlo( ceBulk.atoms, T, symbols=["Al","Mg"] )
-        mc.linear_vib_corretion = linvib
+        #mc.linear_vib_correction = linvib
         #mc.runMC( steps=n_burn, chem_potential=chem_pots )
-        mc.runMC( steps=n_sample, chem_potential=chem_pots )
+        mc.runMC( mode="prec", chem_potential=chem_pots )
+        print (mc.atoms._calc.eci)
         thermo_properties = mc.get_thermodynamic()
         thermo.append( thermo_properties )
         mc.reset

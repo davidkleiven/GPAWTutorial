@@ -42,14 +42,13 @@ def evaluate(BC):
     indx = np.argmin(cvs)
     evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1" )
     eci_name = evaluator.get_cluster_name_eci_dict
-    print (eci_name)
     evaluator.plot_energy()
     plotter = ECIPlotter(eci_name)
     plotter.plot()
 
-    cov_plotter = CovariancePlot( evaluator, constant_term_column=0 )
-    cov_plotter.plot()
-    cov_plotter.plot_corr_func_coverage()
+    #cov_plotter = CovariancePlot( evaluator, constant_term_column=0 )
+    #cov_plotter.plot()
+    #cov_plotter.plot_corr_func_coverage()
 
     #qhull = QHull( db_name )
     #qhull.plot( "Al" )
