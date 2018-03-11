@@ -4,7 +4,7 @@ sys.path.insert(1,"/home/davidkl/Documents/GPAWTutorial/CE_extensions")
 sys.path.append("/usr/local/lib/python2.7/dist-packages/pymatgen/cli/")
 import ase
 print (ase.__file__)
-from ase.ce.settings import BulkCrystal
+from ase.ce.settings_bulk import BulkCrystal
 from ase.ce.evaluate import Evaluate
 from ase.build import bulk
 from ase.ce.newStruct import GenerateStructures
@@ -66,7 +66,20 @@ def main( argv ):
     N = 4
     atoms = atoms*(N,N,N)
 
-    ceBulk = BulkCrystal( "fcc", 4.05, None, [N,N,N], 1, [["Al","Mg"]], conc_args, db_name, max_cluster_size=4, reconf_db=False)
+    ceBulk = BulkCrystal( crystalstructure="fcc", a=4.05, size=[N,N,N], \
+                          basis_elements=[["Al","Mg"]], conc_args=conc_args,
+                          db_name=db_name,
+                          max_cluster_size=4)
+    ceBulk._get_cluster_information()
+    #ceBulk.view_clusters()
+    #ceBulk._get_cluster_information()
+    cf = CorrFunction(ceBulk)
+    #cf_names = cf.get_cf( ceBulk.atoms )
+    #cf_names = cf.get_cf_by_cluster_names( ceBulk.atoms, ["c2_1000_1_00"])
+    #print (cf_names)
+    #print (ceBulk.cluster_names)
+    #cf.reconfig_db_entries()
+    #exit()
     with open("bc_almg_fcc.pkl",'wb') as outfile:
         pck.dump( ceBulk, outfile )
     #struc_generator = GenerateStructures( ceBulk, struct_per_gen=5 )
