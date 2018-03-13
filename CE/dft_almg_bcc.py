@@ -58,8 +58,8 @@ def main( argv ):
         if ( relax_mode == "both" ):
             relaxer = PreconLBFGS( atoms, logfile=logfile, use_armijo=True, precon=precon, variable_cell=True )
         elif ( relax_mode == "positions" ):
-            #relaxer = SciPyFminCG( atoms, logfile=logfile )
-            relaxer = BFGS( atoms, logfile=logfile )
+            relaxer = SciPyFminCG( atoms, logfile=logfile )
+            #relaxer = BFGS( atoms, logfile=logfile )
         elif ( relax_mode == "cell" ):
             str_f = StrainFilter( atoms, mask=[1,1,1,0,0,0] )
             relaxer = BFGS( str_f, logfile=logfile )
