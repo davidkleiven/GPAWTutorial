@@ -11,6 +11,7 @@ from ase.units import GPa
 from scipy.stats import linregress
 from atomtools.ce.phonon_ce_eval import PhononEvalEOS
 from ase.visualize import view
+import json
 
 
 db_name = "bulk_modulus_fcc.db"
@@ -40,44 +41,63 @@ def eval_eci():
     ax.legend( loc="best", frameon=False )
     plt.show()
 
-def main():
+def compute_thermal_prop( gid ):
     db = connect( db_name )
     formula = "Mg"
     V = []
     E = []
     natoms = None
     count = {}
-    for row in db.select( formula=formula ):
+    mg_conc = 0.0
+    for row in db.select( groupID=gid ):
+        if ( row.get("energy") is None ):
+            continue
         V.append( row.volume )
         E.append( row.energy )
         natoms = row.natoms
         count = row.count_atoms()
+        formula = row.formula
+        if ( "Mg" in count.keys() ):
+            mg_conc = float(count["Mg"])/row.natoms
 
     V = np.array(V)
     E = np.array(E)
 
     bm = BirschMurnagan(V,E)
     bm.set_average_mass( count )
-    bm.fit()
-    fig = bm.plot()
     V_fit = np.linspace(0.95*np.min(V), 1.05*np.max(V),100)
     B = bm.bulk_modulus( V )
     #E0,V0 = bm.minimum_energy()
-    ax = fig.gca().twinx()
-
-    ax.plot( V, B/GPa, color="#fc8d62", marker="x" )
-    ax.set_xlabel( "Volume (\$\SI{}{\\angstromg^3}\$)" )
-    ax.set_ylabel( "Bulk modulus (GPa)" )
 
     # Compute the temperature volume curve
     T = np.array( [200,293,300,400,500,600,700,800] )
     vols = bm.volume_temperature( T, natoms )
-    print ("Debye temperature {}: {}K".format(formula,bm.debye_temperature(vols[1])))
-    print ("Bulk modulus {}: {}GPa".format(formula,bm.bulk_modulus(vols[1])/GPa))
-    print ("Speed of sound {}: {}m/s".format(formula,bm.speed_of_sound(vols[1]) ))
+    T_D = bm.debye_temperature(vols[1])
+    B_RT = bm.bulk_modulus(vols[1])/GPa
+    c_sound = bm.speed_of_sound(vols[1])
+    print ("Debye temperature {}: {}K".format(formula,T_D))
+    print ("Bulk modulus {}: {}GPa".format(formula,B_RT))
+    print ("Speed of sound {}: {}m/s".format(formula, c_sound))
     print ("Density {}: {}g/cm^3".format(formula,bm.density_g_per_cm3(vols[1])))
     alpha_L = bm.linear_thermal_expansion_coefficient(T,vol_curve=vols)
     print ("Thermal expansion coefficient {}: {} K^-1".format( formula, alpha_L[1]) )
+    return mg_conc, B_RT, alpha_L[1], T_D, c_sound
+
+def main():
+
+    gid = [1,2,3,4,5,6]
+    res = {"mg_conc":[],"debye_temp":[],"bulk_mod":[],"lin_thermal_exp":[]}
+    for uid in gid:
+        mg_conc,B,alpha_l,T_D, c_sound = compute_thermal_prop(uid)
+        res["mg_conc"].append(mg_conc)
+        res["bulk_mod"].append( B )
+        res["lin_thermal_exp"].append( alpha_l )
+        res["debye_temp"].append( T_D )
+
+    with open( "data/thermal_prop_almg_fcc.json", 'w' ) as outfile:
+        json.dump( res, outfile, sort_keys=True, indent=2, separators=(",",":") )
+
+    """
     fig2 = plt.figure()
     ax2 = fig2.add_subplot(1,1,1)
     ax2.plot( T, vols, marker="x", color="#80b1d3" )
@@ -87,6 +107,7 @@ def main():
     ax2.set_ylabel( "Volume (\$\SI{\\angstrom^3}\$)")
     ax2.set_xlabel( "Temperature (K)" )
     plt.show()
+    """
 
 if __name__ == "__main__":
     #eval_eci()

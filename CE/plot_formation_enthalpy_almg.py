@@ -13,7 +13,7 @@ special_compounds = {
 }
 def main():
     show_ids = False
-    show_special_compounds = False
+    show_special_compounds = True
     fname = "data/almg_formation_energy.json"
     with open(fname,'r') as infile:
         data = json.load( infile )

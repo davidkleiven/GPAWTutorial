@@ -4,7 +4,7 @@ sys.path.insert(1,"/home/davidkl/Documents/GPAWTutorial/CE_extensions")
 sys.path.append("/usr/local/lib/python2.7/dist-packages/pymatgen/cli/")
 import ase
 print (ase.__file__)
-from ase.ce.settings import BulkCrystal
+from ase.ce.settings_bulk import BulkCrystal
 from ase.ce.evaluate import Evaluate
 from ase.build import bulk
 from ase.ce.newStruct import GenerateStructures
@@ -41,8 +41,8 @@ import pickle as pck
 
 SELECTED_ECI= "selectedEci.pkl"
 #db_name = "ce_hydrostatic_phonons.db"
-db_name = "ce_hydrostatic.db"
-#db_name = "almg_bcc.db"
+#db_name = "ce_hydrostatic.db"
+db_name = "almg_bcc.db"
 #db_name = "ce_hydrostatic_eam_relax_effect_ideal.db"
 #db_name = "almg_eam.db"
 
@@ -67,6 +67,7 @@ def main( argv ):
     atoms = atoms*(N,N,N)
 
     ceBulk = BulkCrystal( "fcc", 4.05, None, [N,N,N], 1, [["Al","Mg"]], conc_args, db_name, max_cluster_size=4, reconf_db=False)
+    exit()
     with open("bc_almg_fcc.pkl",'wb') as outfile:
         pck.dump( ceBulk, outfile )
     #struc_generator = GenerateStructures( ceBulk, struct_per_gen=5 )
