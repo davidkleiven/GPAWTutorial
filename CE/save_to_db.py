@@ -28,7 +28,12 @@ class SaveToDB(object):
         if ( atoms.get_potential_energy() < self.smallestEnergy ):
             self.smallestEnergy = atoms.get_potential_energy()
             key_value_pairs = self.db.get(name=self.name).key_value_pairs
+            row = self.db.get(name=self.name)
+            data = row.get("data")
             key_value_pairs["init_fmax"] = self.fmax
             key_value_pairs["init_smax"] = self.smax
             del self.db[self.runID]
-            self.runID = self.db.write( atoms, key_value_pairs=key_value_pairs )
+            if ( data is not None ):
+                self.runID = self.db.write( atoms, key_value_pairs=key_value_pairs, data=data )
+            else:
+                self.runID = self.db.write( atoms, key_value_pairs=key_value_pairs )

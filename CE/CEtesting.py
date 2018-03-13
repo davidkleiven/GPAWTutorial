@@ -42,7 +42,6 @@ import pickle as pck
 SELECTED_ECI= "selectedEci.pkl"
 #db_name = "ce_hydrostatic_phonons.db"
 #db_name = "ce_hydrostatic.db"
-db_name = "almg_bcc.db"
 #db_name = "ce_hydrostatic_eam_relax_effect_ideal.db"
 #db_name = "almg_eam.db"
 
@@ -57,23 +56,35 @@ class ExcludeHighMg(object):
         return True
 
 def main( argv ):
-    option = argv[0]
+    lattice = argv[0]
     conc_args = {
         "conc_ratio_min_1":[[1,0]],
         "conc_ratio_max_1":[[0,1]],
     }
+    if ( lattice == "fcc" ):
+        db_name = "ce_hydrostatic.db"
+        ceBulk = BulkCrystal( crystalstructure="fcc", a=4.05, size=[4,4,4], \
+                              basis_elements=[["Al","Mg"]], conc_args=conc_args,
+                              db_name=db_name,
+                              max_cluster_size=4)
+    elif ( lattice == "bcc" ):
+        db_name = "almg_bcc.db"
+        ceBulk = BulkCrystal( crystalstructure="bcc", a=3.3, size=[4,4,4], \
+                              basis_elements=[["Al","Mg"]], conc_args=conc_args,
+                              db_name=db_name,
+                              max_cluster_size=4)
+    option = argv[1]
     atoms = bulk( "Al" )
     N = 4
     atoms = atoms*(N,N,N)
 
-    ceBulk = BulkCrystal( crystalstructure="fcc", a=4.05, size=[N,N,N], \
-                          basis_elements=[["Al","Mg"]], conc_args=conc_args,
-                          db_name=db_name,
-                          max_cluster_size=4)
+
     ceBulk._get_cluster_information()
+    cf = CorrFunction(ceBulk)
+    cf.reconfig_db_entries()
+    exit()
     #ceBulk.view_clusters()
     #ceBulk._get_cluster_information()
-    cf = CorrFunction(ceBulk)
     #cf_names = cf.get_cf( ceBulk.atoms )
     #cf_names = cf.get_cf_by_cluster_names( ceBulk.atoms, ["c2_1000_1_00"])
     #print (cf_names)
