@@ -16,11 +16,11 @@ from ase.optimize.sciopt import SciPyFminCG
 from ase.optimize import QuasiNewton
 from save_to_db import SaveToDB
 def main( argv ):
-    relax_mode = "positions" # both, cell, positions
+    relax_mode = "cell" # both, cell, positions
     system = "AlMg"
     runID = int(argv[0])
     print ("Running job: %d"%(runID))
-    db_paths = ["/home/ntnu/davidkl/GPAWTutorial/CE/almg_bcc.db", "almg_bcc.db","/home/davidkl/GPAWTutorial/CE/almg_bcc.db"]
+    db_paths = ["/home/ntnu/davidkl/GPAWTutorial/CE/almg_217.db", "almg_217.db","/home/davidkl/GPAWTutorial/CE/almg_217.db"]
     for path in db_paths:
         if ( os.path.isfile(path) ):
             db_name = path

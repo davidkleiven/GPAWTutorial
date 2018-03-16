@@ -15,27 +15,31 @@ import json
 
 
 db_name = "bulk_modulus_fcc.db"
-bc_fname = "bc_almg_fcc.pkl"
+bc_fname = "data/BC_fcc.pkl"
 def eval_eci():
     with open(bc_fname,'rb') as infile:
         bc = pck.load(infile)
 
+    print (bc.cluster_names)
     print (bc.atoms.get_cell())
+    print (bc.basis_functions)
     temperatures = [100,200,300,400,500,600,700,800]
-    evaluator = PhononEvalEOS( bc, db_name, penalty=None, cluster_names=["c0","c1_1","c2_707_1_1"] )
-    ecis = {"c1_1":[],"c2_707_1_1":[]}
+    #cluster_names = ["c0","c1_0","c2_1000_1_00","c2_1155_1_00"]
+    cluster_names = ["c0","c1_0","c2_1000_1_00"]
+    evaluator = PhononEvalEOS( bc, db_name, penalty=None, cluster_names=cluster_names )
+    ecis = {name:[] for name in cluster_names}
     for T in temperatures:
         evaluator.temperature = T
         eci_name = evaluator.get_cluster_name_eci_dict
-        ecis["c1_1"].append( eci_name["c1_1"])
-        ecis["c2_707_1_1"].append( eci_name["c2_707_1_1"] )
+        for key,value in eci_name.iteritems():
+            ecis[key].append( value )
     print (ecis)
     evaluator.plot_energy()
 
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
-    ax.plot( temperatures, ecis["c2_707_1_1"], label="c2", marker="x" )
-    ax.plot( temperatures, ecis["c1_1"], label="singl", marker="o" )
+    for key,value in ecis.iteritems():
+        ax.plot( temperatures, value, label=key, marker="x" )
     ax.set_xlabel( "Temperature (K)" )
     ax.set_ylabel( "ECI/\$k_BT\$" )
     ax.legend( loc="best", frameon=False )
@@ -110,5 +114,5 @@ def main():
     """
 
 if __name__ == "__main__":
-    #eval_eci()
-    main()
+    eval_eci()
+    #main()

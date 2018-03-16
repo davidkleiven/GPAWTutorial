@@ -55,20 +55,24 @@ class ExcludeHighMg(object):
             return False
         return True
 
+db_name = ""
 def main( argv ):
     lattice = argv[0]
+    global db_name
     conc_args = {
         "conc_ratio_min_1":[[1,0]],
         "conc_ratio_max_1":[[0,1]],
     }
     if ( lattice == "fcc" ):
         db_name = "ce_hydrostatic.db"
+        pickle_file = "data/BC_fcc.pkl"
         ceBulk = BulkCrystal( crystalstructure="fcc", a=4.05, size=[4,4,4], \
                               basis_elements=[["Al","Mg"]], conc_args=conc_args,
                               db_name=db_name,
                               max_cluster_size=4)
     elif ( lattice == "bcc" ):
         db_name = "almg_bcc.db"
+        pickle_file = "data/BC_bcc.pkl"
         ceBulk = BulkCrystal( crystalstructure="bcc", a=3.3, size=[4,4,4], \
                               basis_elements=[["Al","Mg"]], conc_args=conc_args,
                               db_name=db_name,
@@ -79,10 +83,13 @@ def main( argv ):
     atoms = atoms*(N,N,N)
 
 
+    #ceBulk.basis_functions[0]["Al"] = 1.0
+    #ceBulk.basis_functions[0]["Mg"] = -1.0
     ceBulk._get_cluster_information()
-    cf = CorrFunction(ceBulk)
-    cf.reconfig_db_entries()
-    exit()
+    print (ceBulk.basis_functions)
+    #cf = CorrFunction(ceBulk)
+    #cf.reconfig_db_entries()
+    #exit()
     #ceBulk.view_clusters()
     #ceBulk._get_cluster_information()
     #cf_names = cf.get_cf( ceBulk.atoms )
@@ -91,7 +98,7 @@ def main( argv ):
     #print (ceBulk.cluster_names)
     #cf.reconfig_db_entries()
     #exit()
-    with open("bc_almg_fcc.pkl",'wb') as outfile:
+    with open(pickle_file,'wb') as outfile:
         pck.dump( ceBulk, outfile )
     #struc_generator = GenerateStructures( ceBulk, struct_per_gen=5 )
     struc_generator = GenerateStructures( ceBulk )
@@ -104,12 +111,12 @@ def main( argv ):
     elif ( option == "popstat" ):
         find_pop_statistics( ceBulk )
     elif ( option == "gsstruct" ):
-        find_gs_structure( ceBulk, float(argv[1]) )
+        find_gs_structure( ceBulk, float(argv[2]) )
     elif ( option == "formation" ):
         enthalpy_of_formation( ceBulk )
     elif ( option == "insert" ):
-        if ( len(argv) == 2 ):
-            fname = argv[1]
+        if ( len(argv) == 3 ):
+            fname = argv[2]
         else:
             raise ValueError( "No xyz filename given!" )
         atoms = read(fname)
@@ -123,7 +130,7 @@ def insert_specific_structure( ceBulk, struct_gen, atoms ):
     if ( struct_gen.exists_in_db(atoms,conc[0],conc[1]) ):
         raise RuntimeError( "The passed structure already exists in the database" )
     kvp = struct_gen.get_kvp( atoms, kvp, conc[0], conc[1] )
-    struct_gen.db.write(atoms,kvp)
+    struct_gen.setting.db.write(atoms,kvp)
 
 def generate_exclusion_criteria( fname ):
     """
@@ -231,15 +238,14 @@ def find_gs_structure( ceBulk, mg_conc ):
     fname = "data/{}.json".format(db_name.split(".")[0])
     with open( fname, 'r' ) as infile:
         ecis = json.load(infile)
-    init_cf = {key:1.0 for key in ecis.keys()}
-    calc = CE( ceBulk, ecis, initial_cf=init_cf )
+    calc = CE( ceBulk, ecis )
     ceBulk.atoms.set_calculator( calc )
+    conc = {
+        "Mg":mg_conc,
+        "Al":1.0-mg_conc
+    }
+    calc.set_composition(conc)
     print ( ceBulk.basis_functions )
-
-    n_mg = int( mg_conc*len(ceBulk.atoms) )
-    for i in range(n_mg):
-        ceBulk.atoms._calc.update_cf( (i,"Al","Mg") )
-    ceBulk.atoms._calc.clear_history()
     formula = ceBulk.atoms.get_chemical_formula()
     temps = [800,700,500,300,200,100,50,20,19,18,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1]
     n_steps_per = 1000
@@ -279,28 +285,16 @@ def evalCE( BC):
     print ("Selected penalization value: {}".format(lambs[indx]))
     evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1" )
     print ( evaluator.cf_matrix[:,1] )
-    #evaluator = ep.EvaluatePrior(BC, selection={"nclusters":5} )
-    #cnames = evaluator.cluster_names
-    #l1 = pen.L1(9E-4)
-    #evaluator.add_penalization( [pen.volume_penalization(1E-14,cnames,penalization="l2"),pen.number_atoms_penalization(1E-14,cnames,penalization="l2")] )
-    #evaluator.add_penalization( [pen.number_atoms_penalization(0.0001,cnames)] )
-    #evaluator.estimate_hyper_params()
     eci_name = evaluator.get_cluster_name_eci_dict
     print (eci_name)
     evaluator.plot_energy()
     plotter = ECIPlotter(eci_name)
     plotter.plot( show_names=True )
 
-    #cov_plotter = CovariancePlot(evaluator, constant_term_column=0)
-    #cov_plotter.plot()
-    #cov_plotter.plot_corr_func_coverage()
     eci_fname = "data/{}.json".format(db_name.split(".")[0])
     with open( eci_fname, 'w') as outfile:
         json.dump( eci_name, outfile )
     print ("ECIs stored in %s"%(eci_fname))
-
-    #qhull = QHull( db_name )
-    #qhull.plot( "Al" )
     plt.show()
 
 def eval_phonons( ceBulk ):

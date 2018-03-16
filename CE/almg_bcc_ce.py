@@ -1,5 +1,5 @@
 import sys
-from ase.ce.settings import BulkCrystal
+from ase.ce.settings_bulk import BulkCrystal
 from ase.ce.evaluate import Evaluate
 from ase.ce.newStruct import GenerateStructures
 from ase.io import read
@@ -10,15 +10,19 @@ from matplotlib import pyplot as plt
 from cemc.wanglandau.ce_calculator import CE
 from cemc.mcmc import montecarlo as mc
 from cemc.mcmc import mc_observers as mcobs
+from ase.units import mol, kJ
+from ase.db import connect
 import json
 
+E_al_fcc = -239.147
+E_mg_fcc = -101.818
 def main( argv ):
     db_name = "almg_bcc.db"
     conc_args = {
         "conc_ratio_min_1":[[1,0]],
         "conc_ratio_max_1":[[0,1]]
     }
-    ceBulk = BulkCrystal( "bcc", 3.3, None, [4,4,4], 1, [["Al","Mg"]], conc_args, db_name, max_cluster_size=4, reconf_db=False)
+    ceBulk = BulkCrystal( crystalstructure="bcc", a=3.3, size=[4,4,4], basis_elements=[["Al","Mg"]], conc_args=conc_args, db_name=db_name, max_cluster_size=4)
     struc_generator = GenerateStructures( ceBulk, struct_per_gen=5 )
 
     if ( len(argv) == 0 ):
@@ -34,6 +38,8 @@ def main( argv ):
         evaluate( ceBulk )
     elif ( option == "gsstruct" ):
         find_gs_structures( ceBulk, struc_generator, at_step=4 )
+    elif ( option == "enthalpy" ):
+        enthalpy_of_formation( db_name )
 
 def insert_specific_structure( ceBulk, struct_gen, atoms ):
     cf = CorrFunction( ceBulk )
@@ -43,7 +49,7 @@ def insert_specific_structure( ceBulk, struct_gen, atoms ):
     if ( struct_gen.exists_in_db(atoms,conc[0],conc[1]) ):
         raise RuntimeError( "The passed structure already exists in the database" )
     kvp = struct_gen.get_kvp( atoms, kvp, conc[0], conc[1] )
-    struct_gen.db.write(atoms,kvp)
+    struct_gen.setting.db.write(atoms,kvp)
 
 def find_gs_structures( ceBulk, struct_gen, at_step=4 ):
     with open( "data/almg_eci_bcc.json", 'r' ) as infile:
@@ -77,6 +83,30 @@ def find_gs_structures( ceBulk, struct_gen, at_step=4 ):
     print ( "Inserted {} new structures".format(num_inserted) )
 
 
+def enthalpy_of_formation( db_name ):
+    energies_bcc = []
+    mg_concs = []
+    db = connect( db_name )
+    for row in db.select( converged=1 ):
+        if ( row.natoms != 64 ):
+            continue
+        energies_bcc.append( row.energy )
+        atoms_count = row.count_atoms()
+        c_mg = 0.0
+        if ( "Mg" in atoms_count.keys() ):
+            c_mg = atoms_count["Mg"]/float(row.natoms)
+        mg_concs.append( c_mg )
+
+    energies_bcc = np.array(energies_bcc)
+    mg_concs = np.array( mg_concs )
+    enthalpy = energies_bcc - (1.0-mg_concs)*E_al_fcc - mg_concs*E_mg_fcc
+    enthalpy /= 64.0
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+    ax.plot( mg_concs, enthalpy*mol/kJ, "x" )
+    ax.set_xlabel( "Mg concentration" )
+    ax.set_ylabel( "Formation enthalpy (kJ/mol)" )
+    plt.show()
 
 def evaluate( BC ):
     lambs = np.logspace( -7, -1, 50 )

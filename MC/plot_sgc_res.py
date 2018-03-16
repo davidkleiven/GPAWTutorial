@@ -37,11 +37,11 @@ def isochemical_potential( data,max_T, max_conc ):
         min_mu = np.inf
         max_mu = -np.inf
         for key,value in data.iteritems():
-            if ( value["mu_c1_1"] < min_mu ):
-                min_mu = value["mu_c1_1"]
+            if ( value["mu_c1_0"] < min_mu ):
+                min_mu = value["mu_c1_0"]
 
-            if ( value["mu_c1_1"] > max_mu ):
-                max_mu = value["mu_c1_1"]
+            if ( value["mu_c1_0"] > max_mu ):
+                max_mu = value["mu_c1_0"]
 
         Z = [[0,0],[0,0]]
 
@@ -52,13 +52,13 @@ def isochemical_potential( data,max_T, max_conc ):
         all_min_T = []
         for key,value in data.iteritems():
             value = sort_based_on_temp(value)
-            chem_pot.append( value["mu_c1_1"] )
-            mapped_mu = (value["mu_c1_1"]-min_mu)/(max_mu-min_mu)
+            chem_pot.append( value["mu_c1_0"] )
+            mapped_mu = (value["mu_c1_0"]-min_mu)/(max_mu-min_mu)
             all_mapped_mu.append( mapped_mu )
             T = value["temperature"]
             all_max_T.append( np.max(T) )
             all_min_T.append( np.min(T) )
-            conc = value["singlet_c1_1"]
+            conc = value["singlet_c1_0"]
             conc = (np.array(conc)+1.0)/2.0
             conc = 1.0-conc
             ax.plot( conc, T, color=cm.nipy_spectral(mapped_mu), lw=5 )
@@ -123,8 +123,8 @@ def free_energy( data, bc, eci_gs ):
         U = np.array( value["energy"] )
         #mf = MeanFieldApprox(bc,symbols=["Al","Mg"])
         #eng_low_temp = fe.FreeEnergy( limit="lte", mfa=mf )
-        mu = {"c1_1":value["mu_c1_1"][0]}
-        sng = {"c1_1":value["singlet_c1_1"]}
+        mu = {"c1_0":value["mu_c1_0"][0]}
+        sng = {"c1_0":value["singlet_c1_0"]}
         sgc_E = eng.get_sgc_energy( U/len(bc.atoms), sng, mu )
         #sgc_E_low = eng_low_temp.get_sgc_energy( U, sng, mu )
         #eng_low_temp.chemical_potential = mu # The low temperature expansion requires mu
@@ -133,7 +133,7 @@ def free_energy( data, bc, eci_gs ):
         #beta_mf = np.linspace(1.0/(kB*T[0]), 1.0/(kB*T[-1]),100.0)
         #mf_energy = mf.free_energy( beta_mf, chem_pot=mu )
         G = np.array( res["free_energy"] )*mol/kJ
-        ax.plot( res["temperature"], G, marker="o", label="{}".format(value["mu_c1_1"][0]))
+        ax.plot( res["temperature"], G, marker="o", label="{}".format(value["mu_c1_0"][0]))
         #ax.plot( res_low["temperature"], res_low["free_energy"], marker="x", label="LTE" )
         #T_mf = 1.0/(kB*beta_mf)
         #ax.plot( T_mf, mf_energy, label="MFA" )
@@ -147,8 +147,8 @@ def main( argv ):
     with open( fname, 'r' ) as infile:
         data = json.load(infile)
 
-    pickle_name = fname.split(".")[0]+".pck"
-    pickle_name = "data/bc_10x10x10_demo.pkl"
+    pickle_name = fname.split(".")[0]+".pkl"
+    pickle_name = "data/bc_10x10x10_linvib.pkl"
     with open( pickle_name, 'rb' ) as infile:
         bc,cf,eci = pck.load( infile )
 
@@ -163,16 +163,16 @@ def main( argv ):
     for key,value in data.iteritems():
         value = sort_based_on_temp(value)
         color = colors[counter%len(colors)]
-        mu.append( value["mu_c1_1"] )
+        mu.append( value["mu_c1_0"] )
         U = np.array(value["energy"])*mol/(len(bc.atoms)*kJ)
         energy_interp = UnivariateSpline( value["temperature"], U, k=3, s=1 )
         ax[0].plot( value["temperature"], U, "o", mfc="none", color=color )
         T = np.linspace( np.min(value["temperature"]), np.max(value["temperature"]), 500)
         ax[0].plot( T, energy_interp(T), color=color )
 
-        singl = np.array( value["singlet_c1_1"] )
+        singl = np.array( value["singlet_c1_0"] )
         x = 0.5*(1.0+singl)
-        ax[1].plot( value["temperature"], x, label="{}".format(value["mu_c1_1"]), color=color, marker="o",mfc="none")
+        ax[1].plot( value["temperature"], x, label="{}".format(value["mu_c1_0"]), color=color, marker="o",mfc="none")
         counter += 1
         #indx_max = np.argmax( Cv(T) )
         #max_T.append( T[indx_max] )

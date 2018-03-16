@@ -17,7 +17,7 @@ for name in db_names:
 def insert_structures():
     db = connect( db_name )
     a = np.linspace(3.9,4.8,10)
-    atoms = read( "data/al4mg_layer.xyz" )
+    atoms = read( "data/al1.xyz" )
     ref_cell = atoms.get_cell()
     a0 = 4.05
     for i in range( len(a) ):
