@@ -20,8 +20,8 @@ def main( argv ):
     system = "AlMg"
     runID = int(argv[0])
     nkpt = 4
-    if ( len(argv) == 2 ):
-        kpt = int(argv[1])
+    if ( len(argv) >= 2 ):
+        nkpt = int(argv[1])
 
     print ("Running job: %d"%(runID))
     db_paths = ["/home/ntnu/davidkl/GPAWTutorial/CE/almgsi.db", "almgsi.db","/home/davidkl/GPAWTutorial/CE/almgsi.db"]
@@ -29,7 +29,7 @@ def main( argv ):
         if ( os.path.isfile(path) ):
             db_name = path
             break
-    #db_name = "test_db.db"
+    #db_name = "almgsi_test_db.db"
     db = ase.db.connect( db_name )
 
     con = sq.connect( db_name )
