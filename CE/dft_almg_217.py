@@ -19,7 +19,7 @@ from save_to_db import SaveToDB
 class SaveRestartFiles(object):
     def __init__(self, calc, name):
         self.calc = calc
-        self.uid = name
+        self.name = name
 
     def __call__(self):
         fname = "calc_restart{}.gpw".format(self.name)
