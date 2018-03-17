@@ -19,6 +19,10 @@ def main( argv ):
     relax_mode = "positions" # both, cell, positions
     system = "AlMg"
     runID = int(argv[0])
+    nkpt = 4
+    if ( len(argv) == 2 ):
+        kpt = int(argv[1])
+
     print ("Running job: %d"%(runID))
     db_paths = ["/home/ntnu/davidkl/GPAWTutorial/CE/almgsi.db", "almgsi.db","/home/davidkl/GPAWTutorial/CE/almgsi.db"]
     for path in db_paths:
@@ -37,6 +41,7 @@ def main( argv ):
     new_run = not db.get( id=runID ).key_value_pairs["started"]
     # Update the databse
     db.update( runID, started=True, converged=False )
+    db.update( runID, nkpt=nkpt )
 
     atoms = db.get_atoms(id=runID)
 
@@ -51,6 +56,7 @@ def main( argv ):
         kpts = (16,16,16)
     else:
         kpts = (4,4,4)
+    kpts = (nkpt,nkpt,nkpt)
     calc = gp.GPAW( mode=gp.PW(600), xc="PBE", kpts=kpts, nbands=nbands )
     atoms.set_calculator( calc )
 
@@ -94,7 +100,7 @@ def main( argv ):
         row = db.get( id=storeBest.runID )
         conv_force = row.get( "converged_force", default=0 )
         conv_stress = row.get( "converged_stress", default=0 )
-        if ( (conv_force==1) and (conv_stress==1) ):
+        if ( (conv_force==1) and (conv_stress==1) and (nkpt==4) ):
             db.update( storeBest.runID, converged=True )
     except Exception as exc:
         print (exc)

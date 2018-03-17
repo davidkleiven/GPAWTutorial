@@ -15,17 +15,27 @@ from ase.optimize import BFGS
 from ase.optimize.sciopt import SciPyFminCG
 from ase.optimize import QuasiNewton
 from save_to_db import SaveToDB
+
+class SaveRestartFiles(object):
+    def __init__(self, calc, name):
+        self.calc = calc
+        self.uid = name
+
+    def __call__(self):
+        fname = "calc_restart{}.gpw".format(self.name)
+        self.calc.write(fname,mode="all")
+
 def main( argv ):
-    relax_mode = "cell" # both, cell, positions
+    relax_mode = "positions" # both, cell, positions
     system = "AlMg"
     runID = int(argv[0])
     print ("Running job: %d"%(runID))
-    db_paths = ["/home/ntnu/davidkl/GPAWTutorial/CE/almg_bcc.db", "almg_bcc.db","/home/davidkl/GPAWTutorial/CE/almg_bcc.db"]
+    db_paths = ["/home/ntnu/davidkl/GPAWTutorial/CE/almg_217.db", "almg_217.db","/home/davidkl/GPAWTutorial/CE/almg_217.db"]
     for path in db_paths:
         if ( os.path.isfile(path) ):
             db_name = path
             break
-    db_name = "test_db.db"
+    #db_name = "almgsi_test_db.db"
     db = ase.db.connect( db_name )
 
     con = sq.connect( db_name )
@@ -40,8 +50,11 @@ def main( argv ):
 
     atoms = db.get_atoms(id=runID)
 
-    calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=(4,4,4), nbands="120%" )
-    #calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=(4,4,4), nbands=-10 )
+    if ( len(atoms) == 1 ):
+        nbands = -10
+    else:
+        nbands = "120%"
+    calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=(4,4,4), nbands=nbands )
     atoms.set_calculator( calc )
 
     logfile = "almg_bcc%d.log"%(runID)
@@ -49,6 +62,7 @@ def main( argv ):
     trajObj = Trajectory(traj, 'w', atoms )
 
     storeBest = SaveToDB(db_name,runID,name,mode=relax_mode)
+    save_calc = SaveRestartFiles(calc,name)
     volume = atoms.get_volume()
 
     try:
@@ -58,8 +72,8 @@ def main( argv ):
         if ( relax_mode == "both" ):
             relaxer = PreconLBFGS( atoms, logfile=logfile, use_armijo=True, precon=precon, variable_cell=True )
         elif ( relax_mode == "positions" ):
-            relaxer = SciPyFminCG( atoms, logfile=logfile )
-            #relaxer = BFGS( atoms, logfile=logfile )
+            #relaxer = SciPyFminCG( atoms, logfile=logfile )
+            relaxer = BFGS( atoms, logfile=logfile )
         elif ( relax_mode == "cell" ):
             str_f = StrainFilter( atoms, mask=[1,1,1,0,0,0] )
             relaxer = BFGS( str_f, logfile=logfile )
@@ -67,6 +81,7 @@ def main( argv ):
 
         relaxer.attach( trajObj )
         relaxer.attach( storeBest, interval=1, atoms=atoms )
+        relaxer.attach( save_calc, interval=1 )
         if ( relax_mode == "both" ):
             relaxer.run( fmax=fmax, smax=smax )
         else:
