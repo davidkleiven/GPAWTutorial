@@ -16,7 +16,7 @@ from ase.optimize.sciopt import SciPyFminCG
 from ase.optimize import QuasiNewton
 from save_to_db import SaveToDB
 def main( argv ):
-    relax_mode = "positions" # both, cell, positions
+    relax_mode = "both" # both, cell, positions
     system = "AlMg"
     runID = int(argv[0])
     nkpt = 4
@@ -72,8 +72,8 @@ def main( argv ):
         fmax = 0.025
         smax = 0.003
         if ( relax_mode == "both" ):
-            uf = UnitCellFilter( atoms, hydrostatic_strain=True )
-            relaxer = PreconLBFGS( uf, logfile=logfile, use_armijo=True, precon=precon )
+            #uf = UnitCellFilter( atoms, hydrostatic_strain=True )
+            relaxer = PreconLBFGS( atoms, logfile=logfile, use_armijo=True, variable_cell=True )
         elif ( relax_mode == "positions" ):
             #relaxer = SciPyFminCG( atoms, logfile=logfile )
             relaxer = BFGS( atoms, logfile=logfile )

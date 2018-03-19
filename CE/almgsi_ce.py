@@ -19,6 +19,8 @@ import json
 from cemc.mcmc import montecarlo as mc
 from ase.io import write, read
 from almg_bcc_ce import insert_specific_structure
+from ase.calculators.cluster_expansion.cluster_expansion import ClusterExpansion
+from ase.db import connect
 
 eci_fname = "data/almgsi_fcc_eci.json"
 def main(argv):
@@ -49,7 +51,10 @@ def main(argv):
     elif ( option == "insert" ):
         fname = argv[1]
         atoms = read(fname)
-        insert_specific_structure( ceBulk, struc_generator, atoms )
+        struc_generator.insert_structure( init_struct=fname )
+        #insert_specific_structure( ceBulk, struc_generator, atoms )
+    elif ( option == "formation" ):
+        enthalpy_of_formation(ceBulk)
     elif ( option == "gsstruct" ):
         if ( len(argv) != 3 ):
             raise ValueError( "If option is gsstruct. The arguments has to be gsstruct mg_conc si_conc" )
@@ -74,6 +79,63 @@ def evaluate(BC):
     with open(eci_fname,'w') as outfile:
         json.dump( eci_name, outfile, indent=2, separators=(",",":"))
     print ( "ECIs written to {}".format(eci_fname))
+
+def enthalpy_of_formation(ceBulk):
+    with open( "data/almgsi_fcc_eci.json", 'r' ) as infile:
+        ecis = json.load(infile)
+
+    db = connect( ceBulk.db_name )
+    ce_ase_calc = ClusterExpansion( ceBulk, cluster_name_eci=ecis )
+    #atoms = bulk("Al")*(4,4,4)
+    #atoms.set_calculator(ce_ase_calc)
+    ceBulk.atoms.set_calculator(ce_ase_calc)
+
+    #ref_eng_al = db.get(formula="Al64",converged=1).energy
+    ref_eng_al = -3.73712125264
+    ref_eng_mg = db.get(formula="Mg1").energy
+    ref_eng_si = db.get(formula="Si1").energy
+    enthalpy_dft = []
+    enthalpy_ce = []
+    conc_mg = []
+    conc_si = []
+    formulas = []
+    for row in db.select(converged=1):
+        e_dft = row.energy/row.natoms
+        count = row.count_atoms()
+        c_mg = 0.0
+        c_si = 0.0
+        if ( "Mg" in count.keys() ):
+            c_mg = float(count["Mg"])/row.natoms
+        if ( "Si" in count.keys() ):
+            c_si = float(count["Si"])/row.natoms
+        c_al = 1.0-c_mg-c_si
+        atoms = row.toatoms()
+        #atoms.set_calculator(ce_ase_calc)
+        E_ce = atoms.get_potential_energy()/row.natoms
+        for i in range(len(ceBulk.atoms)):
+            if ( len(atoms) == 1 ):
+                ceBulk.atoms[i].symbol = atoms[0].symbol
+            else:
+                ceBulk.atoms[i].symbol = atoms[i].symbol
+        H_dft = e_dft - c_al*ref_eng_al - c_mg*ref_eng_mg - c_si*ref_eng_si
+        H_ce = E_ce - c_al*ref_eng_al - c_mg*ref_eng_mg - c_si*ref_eng_si
+        enthalpy_dft.append( H_dft )
+        enthalpy_ce.append( H_ce )
+        conc_mg.append( c_mg )
+        conc_si.append( c_si )
+        formulas.append( row.formula )
+    conc_mg = np.array( conc_mg )
+    conc_si = np.array( conc_si )
+
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+    x = conc_mg/(conc_mg+conc_si)
+    ax.plot( x, enthalpy_dft, "o", mfc="none" )
+    ax.plot( x, enthalpy_ce, "x" )
+    for i in range(len(formulas)):
+        ax.text( x[i], enthalpy_dft[i], formulas[i] )
+    plt.show()
+
 
 def find_gs_structure( ceBulk, mg_conc, si_conc ):
     """

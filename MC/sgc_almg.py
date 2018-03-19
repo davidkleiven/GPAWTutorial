@@ -59,9 +59,9 @@ def run( mu, temps, save=False ):
         if ( rank == 0 ):
             print ("{}: Current temperature {}".format(rank, T) )
         mc = sgc.SGCMonteCarlo( ceBulk.atoms, T, symbols=["Al","Mg"], mpicomm=comm )
-        mc.linear_vib_correction = linvib
+        #mc.linear_vib_correction = linvib
         #mc.runMC( steps=n_burn, chem_potential=chem_pots )
-        mc.runMC( mode="prec", chem_potential=chem_pots, prec=0.01 )
+        mc.runMC( mode="prec", chem_potential=chem_pots, prec=0.1 )
         if ( rank==0 ):
             print (mc.atoms._calc.eci["c1_0"])
         thermo_properties = mc.get_thermodynamic()
