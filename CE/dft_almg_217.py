@@ -67,8 +67,8 @@ def main( argv ):
         nbands = "120%"
     kpts = (nkpt,nkpt,nkpt)
     try:
-        name = SaveRestartFiles.restart_name( name )
-        atoms, calc = gp.restart( name )
+        restart_name = SaveRestartFiles.restart_name( name )
+        atoms, calc = gp.restart( restart_name )
     except:
         calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=kpts, nbands=nbands )
         atoms.set_calculator( calc )
