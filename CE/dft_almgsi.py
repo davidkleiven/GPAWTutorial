@@ -14,7 +14,9 @@ from ase.optimize.precon import PreconFIRE
 from ase.optimize import BFGS
 from ase.optimize.sciopt import SciPyFminCG
 from ase.optimize import QuasiNewton
-from save_to_db import SaveToDB
+#from save_to_db import SaveToDB
+from atomtools.ase.save_restart import SaveRestartFiles
+
 def main( argv ):
     relax_mode = "both" # both, cell, positions
     system = "AlMg"
@@ -35,11 +37,7 @@ def main( argv ):
     #db_name = "almgsi_test_db.db"
     db = ase.db.connect( db_name )
 
-    con = sq.connect( db_name )
-    cur = con.cursor()
-    cur.execute( "SELECT value FROM text_key_values WHERE id=? AND key='name'", (runID,) )
-    name = cur.fetchone()[0]
-    con.close()
+    name = db.get(id=runID).key_value_pairs["name"]
 
     new_run = not db.get( id=runID ).key_value_pairs["started"]
     # Update the databse
@@ -60,14 +58,18 @@ def main( argv ):
     else:
         kpts = (4,4,4)
     kpts = (nkpt,nkpt,nkpt)
-    calc = gp.GPAW( mode=gp.PW(600), xc="PBE", kpts=kpts, nbands=nbands )
-    atoms.set_calculator( calc )
+    try:
+        fname = SaveRestartFiles.restart_name(name)
+        atoms, calc = gp.restart(fname)
+    except:
+        calc = gp.GPAW( mode=gp.PW(600), xc="PBE", kpts=kpts, nbands=nbands )
+        atoms.set_calculator( calc )
 
     logfile = "almgsi%d.log"%(runID)
     traj = "almgsi%d.traj"%(runID)
     trajObj = Trajectory(traj, 'w', atoms )
 
-    storeBest = SaveToDB(db_name,runID,name,mode=relax_mode)
+    #storeBest = SaveToDB(db_name,runID,name,mode=relax_mode)
     volume = atoms.get_volume()
 
     try:
@@ -87,26 +89,32 @@ def main( argv ):
                 fmax=smax*volume
 
             relaxer.attach( trajObj )
-            relaxer.attach( storeBest, interval=1, atoms=atoms )
+            #relaxer.attach( storeBest, interval=1, atoms=atoms )
             if ( relax_mode == "both" ):
                 relaxer.run( fmax=fmax, smax=smax )
             else:
                 relaxer.run( fmax=fmax )
         energy = atoms.get_potential_energy()
 
+        orig_atoms = db.get_atoms(mname=name)
+        scalc = SinglePointCalculator( orig_atoms, energy=energy )
+        orig_atoms.set_calculator( scalc )
+        kvp = db.get(name=name).key_value_pairs
+        del db[runID]
+        newID = db.write( orig_atoms, key_value_pairs=key_value_pairs )
         if ( relax_mode == "positions" ):
-            db.update( storeBest.runID, converged_force=True )
+            db.update( newID, converged_force=True )
         elif ( relax_mode == "cell" ):
-            db.update( storeBest.runID, converged_stress=True )
+            db.update( newID, converged_stress=True )
         else:
-            db.update( storeBest.runID, converged_stress=True, converged_force=True )
+            db.update( newID, converged_stress=True, converged_force=True )
 
-        db.update( storeBest.runID, single_point=single_point )
-        row = db.get( id=storeBest.runID )
+        db.update( newID, single_point=single_point )
+        row = db.get( id=newID )
         conv_force = row.get( "converged_force", default=0 )
         conv_stress = row.get( "converged_stress", default=0 )
         if ( (conv_force==1) and (conv_stress==1) and (nkpt==4) ):
-            db.update( storeBest.runID, converged=True )
+            db.update( newID, converged=True )
     except Exception as exc:
         print (exc)
 
