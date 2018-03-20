@@ -71,6 +71,7 @@ def main( argv ):
 
     #storeBest = SaveToDB(db_name,runID,name,mode=relax_mode)
     volume = atoms.get_volume()
+    restart_saver = SaveRestartFiles( calc, name )
 
     try:
         precon = Exp(mu=1.0,mu_c=1.0)
@@ -90,6 +91,7 @@ def main( argv ):
 
             relaxer.attach( trajObj )
             #relaxer.attach( storeBest, interval=1, atoms=atoms )
+            relaxer.attach( restart_saver, interval=1 )
             if ( relax_mode == "both" ):
                 relaxer.run( fmax=fmax, smax=smax )
             else:
@@ -110,6 +112,7 @@ def main( argv ):
             db.update( newID, converged_stress=True, converged_force=True )
 
         db.update( newID, single_point=single_point )
+        db.update( newID, restart_file=SaveRestartFiles.restart_name(name) )
         row = db.get( id=newID )
         conv_force = row.get( "converged_force", default=0 )
         conv_stress = row.get( "converged_stress", default=0 )

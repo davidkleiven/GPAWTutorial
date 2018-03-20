@@ -52,7 +52,7 @@ def main( argv ):
     db = ase.db.connect( db_name )
     name = db.get(id=runID).key_value_pairs["name"]
     new_run = not db.get( id=runID ).key_value_pairs["started"]
-    
+
     # Update the databse
     db.update( runID, started=True, converged=False )
     db.update( runID, nkpt=nkpt )
@@ -118,6 +118,7 @@ def main( argv ):
             db.update( newID, converged_stress=True, converged_force=True )
 
         db.update( newID, single_point=single_point )
+        db.update( newID, restart_file=SaveRestartFiles.restart_name(name) )
         row = db.get( id=newID )
         conv_force = row.get( "converged_force", default=0 )
         conv_stress = row.get( "converged_stress", default=0 )
