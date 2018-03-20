@@ -40,7 +40,7 @@ def main( argv ):
         if ( os.path.isfile(path) ):
             db_name = path
             break
-    db_name = "almgsi_test_db.db"
+    #db_name = "almgsi_test_db.db"
     db = ase.db.connect( db_name )
 
     con = sq.connect( db_name )
