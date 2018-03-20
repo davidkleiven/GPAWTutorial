@@ -16,7 +16,9 @@ from ase.optimize.sciopt import SciPyFminCG
 from ase.optimize import QuasiNewton
 from save_to_db import SaveToDB
 from ase.calculators.singlepoint import SinglePointCalculator
+from atomtools.ase.save_restart import SaveRestartFiles
 
+"""
 class SaveRestartFiles(object):
     def __init__(self, calc, name):
         self.calc = calc
@@ -29,6 +31,7 @@ class SaveRestartFiles(object):
     def __call__(self):
         fname = SaveRestartFiles.restart_name(self.name)
         self.calc.write(fname)
+"""
 
 def main( argv ):
     relax_mode = "positions" # both, cell, positions
@@ -47,14 +50,9 @@ def main( argv ):
             break
     #db_name = "almgsi_test_db.db"
     db = ase.db.connect( db_name )
-
-    con = sq.connect( db_name )
-    cur = con.cursor()
-    cur.execute( "SELECT value FROM text_key_values WHERE id=? AND key='name'", (runID,) )
-    name = cur.fetchone()[0]
-    con.close()
-
+    name = db.get(id=runID).key_value_pairs["name"]
     new_run = not db.get( id=runID ).key_value_pairs["started"]
+    
     # Update the databse
     db.update( runID, started=True, converged=False )
     db.update( runID, nkpt=nkpt )
