@@ -23,13 +23,16 @@ def main( argv ):
     if ( len(argv) >= 2 ):
         nkpt = int(argv[1])
 
+    if ( len(argv) >= 3 ):
+        single_point = (int(argv[2])==1)
+
     print ("Running job: %d"%(runID))
     db_paths = ["/home/ntnu/davidkl/GPAWTutorial/CE/almgsi.db", "almgsi.db","/home/davidkl/GPAWTutorial/CE/almgsi.db"]
     for path in db_paths:
         if ( os.path.isfile(path) ):
             db_name = path
             break
-    #db_name = "almgsi_test_db.db"
+    db_name = "almgsi_test_db.db"
     db = ase.db.connect( db_name )
 
     con = sq.connect( db_name )
@@ -71,23 +74,24 @@ def main( argv ):
         precon = Exp(mu=1.0,mu_c=1.0)
         fmax = 0.025
         smax = 0.003
-        if ( relax_mode == "both" ):
-            #uf = UnitCellFilter( atoms, hydrostatic_strain=True )
-            relaxer = PreconLBFGS( atoms, logfile=logfile, use_armijo=True, variable_cell=True )
-        elif ( relax_mode == "positions" ):
-            #relaxer = SciPyFminCG( atoms, logfile=logfile )
-            relaxer = BFGS( atoms, logfile=logfile )
-        elif ( relax_mode == "cell" ):
-            str_f = StrainFilter( atoms, mask=[1,1,1,0,0,0] )
-            relaxer = SciPyFminCG( str_f, logfile=logfile )
-            fmax=smax*volume
+        if ( not single_point ):
+            if ( relax_mode == "both" ):
+                #uf = UnitCellFilter( atoms, hydrostatic_strain=True )
+                relaxer = PreconLBFGS( atoms, logfile=logfile, use_armijo=True, variable_cell=True )
+            elif ( relax_mode == "positions" ):
+                #relaxer = SciPyFminCG( atoms, logfile=logfile )
+                relaxer = BFGS( atoms, logfile=logfile )
+            elif ( relax_mode == "cell" ):
+                str_f = StrainFilter( atoms, mask=[1,1,1,0,0,0] )
+                relaxer = SciPyFminCG( str_f, logfile=logfile )
+                fmax=smax*volume
 
-        relaxer.attach( trajObj )
-        relaxer.attach( storeBest, interval=1, atoms=atoms )
-        if ( relax_mode == "both" ):
-            relaxer.run( fmax=fmax, smax=smax )
-        else:
-            relaxer.run( fmax=fmax )
+            relaxer.attach( trajObj )
+            relaxer.attach( storeBest, interval=1, atoms=atoms )
+            if ( relax_mode == "both" ):
+                relaxer.run( fmax=fmax, smax=smax )
+            else:
+                relaxer.run( fmax=fmax )
         energy = atoms.get_potential_energy()
 
         if ( relax_mode == "positions" ):
@@ -97,6 +101,7 @@ def main( argv ):
         else:
             db.update( storeBest.runID, converged_stress=True, converged_force=True )
 
+        db.update( storeBest.runID, single_point=single_point )
         row = db.get( id=storeBest.runID )
         conv_force = row.get( "converged_force", default=0 )
         conv_stress = row.get( "converged_stress", default=0 )
