@@ -15,15 +15,20 @@ from ase.optimize import BFGS
 from ase.optimize.sciopt import SciPyFminCG
 from ase.optimize import QuasiNewton
 from save_to_db import SaveToDB
+from ase.calculators.singlepoint import SinglePointCalculator
 
 class SaveRestartFiles(object):
     def __init__(self, calc, name):
         self.calc = calc
         self.name = name
 
+    @staticmethod
+    def restart_name(name):
+        return fname = "calc_restart{}.gpw".format(name)
+
     def __call__(self):
-        fname = "calc_restart{}.gpw".format(self.name)
-        self.calc.write(fname,mode="all")
+        fname = SaveRestartFiles.restart_name(self.name)
+        self.calc.write(fname)
 
 def main( argv ):
     relax_mode = "positions" # both, cell, positions
@@ -61,14 +66,18 @@ def main( argv ):
     else:
         nbands = "120%"
     kpts = (nkpt,nkpt,nkpt)
-    calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=kpts, nbands=nbands )
-    atoms.set_calculator( calc )
+    try:
+        name = SaveRestartFiles.restart_name( name )
+        atoms, calc = gp.restart( name )
+    except:
+        calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=kpts, nbands=nbands )
+        atoms.set_calculator( calc )
 
     logfile = "almg_bcc%d.log"%(runID)
     traj = "almg_bcc%d.traj"%(runID)
     trajObj = Trajectory(traj, 'w', atoms )
 
-    storeBest = SaveToDB(db_name,runID,name,mode=relax_mode)
+    #storeBest = SaveToDB(db_name,runID,name,mode=relax_mode)
     save_calc = SaveRestartFiles(calc,name)
     volume = atoms.get_volume()
 
@@ -87,7 +96,7 @@ def main( argv ):
             fmax=smax*volume
 
         relaxer.attach( trajObj )
-        relaxer.attach( storeBest, interval=1, atoms=atoms )
+        #relaxer.attach( storeBest, interval=1, atoms=atoms )
         relaxer.attach( save_calc, interval=1 )
         if ( not single_point ):
             if ( relax_mode == "both" ):
@@ -96,19 +105,26 @@ def main( argv ):
                 relaxer.run( fmax=fmax )
         energy = atoms.get_potential_energy()
 
-        if ( relax_mode == "positions" ):
-            db.update( storeBest.runID, converged_force=True )
-        elif ( relax_mode == "cell" ):
-            db.update( storeBest.runID, converged_stress=True )
-        else:
-            db.update( storeBest.runID, converged_stress=True, converged_force=True )
+        orig_atoms = db.get_atoms(runID)
+        single_p_calc = SinglePointCalculator( orig_atoms, energy=energy )
+        orig_atoms.set_calculator( single_p_calc )
+        kvp = db.get(name=name).key_value_pairs
+        del db[runID]
+        newID = db.write( orig_atoms, key_value_pairs=kvp )
 
-        db.update( storeBest.runID, single_point=single_point )
-        row = db.get( id=storeBest.runID )
+        if ( relax_mode == "positions" ):
+            db.update( newID, converged_force=True )
+        elif ( relax_mode == "cell" ):
+            db.update( newID, converged_stress=True )
+        else:
+            db.update( newID, converged_stress=True, converged_force=True )
+
+        db.update( newID, single_point=single_point )
+        row = db.get( id=newID )
         conv_force = row.get( "converged_force", default=0 )
         conv_stress = row.get( "converged_stress", default=0 )
         if ( (conv_force==1) and (conv_stress==1) and (nkpt==4) ):
-            db.update( storeBest.runID, converged=True )
+            db.update( newID, converged=True )
     except Exception as exc:
         print (exc)
 
