@@ -57,7 +57,8 @@ def main( argv ):
         atoms.set_calculator( calc )
 
     logfile = "almg_bcc%d.log"%(runID)
-    traj = "almg_bcc%d.traj"%(runID)
+    traj = "almg_bcc{}.traj".format(name)
+    db.update( runID, trajfile=traj )
     trajObj = Trajectory(traj, 'w', atoms )
 
     #storeBest = SaveToDB(db_name,runID,name,mode=relax_mode)

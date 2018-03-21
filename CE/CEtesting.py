@@ -85,7 +85,7 @@ def main( argv ):
 
     #ceBulk.basis_functions[0]["Al"] = 1.0
     #ceBulk.basis_functions[0]["Mg"] = -1.0
-    ceBulk._get_cluster_information()
+    #ceBulk._get_cluster_information()
     print (ceBulk.basis_functions)
     #cf = CorrFunction(ceBulk)
     #cf.reconfig_db_entries()
