@@ -18,21 +18,6 @@ from save_to_db import SaveToDB
 from ase.calculators.singlepoint import SinglePointCalculator
 from atomtools.ase.save_restart import SaveRestartFiles
 
-"""
-class SaveRestartFiles(object):
-    def __init__(self, calc, name):
-        self.calc = calc
-        self.name = name
-
-    @staticmethod
-    def restart_name(name):
-        return fname = "calc_restart{}.gpw".format(name)
-
-    def __call__(self):
-        fname = SaveRestartFiles.restart_name(self.name)
-        self.calc.write(fname)
-"""
-
 def main( argv ):
     relax_mode = "positions" # both, cell, positions
     system = "AlMg"
