@@ -50,6 +50,7 @@ def run( mu, temps, save=False ):
     print (ecis)
     #calc = CE( ceBulk, ecis, size=(3,3,3) )
     calc = get_ce_calc( ceBulk, kwargs, ecis, size=[10,10,10] )
+    ceBulk = calc.BC
     ceBulk.atoms.set_calculator( calc )
     print ("Number of atoms: {}".format(len(ceBulk.atoms)) )
     view(ceBulk.atoms)
