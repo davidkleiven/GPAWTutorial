@@ -2,7 +2,7 @@ import sys
 from cemc.mcmc import sgc_montecarlo as sgc
 import json
 from ase.ce.settings_bulk import BulkCrystal
-from cemc.wanglandau.ce_calculator import CE
+from cemc.wanglandau.ce_calculator import CE, get_ce_calc
 import numpy as np
 from mpi4py import MPI
 from ase.visualize import view
@@ -34,16 +34,22 @@ def run( mu, temps, save=False ):
             }
     #with open(bc_filename,'rb') as infile:
     #    ceBulk = pck.load(infile)
-    ceBulk = BulkCrystal( crystalstructure="fcc", a=4.05, size=[4,4,4], basis_elements=[["Al","Mg"]], conc_args=conc_args, db_name=db_name,
-     max_cluster_size=4 )
-    #ceBulk.reconfigure_settings()
+    kwargs = {
+        "crystalstructure":"fcc", "a":4.05, "size":[4,4,4], "basis_elements":[["Al","Mg"]],
+        "conc_args":conc_args, "db_name":db_name,
+     "max_cluster_size":4
+    }
+    ceBulk = BulkCrystal( **kwargs )
+    ceBulk._get_cluster_information()
+    ceBulk.reconfigure_settings()
     print (ceBulk.basis_functions)
 
     eci_file = "data/ce_hydrostatic.json"
     with open( eci_file, 'r' ) as infile:
         ecis = json.load( infile )
     print (ecis)
-    calc = CE( ceBulk, ecis, size=(3,3,3) )
+    #calc = CE( ceBulk, ecis, size=(3,3,3) )
+    calc = get_ce_calc( ceBulk, kwargs, ecis, size=[10,10,10] )
     ceBulk.atoms.set_calculator( calc )
     print ("Number of atoms: {}".format(len(ceBulk.atoms)) )
     view(ceBulk.atoms)
