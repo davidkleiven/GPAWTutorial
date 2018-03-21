@@ -5,6 +5,10 @@ from ase.visualize import view
 import json
 import numpy as np
 
+eci_vib = {
+    "c1_0":0.43,
+    "c2_1000_00":-0.045
+}
 def main():
     mu_al = -1.06
     mu_al3mg = -1.067
@@ -18,23 +22,26 @@ def main():
     gs_al = {
         "bc":bc_al,
         "eci":eci_al,
-        "cf":cf_al
+        "cf":cf_al,
+        "linvib":lvc.LinearVibCorrection(eci_vib)
     }
 
     gs_al3mg = {
         "bc":bc_al3mg,
         "eci":eci_al3mg,
-        "cf":cf_al3mg
+        "cf":cf_al3mg,
+        "linvib":lvc.LinearVibCorrection(eci_vib)
     }
-    view(bc_al.atoms)
-    view(bc_al3mg.atoms)
-    exit()
+    #view(bc_al.atoms)
+    #view(bc_al3mg.atoms)
+    #exit()
     boundary_tracker = PhaseBoundaryTracker( gs_al, gs_al3mg )
     zero_kelvin_separation = boundary_tracker.get_zero_temperature_mu_boundary()
     print ("0K phase boundary {}".format(zero_kelvin_separation) )
 
     # Construct common tangent construction
-    T = [200,250,300,310,320,330,340,350,360,361,362,363,364,365,366,367,368,369,370,371,372,373,374,375,376,377,378,379,380]
+    #T = [200,250,300,310,320,330,340,350,360,361,362,363,364,365,366,367,368,369,370,371,372,373,374,375,376,377,378,379,380]
+    T = [200,250,300,350,400,450,500]
     res = boundary_tracker.separation_line( np.array(T) )
     with open("data/phase_boundary.json",'w') as outfile:
         json.dump( res, outfile, sort_keys=True, indent=2, separators=(",",":") )

@@ -34,16 +34,20 @@ def run( mu, temps, save=False ):
             }
     #with open(bc_filename,'rb') as infile:
     #    ceBulk = pck.load(infile)
-    ceBulk = BulkCrystal( crystalstructure="fcc", a=4.05, size=[10,10,10], basis_elements=[["Al","Mg"]], conc_args=conc_args, db_name=db_name,
-     max_cluster_size=4, max_cluster_dia=2*4.05 )
+    ceBulk = BulkCrystal( crystalstructure="fcc", a=4.05, size=[4,4,4], basis_elements=[["Al","Mg"]], conc_args=conc_args, db_name=db_name,
+     max_cluster_size=4 )
+    #ceBulk.reconfigure_settings()
     print (ceBulk.basis_functions)
 
     eci_file = "data/ce_hydrostatic.json"
     with open( eci_file, 'r' ) as infile:
         ecis = json.load( infile )
     print (ecis)
-    calc = CE( ceBulk, ecis )
+    calc = CE( ceBulk, ecis, size=[3,3,3] )
     ceBulk.atoms.set_calculator( calc )
+    print ("Number of atoms: {}".format(len(ceBulk.atoms)) )
+    view(ceBulk.atoms)
+    exit()
 
     n_burn = 40000
     n_sample = 10000
@@ -59,9 +63,10 @@ def run( mu, temps, save=False ):
         if ( rank == 0 ):
             print ("{}: Current temperature {}".format(rank, T) )
         mc = sgc.SGCMonteCarlo( ceBulk.atoms, T, symbols=["Al","Mg"], mpicomm=comm )
-        #mc.linear_vib_correction = linvib
-        #mc.runMC( steps=n_burn, chem_potential=chem_pots )
-        mc.runMC( mode="prec", chem_potential=chem_pots, prec=0.1 )
+        mc.linear_vib_correction = linvib
+        #mc.runMC( steps=n_burn, chem_potential=chem_pots, equil=False )
+        equil = {"confidence_level":1E-8}
+        mc.runMC( mode="prec", chem_potential=chem_pots, prec=0.01, equil_params=equil )
         if ( rank==0 ):
             print (mc.atoms._calc.eci["c1_0"])
         thermo_properties = mc.get_thermodynamic()
