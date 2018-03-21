@@ -43,7 +43,7 @@ def run( mu, temps, save=False ):
     with open( eci_file, 'r' ) as infile:
         ecis = json.load( infile )
     print (ecis)
-    calc = CE( ceBulk, ecis, size=[3,3,3] )
+    calc = CE( ceBulk, ecis, size=(3,3,3) )
     ceBulk.atoms.set_calculator( calc )
     print ("Number of atoms: {}".format(len(ceBulk.atoms)) )
     view(ceBulk.atoms)
