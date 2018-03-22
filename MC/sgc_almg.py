@@ -53,8 +53,8 @@ def run( mu, temps, save=False ):
     ceBulk = calc.BC
     ceBulk.atoms.set_calculator( calc )
     print ("Number of atoms: {}".format(len(ceBulk.atoms)) )
-    view(ceBulk.atoms)
-    exit()
+    #view(ceBulk.atoms)
+    #exit()
 
     n_burn = 40000
     n_sample = 10000

@@ -57,6 +57,10 @@ def main( argv ):
         calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=kpts, nbands=nbands )
         atoms.set_calculator( calc )
 
+    if ( single_point ):
+        calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=kpts, nbands=nbands )
+        atoms.set_calculator( calc )
+        
     logfile = "almg_bcc%d.log"%(runID)
     traj = "almg_bcc{}.traj".format(name)
     db.update( runID, trajfile=traj )
