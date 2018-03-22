@@ -16,7 +16,8 @@ from ase.optimize.sciopt import SciPyFminCG
 from ase.optimize import QuasiNewton
 from save_to_db import SaveToDB
 from ase.calculators.singlepoint import SinglePointCalculator
-from atomtools.ase.save_restart import SaveRestartFiles
+from atomtools.ase import SaveRestartFiles
+from atomtools.ase import UpdateDBInfo
 
 def main( argv ):
     relax_mode = "both" # both, cell, positions
@@ -63,6 +64,7 @@ def main( argv ):
 
     #storeBest = SaveToDB(db_name,runID,name,mode=relax_mode)
     save_calc = SaveRestartFiles(calc,name)
+    update_db_info = UpdateDBInfo( db_name, runID, atoms )
     volume = atoms.get_volume()
 
     try:
@@ -82,6 +84,7 @@ def main( argv ):
         relaxer.attach( trajObj )
         #relaxer.attach( storeBest, interval=1, atoms=atoms )
         relaxer.attach( save_calc, interval=1 )
+        relaxer.attach( update_db_info, interval=1 )
         if ( not single_point ):
             if ( relax_mode == "both" ):
                 relaxer.run( fmax=fmax, smax=smax )
