@@ -52,18 +52,19 @@ def main( argv ):
         "conc_ratio_max_1":[[0,1],[0,1],[0,1],[0,1]]
     }
     conc_args = {
-        "conc_ratio_min_1":[[1,0],[1,0]],
-        "conc_ratio_max_1":[[0,1],[0,1]]
+        "conc_ratio_min_1":[[1,0]],
+        "conc_ratio_max_1":[[0,1]]
     }
     basis_elements = [["Al","Mg"],["Al","Mg"],["Al","Mg"],["Al","Mg"]]
     bs = BulkSpacegroup( basis_elements=basis_elements, basis=basis, spacegroup=217, cellpar=cellpar, conc_args=conc_args,
     max_cluster_size=4, db_name=db_name, size=[1,1,1], grouped_basis=[[0,1,2,3]] )
+    #bs.reconfigure_settings()
     print (bs.basis_functions)
 
     struct_gen = GenerateStructures( bs, struct_per_gen=10 )
 
     if ( option == "newstruct" ):
-        struct_gen.generate_probe_structure()
+        struct_gen.generate_probe_structure( num_steps=100 )
     elif ( option == "insert" ):
         fname = argv[1]
         atoms = read( fname )
@@ -82,6 +83,7 @@ def find_gs( BC, mg_conc ):
     }
 
     eci_fname = "data/{}.json".format(db_name.split(".")[0])
+    print ("Reading ECIs from {}".format(eci_fname))
     with open( eci_fname, 'r') as infile:
         ecis = json.load( infile )
 

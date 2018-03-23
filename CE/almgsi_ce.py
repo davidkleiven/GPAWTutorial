@@ -21,6 +21,7 @@ from ase.io import write, read
 from almg_bcc_ce import insert_specific_structure
 from ase.calculators.cluster_expansion.cluster_expansion import ClusterExpansion
 from ase.db import connect
+from ase.units import mol, kJ
 
 eci_fname = "data/almgsi_fcc_eci.json"
 def main(argv):
@@ -69,6 +70,7 @@ def evaluate(BC):
         evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1" )
         cvs.append(evaluator._cv_loo())
     indx = np.argmin(cvs)
+    print ("Selected penalization: {}".format(lambs[indx]))
     evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1" )
     eci_name = evaluator.get_cluster_name_eci_dict
     evaluator.plot_energy()
@@ -130,8 +132,15 @@ def enthalpy_of_formation(ceBulk):
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
     x = conc_mg/(conc_mg+conc_si)
+    enthalpy_dft = np.array(enthalpy_dft)*mol/kJ
+    enthalpy_ce = np.array(enthalpy_ce)*mol/kJ
     ax.plot( x, enthalpy_dft, "o", mfc="none" )
     ax.plot( x, enthalpy_ce, "x" )
+    ax.set_xlabel( "\$x_{Si}/(x_{Mg}+x_{Si})")
+    ax.set_ylabel( "Enthalpy of formation (kJ/mol)")
+    ax.spines["right"].set_visible(False)
+    ax.spines["top"].set_visible(False)
+
     for i in range(len(formulas)):
         ax.text( x[i], enthalpy_dft[i], formulas[i] )
     plt.show()
