@@ -40,8 +40,6 @@ def run( mu, temps, save=False ):
      "max_cluster_size":4
     }
     ceBulk = BulkCrystal( **kwargs )
-    ceBulk._get_cluster_information()
-    ceBulk.reconfigure_settings()
     print (ceBulk.basis_functions)
 
     eci_file = "data/ce_hydrostatic.json"
@@ -70,7 +68,7 @@ def run( mu, temps, save=False ):
         if ( rank == 0 ):
             print ("{}: Current temperature {}".format(rank, T) )
         mc = sgc.SGCMonteCarlo( ceBulk.atoms, T, symbols=["Al","Mg"], mpicomm=comm )
-        mc.linear_vib_correction = linvib
+        #mc.linear_vib_correction = linvib
         #mc.runMC( steps=n_burn, chem_potential=chem_pots, equil=False )
         equil = {"confidence_level":1E-8}
         mc.runMC( mode="prec", chem_potential=chem_pots, prec=0.01, equil_params=equil )
