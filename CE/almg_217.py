@@ -87,7 +87,8 @@ def find_gs( BC, mg_conc ):
     with open( eci_fname, 'r') as infile:
         ecis = json.load( infile )
 
-    T = [1000,800,600,400,200,100,50,20,10,5,1]
+    #T = [1000,800,600,400,300,200,100,50,20,15,10,5,1]
+    T = np.logspace(0,3,30)[::-1]
     n_steps_per = 5000
     gsfinder = GSFinder()
     result = gsfinder.get_gs( BC, ecis, composition=composition, temps=T, n_steps_per_temp=n_steps_per )

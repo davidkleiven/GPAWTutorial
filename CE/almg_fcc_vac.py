@@ -32,6 +32,20 @@ def main( argv ):
     elif( option == "insert" ):
         fname = argv[1]
         struct_gen.insert_structure( init_struct=fname )
+    elif ( option == "gs_all" ):
+        find_all_gs( ceBulk, struct_gen )
+
+def find_all_gs( BC, struct_gen ):
+    mg_conc,vac_conc = np.loadtxt( "mg_vac_conc.csv", unpack=True, delimiter="," )
+    n_inserted = 0
+    for cm,cv in zip(mg_conc,vac_conc):
+        gs_struct = find_gs( BC, cm, cv )
+        try:
+            struct_gen.insert_structure( gs_struct )
+            n_inserted += 1
+        except Exception as exc:
+            print (str(exc))
+    print ( "Inserted {} new structures".format(n_inserted) )
 
 def find_gs( BC, mg_conc, vac_conc ):
     composition = {
@@ -55,11 +69,13 @@ def find_gs( BC, mg_conc, vac_conc ):
     print ("GS energy: {} eV".format(result["energy"]) )
     print ("Structure written to {}".format(outfname) )
     print (result["cf"])
+    return outfname
 
 def evaluate(BC):
     lambs = np.logspace(-7,-1,num=50)
     cvs = []
     for i in range(len(lambs)):
+        print ( "Current penalization: {}".format(lambs[i]))
         evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1" )
         cvs.append(evaluator._cv_loo())
     indx = np.argmin(cvs)
