@@ -22,15 +22,13 @@ def main():
     gs_al = {
         "bc":bc_al,
         "eci":eci_al,
-        "cf":cf_al,
-        "linvib":lvc.LinearVibCorrection(eci_vib)
+        "cf":cf_al
     }
 
     gs_al3mg = {
         "bc":bc_al3mg,
         "eci":eci_al3mg,
-        "cf":cf_al3mg,
-        "linvib":lvc.LinearVibCorrection(eci_vib)
+        "cf":cf_al3mg
     }
     #view(bc_al.atoms)
     #view(bc_al3mg.atoms)
