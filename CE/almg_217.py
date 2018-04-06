@@ -103,13 +103,17 @@ def find_gs( BC, mg_conc ):
 def evalCE( BC):
     lambs = np.logspace(-7,-1,num=50)
     cvs = []
+    select_cond = None
+    select_cond = [("in_conc_range","=","1")]
     for i in range(len(lambs)):
         print (lambs[i])
-        evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1" )
+        evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1", select_cond=select_cond )
+
         cvs.append(evaluator._cv_loo())
     indx = np.argmin(cvs)
     print ("Selected penalization value: {}".format(lambs[indx]))
-    evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1" )
+    evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1", select_cond=select_cond )
+
     print ( evaluator.cf_matrix[:,1] )
     eci_name = evaluator.get_cluster_name_eci_dict
     print (eci_name)
