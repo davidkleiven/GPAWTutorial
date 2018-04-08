@@ -5,6 +5,7 @@ from ase.ce.settings_bulk import BulkSpacegroup
 from ase.ce.newStruct import GenerateStructures
 from almg_bcc_ce import insert_specific_structure
 from ase.io import read
+from ase.db import connect
 import numpy as np
 from ase.ce import Evaluate
 from atomtools.ce import ECIPlotter
@@ -12,6 +13,8 @@ import json
 from matplotlib import pyplot as plt
 from cemc.tools import GSFinder
 from ase.io import write
+from ase.units import mol, kJ
+from ase.calculators.cluster_expansion import ClusterExpansion
 
 def get_atoms():
     # https://materials.springer.com/isp/crystallographic/docs/sd_0453869
@@ -75,6 +78,20 @@ def main( argv ):
     elif ( option == "gs" ):
         mg_conc = float( argv[1] )
         find_gs( bs, mg_conc )
+    elif ( option == "allgs" ):
+        find_all_gs(bs,struct_gen)
+
+def find_all_gs(BC, struct_gen, mg_conc_min=0.5,mg_conc_max=0.7):
+    mg_concs = np.linspace(mg_conc_min,mg_conc_max,10)
+    insert_count = 0
+    for mg_conc in mg_concs:
+        fname = find_gs(BC,mg_conc)
+        try:
+            struct_gen.insert_structure(init_struct=fname)
+            insert_count += 1
+        except Exception as exc:
+            print (str(exc))
+    print ("Inserted {} new structures".format(insert_count))
 
 def find_gs( BC, mg_conc ):
     composition = {
@@ -99,23 +116,59 @@ def find_gs( BC, mg_conc ):
     print ("GS energy: {} eV".format(result["energy"]) )
     print ("Structure written to {}".format(outfname) )
     print (result["cf"])
+    return outfname
 
 def evalCE( BC):
     lambs = np.logspace(-7,-1,num=50)
     cvs = []
+    sel_cond = [("in_conc_range","=","1")]
     for i in range(len(lambs)):
         print (lambs[i])
-        evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1" )
+        evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1", select_cond=sel_cond )
         cvs.append(evaluator._cv_loo())
     indx = np.argmin(cvs)
     print ("Selected penalization value: {}".format(lambs[indx]))
-    evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1" )
+    evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1", select_cond=sel_cond )
     print ( evaluator.cf_matrix[:,1] )
     eci_name = evaluator.get_cluster_name_eci_dict
+    evaluator._get_e_predict()
+    e_pred = evaluator.e_pred
+    e_dft = evaluator.e_dft
     print (eci_name)
     evaluator.plot_energy()
     plotter = ECIPlotter(eci_name)
     plotter.plot( show_names=True )
+
+    # Formation enthalpy
+    ref_eng_fcc ={"Al":-3.73667187,"Mg":-1.59090625}
+    e_form_dft = []
+    e_form_ce = []
+    mg_concs = []
+    db = connect( BC.db_name )
+    calc = ClusterExpansion( BC, cluster_name_eci=eci_name )
+    for i,row in enumerate(db.select(converged=1,in_conc_range=1)):
+        energy = row.energy/row.natoms
+        count = row.count_atoms()
+        energy = e_dft[i]
+        e_ce = e_pred[i]
+        xmg = 0.0
+        for key,value in count.iteritems():
+            count[key] /= float(row.natoms)
+            energy -= ref_eng_fcc[key]*count[key]
+            e_ce -= ref_eng_fcc[key]*count[key]
+        e_form_dft.append( energy )
+        e_form_ce.append( e_ce )
+        if ( "Mg" in count.keys() ):
+            xmg = count["Mg"]
+        mg_concs.append(xmg)
+
+    e_form_dft = np.array(e_form_dft)
+    e_form_ce = np.array( e_form_ce )
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+    ax.plot( mg_concs, e_form_dft*mol/kJ, "o",mfc="none" )
+    ax.plot( mg_concs, e_form_ce*mol/kJ, "x" )
+    ax.axhline(0.0,ls="--")
 
     eci_fname = "data/{}.json".format(db_name.split(".")[0])
     with open( eci_fname, 'w') as outfile:
