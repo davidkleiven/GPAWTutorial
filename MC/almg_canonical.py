@@ -8,6 +8,10 @@ import numpy as np
 from matplotlib import pyplot as plt
 from mpi4py import MPI
 from cemc.tools import CanonicalFreeEnergy
+from ase.units import kJ,mol
+from matplotlib import cm
+from scipy.interpolate import UnivariateSpline
+import json
 
 mc_db_name = "data/almg_fcc_canonical.db"
 comm = MPI.COMM_WORLD
@@ -131,22 +135,67 @@ def get_free_energies():
         result[formula]["internal_energy"] = internal
         result[formula]["free_energy"] = F
         result[formula]["conc"] = conc
+        result[formula]["entropy"] = (internal-F)/temp
+        result[formula]["TS"] = internal-F
     return result
+
+def find_extremal_points( all_concs, all_excess, show_plot=True ):
+    maxima = []
+    minima = []
+    for conc,excess in zip(all_concs,all_excess):
+        maxima_fixed_temp = []
+        minima_fixed_temp = []
+        spl = UnivariateSpline( conc, excess, k=2, s=0 )
+        x = np.linspace( np.min(all_concs), np.max(all_concs), 100 )
+        y = spl(x)
+
+        # Brute force find local maximia
+        for i in range(1,len(y)-1):
+            if ( y[i] > y[i-1] and y[i] > y[i+1] ):
+                maxima_fixed_temp.append( x[i] )
+            elif ( y[i] < y[i-1] and y[i] < y[i+1] ):
+                minima_fixed_temp.append(x[i])
+        maxima.append( maxima_fixed_temp )
+        minima.append( minima_fixed_temp )
+        if ( show_plot ):
+            plt.plot(conc,excess)
+            plt.plot(x,y)
+            plt.show()
+    return maxima, minima
 
 def excess( temps ):
     ref_energies = {
         "Al":-3.73667187,
         "Mg":-1.59090625
     }
+    if ( temps == "all" ):
+        db = connect( mc_db_name )
+        all_temps = []
+        for row in db.select(converged=1):
+            if ( row.temperature not in all_temps ):
+                all_temps.append( row.temperature )
+        temps = all_temps
     res = get_free_energies()
     plt.plot( res["Al950Mg50"]["temperature"], res["Al950Mg50"]["free_energy"], "x" )
     plt.show()
 
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
-    for T in temps:
+    markers = ["o","x","^","v","d"]
+    colors = ['#b2182b','#ef8a62','#fddbc7','#f7f7f7','#d1e5f0','#67a9cf','#2166ac']
+    fig_entropy = plt.figure()
+    ax_entropy = fig_entropy.add_subplot(1,1,1)
+
+    Tmin = np.min(temps)
+    Tmax = np.max(temps)
+    all_excess = []
+    all_concs = []
+    all_temps = []
+    for count,T in enumerate(temps):
         excess = []
         concs = []
+        entropy = []
+        temperature = None
         for key,entry in res.iteritems():
             if ( "Mg" in entry["conc"].keys() ):
                 mg_conc = entry["conc"]["Mg"]
@@ -158,8 +207,64 @@ def excess( temps ):
             if ( diff[indx] > 1.0 ):
                 print ("Warning! Difference {}. Temperature might not be simulated!".format(diff[indx]) )
             excess.append( entry["free_energy"][indx]-ref_energies["Al"]*entry["conc"]["Al"] - ref_energies["Mg"]*entry["conc"]["Mg"] )
+            if ( temperature is None ):
+                temperature = entry["temperature"][indx]
+            excess[-1] += entry["TS"][indx]
+            entropy.append( entry["entropy"][indx] )
+            #excess.append( entry["free_energy"][indx]+entry["TS"][indx] )
             #excess.append( entry["free_energy"][indx] )
-        ax.plot( concs, excess, "x", label="{}K".format(int(T)) )
+        concs += [0.0,1.0]
+        excess += [0.0,0.0]
+        entropy += [0.0,0.0]
+        srt_indx = np.argsort(concs)
+        concs = [concs[indx] for indx in srt_indx]
+        excess = np.array( [excess[indx] for indx in srt_indx] )
+        entropy = np.array( [entropy[indx] for indx in srt_indx])
+        all_excess.append(excess)
+        all_concs.append(concs)
+        mapped_temp = (temperature-Tmin)/(Tmax-Tmin)
+        all_temps.append( temperature )
+        ax.plot( concs, excess*mol/kJ, marker=markers[count%len(markers)], label="{}K".format(temperature), mfc="none", color=cm.copper(mapped_temp),lw=2 )
+        ax_entropy.plot( concs, 1000.0*entropy*mol/kJ, marker=markers[count%len(markers)], label="{}K".format(temperature), color=cm.copper(mapped_temp),lw=2 , mfc="none")
+    #ax.legend(frameon=False)
+    ax.set_xlabel( "Mg concentration" )
+    ax.set_ylabel( "Enthalpy of formation (kJ/mol)" )
+    ax.spines["right"].set_visible(False)
+    ax.spines["top"].set_visible(False)
+
+    ax_entropy.set_xlabel( "Mg concentration" )
+    ax_entropy.set_ylabel( "Entropy (J/K mol)")
+    ax_entropy.spines["right"].set_visible(False)
+    ax_entropy.spines["top"].set_visible(False)
+    fig_info = plt.figure()
+    Z = [[0,0],[0,0]]
+    #temp_info = [np.min(T),np.max(T)]
+    ax_info = fig_info.add_subplot(1,1,1)
+    temp_info = np.linspace(np.min(temps),np.max(temps),256)
+    Cb_info = ax_info.contourf(Z,temp_info, cmap="copper")
+
+    cbar = fig.colorbar(Cb_info, orientation="horizontal", ticks=[100,300,500,700] )
+    cbar.ax.xaxis.set_ticks_position("top")
+    cbar.ax.set_xticklabels([100,300,500,700])
+    cbar.ax.xaxis.set_label_position("top")
+
+    #cbar.ax.tick_params(axis='x',direction='in',labeltop='on')
+    cbar.set_label( "Temperature (K)")
+
+    cbar2 = fig_entropy.colorbar(Cb_info, orientation="horizontal", ticks=[100,300,500,700] )
+    cbar2.ax.xaxis.set_ticks_position("top")
+    cbar2.ax.set_xticklabels([100,300,500,700])
+    cbar2.ax.xaxis.set_label_position("top")
+    cbar2.set_label( "Temperature (K)" )
+
+    all_maxima, all_minima = find_extremal_points( all_concs, all_excess, show_plot=False )
+
+    all_data = []
+    for temp,maxima,minima in zip(all_temps,all_maxima,all_minima):
+        all_data.append( {"temperature":temp, "maxima":maxima,"minima":minima} )
+
+    with open("data/extremal_points.json", 'w') as outfile:
+        json.dump( all_data, outfile, indent=2, separators=(",",":") )
     plt.show()
 
 

@@ -4,16 +4,20 @@ from matplotlib import pyplot as plt
 from ase.visualize import view
 import json
 import numpy as np
+from mpi4py import MPI
 
 eci_vib = {
     "c1_0":0.43,
     "c2_1000_00":-0.045
 }
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
 def main():
     mu_al = -1.06
     mu_al3mg = -1.067
-    gs_al_file = "data/bc_10x10x10_gsAl.pkl"
-    gs_al3mg_file = "data/bc_10x10x10_gsAl3Mg.pkl"
+    gs_al_file = "data/bc_10x10x10_Al.pkl"
+    gs_al3mg_file = "data/bc_10x10x10_Al3Mg.pkl"
     with open( gs_al_file, 'rb' ) as infile:
         bc_al,cf_al,eci_al = pck.load( infile )
     with open( gs_al3mg_file, 'rb' ) as infile:
@@ -39,18 +43,22 @@ def main():
 
     # Construct common tangent construction
     #T = [200,250,300,310,320,330,340,350,360,361,362,363,364,365,366,367,368,369,370,371,372,373,374,375,376,377,378,379,380]
-    T = [200,250,300,350,400,450,500]
-    res = boundary_tracker.separation_line( np.array(T) )
-    with open("data/phase_boundary.json",'w') as outfile:
-        json.dump( res, outfile, sort_keys=True, indent=2, separators=(",",":") )
-    print (res["msg"])
-    print (bc_al.atoms.get_chemical_formula())
-    print (bc_al3mg.atoms.get_chemical_formula())
-    view(bc_al.atoms)
-    view(bc_al3mg.atoms)
-    fig = plt.figure()
-    ax = fig.add_subplot(1,1,1)
-    ax.plot( res["temperature"], res["mu"] )
-    plt.show()
+    mc_args = {
+        "mode":"prec",
+        "prec":1E-5
+    }
+    res = boundary_tracker.separation_line_adaptive_euler( T0=100, stepsize=50, min_step=0.5, mc_args=mc_args )
+    print (res)
+    if ( rank == 0 ):
+        with open("data/phase_boundary_adaptive.json",'w') as outfile:
+            json.dump( res, outfile, sort_keys=True, indent=2, separators=(",",":") )
+        print (res["msg"])
+        print (bc_al.atoms.get_chemical_formula())
+        print (bc_al3mg.atoms.get_chemical_formula())
+    #fig = plt.figure()
+    #ax = fig.add_subplot(1,1,1)
+    #ax.plot( res["temperature"], res["mu"] )
+    #plt.show()
+
 if __name__ == "__main__":
     main()
