@@ -5,6 +5,7 @@ from ase.visualize import view
 import json
 import numpy as np
 from mpi4py import MPI
+import gc
 
 eci_vib = {
     "c1_0":0.43,
@@ -47,7 +48,7 @@ def main():
         "mode":"prec",
         "prec":1E-5
     }
-    res = boundary_tracker.separation_line_adaptive_euler( T0=100, stepsize=50, min_step=0.5, mc_args=mc_args )
+    res = boundary_tracker.separation_line_adaptive_euler( T0=100, stepsize=50, min_step=1E-6, mc_args=mc_args )
     print (res)
     if ( rank == 0 ):
         with open("data/phase_boundary_adaptive.json",'w') as outfile:

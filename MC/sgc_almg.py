@@ -1,16 +1,17 @@
 import sys
 from cemc.mcmc import sgc_montecarlo as sgc
 import json
-from ase.ce.settings_bulk import BulkCrystal
+from ase.ce import BulkCrystal
 from cemc.wanglandau.ce_calculator import CE, get_ce_calc
 import numpy as np
 from mpi4py import MPI
 from ase.visualize import view
 import dill as pck
 from cemc.mcmc.linear_vib_correction import LinearVibCorrection
+import gc
 
-OUTFILE = "data/almg_10x10x10_linvib.json"
-pck_file = "data/bc_10x10x10_linvib.pkl"
+OUTFILE = "data/almg_10x10x10_AlMg3.json"
+pck_file = "data/bc_10x10x10_AlMg3.pkl"
 db_name = "data/ce_hydrostatic.db"
 bc_filename = "../CE/data/BC_fcc.pkl"
 
@@ -71,12 +72,14 @@ def run( mu, temps, save=False ):
         #mc.linear_vib_correction = linvib
         #mc.runMC( steps=n_burn, chem_potential=chem_pots, equil=False )
         equil = {"confidence_level":1E-8}
-        mc.runMC( mode="prec", chem_potential=chem_pots, prec=0.01, equil_params=equil )
+        mc.runMC( mode="prec", chem_potential=chem_pots, prec=1E-8, equil_params=equil )
         if ( rank==0 ):
             print (mc.atoms._calc.eci["c1_0"])
         thermo_properties = mc.get_thermodynamic()
         thermo.append( thermo_properties )
         mc.reset()
+        n_unreachable = gc.collect()
+        print ("GC number of unreachable: {}".format(n_unreachable))
 
     #all_thermos = []
     #all_thermos = comm.gather( thermo, root=0 )
@@ -121,9 +124,9 @@ def run( mu, temps, save=False ):
             json.dump( data, outfile, sort_keys=True, indent=2, separators=(",",":") )
         print ( "Data written to {}".format(OUTFILE) )
 
-    if ( comm.Get_size() == 1 ):
+    if ( comm.Get_rank() == 0 ):
         print (ceBulk.atoms.get_chemical_formula() )
-        view( ceBulk.atoms )
+        #view( ceBulk.atoms )
 
     ceBulk.atoms.set_calculator(None)
     if ( rank == 0 ):
