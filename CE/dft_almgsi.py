@@ -25,6 +25,7 @@ def main( argv ):
     if ( len(argv) >= 2 ):
         nkpt = int(argv[1])
 
+    single_point = False
     if ( len(argv) >= 3 ):
         single_point = (int(argv[2])==1)
 
