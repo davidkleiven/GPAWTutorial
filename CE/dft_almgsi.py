@@ -99,7 +99,7 @@ def main( argv ):
                 relaxer.run( fmax=fmax )
         energy = atoms.get_potential_energy()
 
-        orig_atoms = db.get_atoms(mname=name)
+        orig_atoms = db.get_atoms(name=name)
         scalc = SinglePointCalculator( orig_atoms, energy=energy )
         orig_atoms.set_calculator( scalc )
         kvp = db.get(name=name).key_value_pairs
