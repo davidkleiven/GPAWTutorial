@@ -15,6 +15,7 @@ from cemc.tools import GSFinder
 from ase.io import write
 from ase.units import mol, kJ
 from ase.calculators.cluster_expansion import ClusterExpansion
+from ase.ce import CorrFunction
 
 def get_atoms():
     # https://materials.springer.com/isp/crystallographic/docs/sd_0453869
@@ -62,6 +63,8 @@ def main( argv ):
     bs = BulkSpacegroup( basis_elements=basis_elements, basis=basis, spacegroup=217, cellpar=cellpar, conc_args=conc_args,
     max_cluster_size=4, db_name=db_name, size=[1,1,1], grouped_basis=[[0,1,2,3]] )
     #bs.reconfigure_settings()
+    #cf = CorrFunction(bs)
+    #cf.reconfig_db_entries()
     print (bs.basis_functions)
 
     struct_gen = GenerateStructures( bs, struct_per_gen=10 )
@@ -82,7 +85,7 @@ def main( argv ):
         find_all_gs(bs,struct_gen)
 
 def find_all_gs(BC, struct_gen, mg_conc_min=0.5,mg_conc_max=0.7):
-    mg_concs = np.linspace(mg_conc_min,mg_conc_max,10)
+    mg_concs = np.linspace(mg_conc_min,mg_conc_max,20)
     insert_count = 0
     for mg_conc in mg_concs:
         fname = find_gs(BC,mg_conc)
@@ -119,9 +122,9 @@ def find_gs( BC, mg_conc ):
     return outfname
 
 def evalCE( BC):
-    lambs = np.logspace(-7,-1,num=50)
+    lambs = np.logspace(-6,1,num=50)
     cvs = []
-    select_cond = None
+    #select_cond = None
     select_cond = [("in_conc_range","=","1")]
     for i in range(len(lambs)):
         print (lambs[i])
@@ -130,7 +133,8 @@ def evalCE( BC):
         cvs.append(evaluator._cv_loo())
     indx = np.argmin(cvs)
     print ("Selected penalization value: {}".format(lambs[indx]))
-    evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1", select_cond=select_cond )
+    lamb = float(lambs[indx])
+    evaluator = Evaluate( BC, lamb=lamb, penalty="l1", select_cond=select_cond )
 
     print ( evaluator.cf_matrix[:,1] )
     eci_name = evaluator.get_cluster_name_eci_dict

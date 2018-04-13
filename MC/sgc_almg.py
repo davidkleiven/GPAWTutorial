@@ -71,8 +71,7 @@ def run( mu, temps, save=False ):
         mc = sgc.SGCMonteCarlo( ceBulk.atoms, T, symbols=["Al","Mg"], mpicomm=comm )
         #mc.linear_vib_correction = linvib
         #mc.runMC( steps=n_burn, chem_potential=chem_pots, equil=False )
-        equil = {"confidence_level":1E-8}
-        mc.runMC( mode="prec", chem_potential=chem_pots, prec=1E-8, equil_params=equil )
+        mc.runMC( mode="prec", chem_potential=chem_pots, prec=1E-4 )
         if ( rank==0 ):
             print (mc.atoms._calc.eci["c1_0"])
         thermo_properties = mc.get_thermodynamic()

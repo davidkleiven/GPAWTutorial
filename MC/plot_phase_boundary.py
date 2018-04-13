@@ -7,6 +7,7 @@ mpl.rcParams["axes.unicode_minus"] = False
 from matplotlib import pyplot as plt
 from ase.units import mol,kJ
 import numpy as np
+from scipy.signal import savgol_filter
 
 def main(argv):
     fname = argv[0]
@@ -35,8 +36,8 @@ def main(argv):
     mg_conc1 = 1.0-al_conc1
     mg_conc2 = 1.0-al_conc2
 
-    ax_comp.plot( mg_conc1, data["temperature"], marker="x" )
-    ax_comp.plot( mg_conc2, data["temperature"], marker="o", mfc="none" )
+    ax_comp.plot( mg_conc1, data["temperature"], "x" )
+    ax_comp.plot( mg_conc2, data["temperature"], "x" )
     ax_comp.spines["right"].set_visible(False)
     ax_comp.spines["top"].set_visible(False)
     ax_comp.set_xlabel( "Mg concentration" )

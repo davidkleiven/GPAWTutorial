@@ -24,8 +24,8 @@ from ase.db import connect
 from ase.units import mol, kJ
 
 eci_fname = "data/almgsi_fcc_eci.json"
+db_name = "almgsi.db"
 def main(argv):
-    db_name = "almgsi.db"
     option = argv[0]
     conc_args = {
         "conc_ratio_min_1":[[64,0,0]],
@@ -62,16 +62,31 @@ def main(argv):
         mg_conc = float( argv[1] )
         si_conc = float( argv[2] )
         find_gs_structure( ceBulk, mg_conc, si_conc )
+    elif ( option == "update_conc_range" ):
+        update_in_conc_range()
+    elif ( option == "allgs" ):
+        find_all_gs( ceBulk, struc_generator )
+
+def update_in_conc_range():
+    db = connect( db_name )
+    for row in db.select():
+        at_count = row.count_atoms()
+        conc_si = 0.0
+        if ( "Si" in at_count.keys() ):
+            conc_si = at_count["Si"]/float(row.natoms)
+        if ( conc_si > 0.32 ):
+            db.update( row.id, in_conc_range=0 )
 
 def evaluate(BC):
     lambs = np.logspace(-7,-1,num=50)
     cvs = []
+    s_cond = [("in_conc_range","=","1")]
     for i in range(len(lambs)):
-        evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1" )
+        evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1", select_cond=s_cond )
         cvs.append(evaluator._cv_loo())
     indx = np.argmin(cvs)
     print ("Selected penalization: {}".format(lambs[indx]))
-    evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1" )
+    evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1", select_cond=s_cond )
     eci_name = evaluator.get_cluster_name_eci_dict
     evaluator.plot_energy()
     plotter = ECIPlotter(eci_name)
@@ -145,6 +160,19 @@ def enthalpy_of_formation(ceBulk):
         ax.text( x[i], enthalpy_dft[i], formulas[i] )
     plt.show()
 
+def find_all_gs(ceBulk,struct_gen):
+    fname = "almgsi_gs_search.csv"
+    mg_concs, si_concs = np.loadtxt( fname, delimiter=",", unpack=True )
+    n_inserted = 0
+    for xmg,xsi in zip(mg_concs,si_concs):
+        fname = find_gs_structure( ceBulk, xmg,xsi )
+        try:
+            struct_gen.insert_structure( init_struct=fname )
+            n_inserted += 1
+        except Exception as exc:
+            print (str(exc))
+
+    print ("Inserted {} new ground state structures".format(n_inserted))
 
 def find_gs_structure( ceBulk, mg_conc, si_conc ):
     """
@@ -176,6 +204,7 @@ def find_gs_structure( ceBulk, mg_conc, si_conc ):
         thermo = mc_obj.get_thermodynamic()
         print ("Mean energy: {}".format(thermo["energy"]))
     fname = "data/gs_structure%s.xyz"%(formula)
+    gs_fname = fname
     write( fname, lowest_struct.lowest_energy_atoms )
     print ("Lowest energy found: {}".format( lowest_struct.lowest_energy))
     print ("GS structure saved to %s"%(fname) )
@@ -185,6 +214,7 @@ def find_gs_structure( ceBulk, mg_conc, si_conc ):
         for key,value in cf.iteritems():
             outfile.write( "{},{}\n".format(key,value))
     print ("CFs saved to %s"%(fname))
+    return gs_fname
 
 if __name__ == "__main__":
     main( sys.argv[1:] )

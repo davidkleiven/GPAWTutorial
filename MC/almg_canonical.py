@@ -76,8 +76,11 @@ def main( argv ):
         formula = argv[1]
         plot(formula)
     elif ( option == "excess" ):
-        temps = argv[1].split(",")
-        temps = [float(temp) for temp in temps]
+        if ( argv[1] != "all" ):
+            temps = argv[1].split(",")
+            temps = [float(temp) for temp in temps]
+        else:
+            temps = "all"
         excess(temps)
 
 def plot(formula):
@@ -226,7 +229,7 @@ def excess( temps ):
         all_temps.append( temperature )
         ax.plot( concs, excess*mol/kJ, marker=markers[count%len(markers)], label="{}K".format(temperature), mfc="none", color=cm.copper(mapped_temp),lw=2 )
         ax_entropy.plot( concs, 1000.0*entropy*mol/kJ, marker=markers[count%len(markers)], label="{}K".format(temperature), color=cm.copper(mapped_temp),lw=2 , mfc="none")
-    #ax.legend(frameon=False)
+    ax.legend(frameon=False)
     ax.set_xlabel( "Mg concentration" )
     ax.set_ylabel( "Enthalpy of formation (kJ/mol)" )
     ax.spines["right"].set_visible(False)
