@@ -99,6 +99,7 @@ def main( argv ):
             else:
                 relaxer.run( fmax=fmax )
         energy = atoms.get_potential_energy()
+        print ("Energy: {}".format(energy))
 
         orig_atoms = db.get_atoms(name=name)
         scalc = SinglePointCalculator( orig_atoms, energy=energy )
