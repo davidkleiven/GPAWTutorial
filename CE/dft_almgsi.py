@@ -105,7 +105,7 @@ def main( argv ):
         orig_atoms.set_calculator( scalc )
         kvp = db.get(name=name).key_value_pairs
         del db[runID]
-        newID = db.write( orig_atoms, key_value_pairs=key_value_pairs )
+        newID = db.write( orig_atoms, key_value_pairs=kvp )
         if ( relax_mode == "positions" ):
             db.update( newID, converged_force=True )
         elif ( relax_mode == "cell" ):
