@@ -16,6 +16,7 @@ from ase.optimize.sciopt import SciPyFminCG
 from ase.optimize import QuasiNewton
 #from save_to_db import SaveToDB
 from atomtools.ase.save_restart import SaveRestartFiles
+from ase.calculators.singlepoint import SinglePointCalculator
 
 def main( argv ):
     relax_mode = "both" # both, cell, positions
