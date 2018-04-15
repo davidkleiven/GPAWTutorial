@@ -36,13 +36,20 @@ def main(argv):
     atoms = bulk( "Al" )
     N = 4
     atoms = atoms*(N,N,N)
+    orig_spin_dict = {
+        "Mg":1.0,
+        "Si":-1.0,
+        "Al":0.0
+    }
 
     ceBulk = BulkCrystal( crystalstructure="fcc", a=4.05, size=[N,N,N], basis_elements=[["Al","Mg","Si"]], \
     conc_args=conc_args, db_name=db_name, max_cluster_size=4 )
+    ceBulk.spin_dict = orig_spin_dict
+    ceBulk.basis_functions = ceBulk._get_basis_functions()
     ceBulk._get_cluster_information()
     print (ceBulk.basis_functions)
     cf = CorrFunction( ceBulk )
-    #cf.reconfig_db_entries()
+    #cf.reconfig_db_entries( select_cond=[("id",">=","2315")])
     #exit()
     struc_generator = GenerateStructures( ceBulk, struct_per_gen=5 )
     if ( option == "generateNew" ):
@@ -80,7 +87,7 @@ def update_in_conc_range():
 def evaluate(BC):
     lambs = np.logspace(-7,-1,num=50)
     cvs = []
-    s_cond = [("in_conc_range","=","1")]
+    s_cond = [("in_conc_range","=","1"),("duplicate","=","0")]
     for i in range(len(lambs)):
         evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1", select_cond=s_cond )
         cvs.append(evaluator._cv_loo())
