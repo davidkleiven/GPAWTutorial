@@ -12,6 +12,7 @@ from ase.units import kJ,mol
 from matplotlib import cm
 from scipy.interpolate import UnivariateSpline
 import json
+plt.switch_backend("TkAgg")
 
 mc_db_name = "data/almg_fcc_canonical.db"
 comm = MPI.COMM_WORLD
@@ -26,7 +27,7 @@ def run( maxT, minT, n_temp, mg_conc ):
     kwargs = {
         "crystalstructure":"fcc", "a":4.05, "size":[4,4,4], "basis_elements":[["Al","Mg"]],
         "conc_args":conc_args, "db_name":"data/temporary_bcdb.db",
-     "max_cluster_size":4
+        "max_cluster_size":4
     }
     ceBulk = BulkCrystal( **kwargs )
     print (ceBulk.basis_functions)
@@ -82,6 +83,8 @@ def main( argv ):
         else:
             temps = "all"
         excess(temps)
+    elif ( option == "save_free_eng" ):
+        free_energies_to_file( "data/free_energies_fcc.json" )
 
 def plot(formula):
     db = connect( mc_db_name )
@@ -107,6 +110,17 @@ def delete(formula):
     db = connect( mc_db_name )
     for row in db.select(formula=formula):
         del db[row.id]
+
+def free_energies_to_file(fname):
+    free_eng = get_free_energies()
+    for key,value in free_eng.iteritems():
+        for subkey,subval in value.iteritems():
+            if ( isinstance(subval, np.ndarray) ):
+                value[subkey] = value[subkey].tolist()
+
+    with open(fname,'w') as outfile:
+        json.dump( free_eng, outfile, indent=2, separators=(",",":") )
+    print ("Free energies written to {}".format(fname))
 
 def get_free_energies():
     """
@@ -189,6 +203,9 @@ def excess( temps ):
     fig_entropy = plt.figure()
     ax_entropy = fig_entropy.add_subplot(1,1,1)
 
+    fig_mg_weighted = plt.figure()
+    ax_mg_weighted = fig_mg_weighted.add_subplot(1,1,1)
+
     Tmin = np.min(temps)
     Tmax = np.max(temps)
     all_excess = []
@@ -229,6 +246,7 @@ def excess( temps ):
         all_temps.append( temperature )
         ax.plot( concs, excess*mol/kJ, marker=markers[count%len(markers)], label="{}K".format(temperature), mfc="none", color=cm.copper(mapped_temp),lw=2 )
         ax_entropy.plot( concs, 1000.0*entropy*mol/kJ, marker=markers[count%len(markers)], label="{}K".format(temperature), color=cm.copper(mapped_temp),lw=2 , mfc="none")
+        ax_mg_weighted.plot( concs, (excess/concs)*mol/kJ,  marker=markers[count%len(markers)], color=cm.copper(mapped_temp),lw=2 , mfc="none" )
     ax.legend(frameon=False)
     ax.set_xlabel( "Mg concentration" )
     ax.set_ylabel( "Enthalpy of formation (kJ/mol)" )
