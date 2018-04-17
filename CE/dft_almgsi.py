@@ -65,7 +65,7 @@ def main( argv ):
         atoms, calc = gp.restart(fname)
         if ( nkpt != 2 ):
             calc = gp.GPAW( mode=gp.PW(600), xc="PBE", kpts=kpts, nbands=nbands )
-            atoms.set_calculator()
+            atoms.set_calculator(calc)
     except:
         calc = gp.GPAW( mode=gp.PW(600), xc="PBE", kpts=kpts, nbands=nbands )
         atoms.set_calculator( calc )
