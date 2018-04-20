@@ -37,10 +37,10 @@ def plot_fcc( ax ):
         concs = [concs[indx] for indx in srt_indx]
         F = np.array( [F[indx] for indx in srt_indx] )
 
-        ax.plot( concs, F*mol/kJ, marker="o", mfc="none", color=colors[i], label="FCC" )
+        ax.plot( concs, F*mol/kJ, marker="o", mfc="none", color=colors[i], label="{}K".format(T) )
 
 def plot_hcp( ax ):
-    concs = [0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.75,0.8,0.95]
+    concs = [0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]
 
     for i,T in enumerate(temps):
         F = []
@@ -51,14 +51,14 @@ def plot_hcp( ax ):
             energy = free_energy[indx] - mg_conc[0]*ref_mg - (1.0-mg_conc[0])*ref_al
             F.append( energy )
         F = np.array(F)
-        ax.plot( concs, F*mol/kJ, marker="^", mfc="none", ls="--", color=colors[i], label="HCP" )
+        ax.plot( concs, F*mol/kJ, marker="^", mfc="none", ls="--", color=colors[i] )
 
 def main():
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
     plot_fcc(ax)
     plot_hcp(ax)
-    #ax.legend(frameon=False)
+    ax.legend(frameon=False)
     ax.set_xlabel( "Mg concentration" )
     ax.set_ylabel( "Free energy of formation (kJ/mol)" )
     ax.spines["right"].set_visible(False)

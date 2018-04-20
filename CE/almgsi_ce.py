@@ -87,7 +87,7 @@ def update_in_conc_range():
 def evaluate(BC):
     lambs = np.logspace(-7,-1,num=50)
     cvs = []
-    s_cond = [("in_conc_range","=","1"),("duplicate","=","0")]
+    s_cond = [("in_conc_range","=","1")]
     for i in range(len(lambs)):
         evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1", select_cond=s_cond )
         cvs.append(evaluator._cv_loo())
