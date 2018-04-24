@@ -1,6 +1,6 @@
 import sys
-sys.path.insert(1,"/home/davidkl/Documents/aseJin")
-sys.path.insert(1,"/home/davidkl/Documents/GPAWTutorial/CE_extensions")
+sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1")
+#sys.path.insert(1,"/home/davidkl/Documents/GPAWTutorial/CE_extensions")
 sys.path.append("/usr/local/lib/python2.7/dist-packages/pymatgen/cli/")
 import ase
 print (ase.__file__)
@@ -38,6 +38,7 @@ from ase.io import write, read
 from ase.db import connect
 from ase.calculators.cluster_expansion.cluster_expansion import ClusterExpansion
 import pickle as pck
+from atomtools.ce import CVScoreHistory
 
 SELECTED_ECI= "selectedEci.pkl"
 #db_name = "ce_hydrostatic_phonons.db"
@@ -121,6 +122,12 @@ def main( argv ):
             raise ValueError( "No xyz filename given!" )
         atoms = read(fname)
         insert_specific_structure( ceBulk, struc_generator, atoms )
+    elif( option == "cv_hist" ):
+        lambdas = np.logspace(-7,-3,8)
+        history = CVScoreHistory(setting=ceBulk, penalization="L1" )
+        history.get_history( lambdas=lambdas )
+        history.plot()
+        plt.show()
 
 def insert_specific_structure( ceBulk, struct_gen, atoms ):
     cf = CorrFunction( ceBulk )

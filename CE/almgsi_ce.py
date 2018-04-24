@@ -1,6 +1,6 @@
 import sys
-sys.path.insert(1,"/home/davidkl/Documents/aseJin")
-sys.path.insert(1,"/home/dkleiven/Documents/aseJin")
+sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1")
+#sys.path.insert(1,"/home/dkleiven/Documents/aseJin")
 sys.path.append("/home/davidkl/Documents/GPAWTutorial/CE_extensions")
 sys.path.append("/home/dkleiven/Documents/GPAWTutorials/CE_extensions")
 from ase.build import bulk
@@ -22,6 +22,7 @@ from almg_bcc_ce import insert_specific_structure
 from ase.calculators.cluster_expansion.cluster_expansion import ClusterExpansion
 from ase.db import connect
 from ase.units import mol, kJ
+from atomtools.ce import CVScoreHistory
 
 eci_fname = "data/almgsi_fcc_eci.json"
 db_name = "almgsi.db"
@@ -51,7 +52,7 @@ def main(argv):
     cf = CorrFunction( ceBulk )
     #cf.reconfig_db_entries( select_cond=[("id",">=","2315")])
     #exit()
-    struc_generator = GenerateStructures( ceBulk, struct_per_gen=5 )
+    struc_generator = GenerateStructures( ceBulk, struct_per_gen=10 )
     if ( option == "generateNew" ):
         struc_generator.generate_probe_structure()
     elif ( option == "eval" ):
@@ -73,6 +74,13 @@ def main(argv):
         update_in_conc_range()
     elif ( option == "allgs" ):
         find_all_gs( ceBulk, struc_generator )
+    elif( option == "cv_hist" ):
+        lambdas = np.logspace(-7,-3,8)
+        history = CVScoreHistory(setting=ceBulk, penalization="L1", select_cond=[("in_conc_range","=","1")] )
+        history.get_history( lambdas=lambdas )
+        history.plot()
+        plt.show()
+
 
 def update_in_conc_range():
     db = connect( db_name )
@@ -158,7 +166,7 @@ def enthalpy_of_formation(ceBulk):
     enthalpy_ce = np.array(enthalpy_ce)*mol/kJ
     ax.plot( x, enthalpy_dft, "o", mfc="none" )
     ax.plot( x, enthalpy_ce, "x" )
-    ax.set_xlabel( "\$x_{Si}/(x_{Mg}+x_{Si})")
+    ax.set_xlabel( "\$c_{Mg}/(c_{Mg}+c_{Si})")
     ax.set_ylabel( "Enthalpy of formation (kJ/mol)")
     ax.spines["right"].set_visible(False)
     ax.spines["top"].set_visible(False)
@@ -198,7 +206,7 @@ def find_gs_structure( ceBulk, mg_conc, si_conc ):
     ceBulk.atoms.set_calculator(calc)
     calc.set_composition( conc )
 
-    temperatures = [800,700,600,500,400,300,200,100,50,20,10]
+    temperatures = [800,700,600,500,400,300,200,175,150,125,100,75,50,25,20,10]
     nsteps = 10000
     lowest_struct = mcobs.LowestEnergyStructure( calc, None )
     formula = ceBulk.atoms.get_chemical_formula()

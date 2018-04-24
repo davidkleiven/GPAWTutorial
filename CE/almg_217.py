@@ -1,4 +1,5 @@
 import sys
+sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1") # Use the newest version here
 from ase.spacegroup import crystal
 from ase.visualize import view
 from ase.ce.settings_bulk import BulkSpacegroup
@@ -16,6 +17,10 @@ from ase.io import write
 from ase.units import mol, kJ
 from ase.calculators.cluster_expansion import ClusterExpansion
 from ase.ce import CorrFunction
+plt.switch_backend("TkAgg")
+import pickle as pck
+from atomtools.ce import PopulationVariance
+from atomtools.ce import EvaluateBootstrap
 
 def get_atoms():
     # https://materials.springer.com/isp/crystallographic/docs/sd_0453869
@@ -62,10 +67,14 @@ def main( argv ):
     basis_elements = [["Al","Mg"],["Al","Mg"],["Al","Mg"],["Al","Mg"]]
     bs = BulkSpacegroup( basis_elements=basis_elements, basis=basis, spacegroup=217, cellpar=cellpar, conc_args=conc_args,
     max_cluster_size=4, db_name=db_name, size=[1,1,1], grouped_basis=[[0,1,2,3]] )
+    with open("data/almg_217_bs.pkl", 'wb' ) as outfile:
+        pck.dump( bs, outfile )
     #bs.reconfigure_settings()
     #cf = CorrFunction(bs)
-    #cf.reconfig_db_entries()
+    #cf.reconfig_db_entries( select_cond=[("calculator","=","unknown")])
     print (bs.basis_functions)
+    #bs.view_clusters()
+    #exit()
 
     struct_gen = GenerateStructures( bs, struct_per_gen=10 )
 
@@ -83,6 +92,8 @@ def main( argv ):
         find_gs( bs, mg_conc )
     elif ( option == "allgs" ):
         find_all_gs(bs,struct_gen)
+    elif ( option == "popvar" ):
+        explore_population(bs)
 
 def find_all_gs(BC, struct_gen, mg_conc_min=0.5,mg_conc_max=0.7):
     mg_concs = np.linspace(mg_conc_min,mg_conc_max,20)
@@ -95,6 +106,14 @@ def find_all_gs(BC, struct_gen, mg_conc_min=0.5,mg_conc_max=0.7):
         except Exception as exc:
             print (str(exc))
     print ("Inserted {} new structures".format(insert_count))
+
+def explore_population(bs):
+    popvar = PopulationVariance( bs )
+    cov, mu = popvar.estimate( n_probe_structures=300 )
+    eigval, eigvec = popvar.diagonalize( cov, plot=True )
+    popvar.plot_eigen( eigval, eigvec )
+    popvar.save( eigval, eigvec, fname="data/almg217_basis.h5" )
+    plt.show()
 
 def find_gs( BC, mg_conc ):
     composition = {
@@ -135,6 +154,7 @@ def evalCE( BC):
     print ("Selected penalization value: {}".format(lambs[indx]))
     lamb = float(lambs[indx])
     evaluator = Evaluate( BC, lamb=lamb, penalty="l1", select_cond=select_cond )
+    #evaluator = EvaluateBootstrap( BC, lamb=lamb, penalty="l1", select_cond=select_cond, n_bootstrap=1000 )
 
     print ( evaluator.cf_matrix[:,1] )
     eci_name = evaluator.get_cluster_name_eci_dict
