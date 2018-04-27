@@ -49,7 +49,7 @@ def run(T,mg_conc):
     mc_obj.attach( camera, interval=10000 )
     mc_obj.attach( pairs, interval=1 )
     mc_obj.attach( network, interval=500 )
-    mc_obj.runMC( mode=mode, steps=40000000, equil=True )
+    mc_obj.runMC( mode=mode, steps=10000000, equil=True )
 
     pair_mean = pairs.get_average()
     pair_std = pairs.get_std()

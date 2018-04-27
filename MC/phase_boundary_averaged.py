@@ -69,7 +69,7 @@ def get_averaged_results( all_data, Tmin, Tmax, nsteps ):
     }
 
     with open(outfname,'w') as outfile:
-        json.dump( res, outfile, indent=2, separators=(":",",") )
+        json.dump( res, outfile, indent=2, separators=(",",":") )
     print ( "Averaged results written to {}".format(outfname))
     return res
 
