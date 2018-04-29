@@ -1,5 +1,6 @@
 import sys
 sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1")
+sys.path.insert(2,"/home/dkleiven/Documents/aseJin")
 
 from cemc.mcmc import NucleationMC
 from cemc.mcmc import TransitionPathRelaxer
@@ -31,7 +32,7 @@ def main(outfname,action):
         ecis = json.load( infile )
     print (ecis)
     #calc = CE( ceBulk, ecis, size=(3,3,3) )
-    calc = get_ce_calc( ceBulk, kwargs, ecis, size=[15,15,15], free_unused_arrays_BC=True )
+    calc = get_ce_calc( ceBulk, kwargs, ecis, size=[10,10,10], free_unused_arrays_BC=True )
     ceBulk = calc.BC
     ceBulk.atoms.set_calculator( calc )
 

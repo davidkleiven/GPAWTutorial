@@ -1,4 +1,5 @@
 import sys
+sys.path.insert(1,"/home/dkleiven/Documents/aseJin")
 from cemc.mcmc import Montecarlo
 from ase.ce import BulkCrystal
 import json
@@ -33,7 +34,7 @@ def run(T,mg_conc):
         ecis = json.load( infile )
     print (ecis)
     #calc = CE( ceBulk, ecis, size=(3,3,3) )
-    calc = get_ce_calc( ceBulk, kwargs, ecis, size=[15,15,15], free_unused_arrays_BC=True )
+    calc = get_ce_calc( ceBulk, kwargs, ecis, size=[10,10,10], free_unused_arrays_BC=True )
     ceBulk = calc.BC
     ceBulk.atoms.set_calculator( calc )
     comp = {
@@ -49,7 +50,7 @@ def run(T,mg_conc):
     mc_obj.attach( camera, interval=10000 )
     mc_obj.attach( pairs, interval=1 )
     mc_obj.attach( network, interval=500 )
-    mc_obj.runMC( mode=mode, steps=10000000, equil=True )
+    mc_obj.runMC( mode=mode, steps=10000, equil=True )
 
     pair_mean = pairs.get_average()
     pair_std = pairs.get_std()

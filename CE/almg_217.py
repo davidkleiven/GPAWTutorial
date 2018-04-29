@@ -1,5 +1,6 @@
 import sys
 sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1") # Use the newest version here
+sys.path.insert(2,"/home/dkleiven/Documents/aseJin")
 from ase.spacegroup import crystal
 from ase.visualize import view
 from ase.ce.settings_bulk import BulkSpacegroup
@@ -20,7 +21,7 @@ from ase.ce import CorrFunction
 plt.switch_backend("TkAgg")
 import pickle as pck
 from atomtools.ce import PopulationVariance
-from atomtools.ce import EvaluateBootstrap
+#from atomtools.ce import EvaluateBootstrap
 
 def get_atoms():
     # https://materials.springer.com/isp/crystallographic/docs/sd_0453869
@@ -171,10 +172,12 @@ def evalCE( BC):
     e_form_dft = []
     e_form_ce = []
     mg_concs = []
+    ids = []
     db = connect( BC.db_name )
     calc = ClusterExpansion( BC, cluster_name_eci=eci_name )
     for i,row in enumerate(db.select(converged=1,in_conc_range=1)):
         energy = row.energy/row.natoms
+        ids.append(row.id)
         count = row.count_atoms()
         energy = e_dft[i]
         e_ce = e_pred[i]
@@ -201,6 +204,12 @@ def evalCE( BC):
     with open( eci_fname, 'w') as outfile:
         json.dump( eci_name, outfile )
     print ("ECIs stored in %s"%(eci_fname))
+    diff = np.abs(e_form_dft-e_form_ce)
+    srt_indx = np.argsort(diff)[::-1]
+    srt_id = [ids[indx] for indx in srt_indx]
+    print (srt_id)
+    srt_diff =[diff[indx] for indx in srt_indx]
+    print(srt_diff)
     plt.show()
 
 if __name__ == "__main__":
