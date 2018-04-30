@@ -109,7 +109,7 @@ def enthalpy_of_formation( db_name ):
     plt.show()
 
 def evaluate( BC ):
-    lambs = np.logspace( -7, -1, 50 )
+    lambs = np.logspace( -7, -3, 50 )
     cvs = []
     for i in range(len(lambs)):
         print (lambs[i])

@@ -142,7 +142,7 @@ def find_gs( BC, mg_conc ):
     return outfname
 
 def evalCE( BC):
-    lambs = np.logspace(-6,1,num=50)
+    lambs = np.logspace(-4,-3,num=50)
     cvs = []
     #select_cond = None
     select_cond = [("in_conc_range","=","1")]

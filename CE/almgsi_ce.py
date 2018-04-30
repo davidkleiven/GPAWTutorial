@@ -43,11 +43,11 @@ def main(argv):
         "Al":0.0
     }
 
-    ceBulk = BulkCrystal( crystalstructure="fcc", a=4.05, size=[N,N,N], basis_elements=[["Al","Mg","Si"]], \
+    ceBulk = BulkCrystal( crystalstructure="fcc", a=4.05, size=[N,N,N], basis_elements=[["Mg","Si","Al",]], \
     conc_args=conc_args, db_name=db_name, max_cluster_size=4 )
-    ceBulk.spin_dict = orig_spin_dict
-    ceBulk.basis_functions = ceBulk._get_basis_functions()
-    ceBulk._get_cluster_information()
+    #ceBulk.spin_dict = orig_spin_dict
+    #ceBulk.basis_functions = ceBulk._get_basis_functions()
+    #ceBulk._get_cluster_information()
     print (ceBulk.basis_functions)
     cf = CorrFunction( ceBulk )
     #cf.reconfig_db_entries( select_cond=[("id",">=","2315")])
@@ -93,10 +93,11 @@ def update_in_conc_range():
             db.update( row.id, in_conc_range=0 )
 
 def evaluate(BC):
-    lambs = np.logspace(-7,-1,num=50)
+    lambs = np.logspace(-5,-4,num=50)
     cvs = []
     s_cond = [("in_conc_range","=","1")]
     for i in range(len(lambs)):
+        print (lambs[i])
         evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1", select_cond=s_cond )
         cvs.append(evaluator._cv_loo())
     indx = np.argmin(cvs)

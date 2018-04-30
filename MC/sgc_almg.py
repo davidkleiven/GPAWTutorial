@@ -70,8 +70,8 @@ def run( mu, temps, save=False ):
             print ("{}: Current temperature {}".format(rank, T) )
         mc = sgc.SGCMonteCarlo( ceBulk.atoms, T, symbols=["Al","Mg"], mpicomm=comm )
         #mc.linear_vib_correction = linvib
-        #mc.runMC( steps=2000000, chem_potential=chem_pots, equil=False )
-        #exit()
+        mc.runMC( steps=2000000, chem_potential=chem_pots, equil=False )
+        exit()
         mc.runMC( mode="prec", chem_potential=chem_pots, prec=1E-4 )
         if ( rank==0 ):
             print (mc.atoms._calc.eci["c1_0"])
