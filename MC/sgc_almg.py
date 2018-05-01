@@ -37,7 +37,7 @@ def run( mu, temps, save=False ):
     #    ceBulk = pck.load(infile)
     kwargs = {
         "crystalstructure":"fcc", "a":4.05, "size":[4,4,4], "basis_elements":[["Al","Mg"]],
-        "conc_args":conc_args, "db_name":db_name,
+        "conc_args":conc_args, "db_name":"random_test.db",
      "max_cluster_size":4
     }
     ceBulk = BulkCrystal( **kwargs )
