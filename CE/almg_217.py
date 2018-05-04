@@ -145,7 +145,7 @@ def evalCE( BC):
     lambs = np.logspace(-4,-3,num=50)
     cvs = []
     #select_cond = None
-    select_cond = [("in_conc_range","=","1")]
+    select_cond = [("in_conc_range","=","1"),("calculator","=","unknown")]
     for i in range(len(lambs)):
         print (lambs[i])
         evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1", select_cond=select_cond )
@@ -175,7 +175,7 @@ def evalCE( BC):
     ids = []
     db = connect( BC.db_name )
     calc = ClusterExpansion( BC, cluster_name_eci=eci_name )
-    for i,row in enumerate(db.select(converged=1,in_conc_range=1)):
+    for i,row in enumerate(db.select(converged=1,in_conc_range=1,calculator="unknown")):
         energy = row.energy/row.natoms
         ids.append(row.id)
         count = row.count_atoms()

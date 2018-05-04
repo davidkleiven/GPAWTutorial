@@ -57,7 +57,7 @@ def main():
     sizes = range(3,51)
     energies = []
     for size in sizes:
-        T = np.logspace(3,-1,100)
+        T = np.logspace(3,-1,20)
         mc = FixedNucleusMC( ceBulk.atoms, T, size=size, network_name="c2_1414_1", network_element="Mg" )
         low_en = LowestEnergyStructure( calc, mc )
         mc.attach( low_en )
