@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1")
-#sys.path.insert(1,"/home/dkleiven/Documents/aseJin")
+sys.path.insert(2,"/home/dkleiven/Documents/aseJin")
 sys.path.append("/home/davidkl/Documents/GPAWTutorial/CE_extensions")
 sys.path.append("/home/dkleiven/Documents/GPAWTutorials/CE_extensions")
 from ase.build import bulk
