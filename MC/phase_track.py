@@ -1,3 +1,5 @@
+import sys
+sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1")
 from cemc.tools.phase_boundary_tracker import PhaseBoundaryTracker
 import pickle as pck
 from matplotlib import pyplot as plt
@@ -48,13 +50,13 @@ def main():
     #T = [200,250,300,310,320,330,340,350,360,361,362,363,364,365,366,367,368,369,370,371,372,373,374,375,376,377,378,379,380]
     mc_args = {
         "mode":"prec",
-        "prec":1E-4,
+        "prec":1E-3,
         "equil":True
     }
     res = boundary_tracker.separation_line_adaptive_euler( T0=100, stepsize=50, min_step=1.0, mc_args=mc_args )
     print (res)
     if ( rank == 0 ):
-        with open("data/phase_boundary_adaptive.json",'w') as outfile:
+        with open("data/phase_boundary_adaptive_fixed.json",'w') as outfile:
             json.dump( res, outfile, sort_keys=True, indent=2, separators=(",",":") )
         print (res["msg"])
         print (bc_al.atoms.get_chemical_formula())

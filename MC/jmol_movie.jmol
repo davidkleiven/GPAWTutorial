@@ -1,0 +1,17 @@
+~degstep=2
+~degrees=0
+~counter = 0
+
+while (~degrees < 360)
+{
+	rotate y @~degstep
+	~degrees += ~degstep
+	~counter += 1
+	refresh
+	~curpos = "Degress = " + ~degrees
+	print ~curpos
+
+	~prefix = "/home/davidkl/Documents/Dump/jpg_frames/"
+	~fname = ~prefix+"img"+~counter + ".jpg"
+	write image jpg @~fname
+}

@@ -2,8 +2,8 @@ import sys
 sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1")
 sys.path.insert(2,"/home/dkleiven/Documents/aseJin")
 
-from cemc.mcmc import NucleationMC
-from cemc.mcmc import TransitionPathRelaxer
+from cemc.mcmc import NucleationSampler, SGCNucleation, CanonicalNucleationMC
+#from cemc.mcmc import TransitionPathRelaxer
 from ase.ce import BulkCrystal
 from cemc.wanglandau.ce_calculator import get_ce_calc
 import json
@@ -38,12 +38,30 @@ def main(outfname,action):
 
     chem_pot = {"c1_0":-1.0651526881167124}
     chem_pot = {"c1_0":-1.069}
-    mc = NucleationMC( ceBulk.atoms, 300, size_window_width=10, network_name="c2_1414_1", network_element="Mg", symbols=["Al","Mg"], \
-    chemical_potential=chem_pot, max_cluster_size=200, merge_strategy="normalize_overlap", mpicomm=comm )
+    sampler = NucleationSampler( size_window_width=3, \
+    chemical_potential=chem_pot, max_cluster_size=15, \
+    merge_strategy="normalize_overlap", mpicomm=comm, max_one_cluster=True )
+
+    T = 700
+    mc = SGCNucleation( ceBulk.atoms, T, nucleation_sampler=sampler, \
+    network_name="c2_1414_1",  network_element="Mg", symbols=["Al","Mg"], \
+    chem_pot=chem_pot, allow_solutes=True )
+
+    mg_conc = 0.04
+    concentration = {
+        "Mg":mg_conc,
+        "Al":1.0-mg_conc
+    }
+
+    mc_canonical = CanonicalNucleationMC( ceBulk.atoms, T, nucleation_sampler=sampler,
+    network_name="c2_1414_1",  network_element="Mg", concentration=concentration )
 
     if ( action == "barrier" ):
         mc.run(nsteps=100000)
-        mc.save(fname=outfname)
+        sampler.save(fname=outfname)
+    elif ( action == "barrier_canonical" ):
+        mc_canonical.run( nsteps=50000 )
+        sampler.save(fname=outfname)
     elif ( action == "trans_path" ):
         mc.find_transition_path( initial_cluster_size=50, max_size_reactant=10, min_size_product=100, folder="data", path_length=50, max_attempts=10 )
         plt.show()
@@ -80,6 +98,9 @@ if __name__ == "__main__":
     if ( option == "run" ):
         fname = sys.argv[2]
         main(fname,"barrier")
+    elif ( option == "barrier_canonical" ):
+        fname = sys.argv[2]
+        main(fname,"barrier_canonical")
     elif ( option == "plot" ):
         fname = sys.argv[2]
         plot(fname)

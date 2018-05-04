@@ -1,0 +1,6 @@
+color background white
+unitcell off
+axes off
+spacefill 25%
+select magnesium
+restrict within(3.0,selected)
