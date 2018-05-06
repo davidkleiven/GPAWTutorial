@@ -8,7 +8,7 @@ from ase.units import kB, kJ, mol
 from scipy.interpolate import UnivariateSpline
 
 n_atoms = 15**3
-energy_file = "data/cluster_structure/energies.txt"
+energy_file = "data/cluster_struct1mill_1/energies_run2.txt"
 
 ref_en_al = -239.147/64.0 # DFT value
 ref_en_mg = -101.818/64.0 # DFT value
