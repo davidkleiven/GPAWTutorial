@@ -21,7 +21,7 @@ def get_pure_energies(eci):
             mg -= value
     return al,mg
 
-folder = "data/cluster_struct_longrun/"
+folder = "data/cluster_struct1mill_1/"
 def main():
     conc_args = {
                 "conc_ratio_min_1":[[1,0]],
@@ -57,17 +57,18 @@ def main():
     sizes = range(3,51)
     energies = []
     for size in sizes:
-        T = np.logspace(3,-1,20)
+        T = np.linspace(50,1000,40)[::-1]
         mc = FixedNucleusMC( ceBulk.atoms, T, size=size, network_name="c2_1414_1", network_element="Mg" )
-        low_en = LowestEnergyStructure( calc, mc )
+        low_en = LowestEnergyStructure( calc, mc, verbose=True )
         mc.attach( low_en )
         init_cluster = True
         for temp in T:
             print ("Temperature {}K".format(temp))
             mc.T = temp
-            mc.run( nsteps=100000, init_cluster=init_cluster )
+            mc.run( nsteps=10000, init_cluster=init_cluster )
             init_cluster = False
             mc.reset()
+            mc.is_first = False
         atoms,clust = mc.get_atoms( atoms=low_en.atoms )
         write( "{}cluster{}_all.cif".format(folder,size), atoms )
         write( "{}cluster{}_cluster.cif".format(folder,size), clust )
