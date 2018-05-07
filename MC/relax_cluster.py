@@ -21,7 +21,7 @@ def get_pure_energies(eci):
             mg -= value
     return al,mg
 
-folder = "data/cluster_struct_viz/"
+folder = "data/cluster_struct_new_trialmove/"
 def main():
     conc_args = {
                 "conc_ratio_min_1":[[1,0]],

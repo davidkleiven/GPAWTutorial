@@ -6,9 +6,10 @@ from matplotlib import pyplot as plt
 import numpy as np
 from ase.units import kB, kJ, mol
 from scipy.interpolate import UnivariateSpline
+from scipy.stats import linregress
 
 n_atoms = 15**3
-energy_file = "data/cluster_struct1mill_1/energies_run2.txt"
+energy_file = "data/cluster_struct_new_trialmove/energies_run2.txt"
 
 ref_en_al = -239.147/64.0 # DFT value
 ref_en_mg = -101.818/64.0 # DFT value
@@ -72,10 +73,10 @@ def main():
 
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
-    ax.plot( size, energy*mol/kJ, marker="o", mfc="none" )
-    ax.plot( size_temp, dilution_limit*mol/kJ )
+    ax.plot( size, energy, marker="o", mfc="none" )
+    ax.plot( size_temp, dilution_limit )
     ax.set_xlabel( "Cluster size" )
-    ax.set_ylabel( "Cluster energy (kJ/mol)" )
+    ax.set_ylabel( "Cluster energy (eV)" )
     ax.spines["right"].set_visible(False)
     ax.spines["top"].set_visible(False)
 
@@ -91,7 +92,7 @@ def main():
             dS = kB*(size-1)*np.log(conc)
             dS[0] = 0.0
             F = dH - T[i]*dS
-            axF[i].plot( size, F*mol/kJ, marker="o", mfc="none",label="\${}\%\$".format(int(conc*100)) )
+            axF[i].plot( size, F, marker="o", mfc="none",label="\${}\%\$".format(int(conc*100)) )
         axF[i].spines["right"].set_visible(False)
     axF[0].spines["top"].set_visible(False)
     axF[1].spines["top"].set_visible(False)
@@ -101,13 +102,24 @@ def main():
     axF[0].text( 5,100, "T=353K")
     axF[1].text( 5,50, "T=293K")
     axF[1].set_xlabel( "Cluster size" )
-    axF[0].set_ylabel( "Free energy (kJ/mol)")
+    axF[0].set_ylabel( "Free energy (eV)")
     #axF[0].set_xticklabels([])
 
-    #T,nmax,barrier = critical_size( dH, size )
-    #fig_size = plt.figure()
-    #ax_size = fig_size.add_subplot(1,1,1)
-    #ax_size.plot( T, nmax )
+    dH_start_one = dH[1:]*1000.0
+    size_start_one = size[1:]
+    dH_per_atom = dH_start_one/size_start_one
+    slope, interscept, rvalue, pvalue, stderr = linregress( size_start_one[1:]**(-1.0/3.0), dH_per_atom[1:] )
+    n_fit = np.linspace( 1.0, 2.0*np.max(size), 10 )
+    dH_fit = interscept + slope*n_fit**(-1.0/3.0)
+    fig_shape = plt.figure()
+    ax_shape = fig_shape.add_subplot(1,1,1)
+    ax_shape.plot( size_start_one**(-1.0/3.0), dH_per_atom, "o", mfc="none")
+    ax_shape.plot( n_fit**(-1.0/3.0), dH_fit )
+    ax_shape.set_ylabel( "Normalized Cluster Energy (meV/atom)")
+    ax_shape.set_xlabel( "\$1/\sqrt[3]{N}\$" )
+    ax_shape.spines["right"].set_visible(False)
+    ax_shape.spines["top"].set_visible(False)
+    print ("Slope: {}. interscept: {}".format(slope,interscept))
     plt.show()
 
 if __name__ == "__main__":

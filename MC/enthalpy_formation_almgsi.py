@@ -56,7 +56,7 @@ def run(T,mg_conc,si_conc):
         print ("Current temperature {}K".format(temp))
         mc_obj = Montecarlo( ceBulk.atoms, temp, mpicomm=comm )
         mode = "prec"
-        prec = 1E-5
+        prec = 1E-3
         mc_obj.runMC( mode=mode, prec=prec )
         thermo = mc_obj.get_thermodynamic()
         thermo["temperature"] = temp
