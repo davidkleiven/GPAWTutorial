@@ -59,6 +59,39 @@ def critical_size( dH, size ):
             barrier.append(0)
     return T,nmax,barrier
 
+def barrier_vs_temp(dH):
+    concs = [0.01,0.05,0.1,0.15]
+    T = np.linspace(100,400,40)
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+    figbeta = plt.figure()
+    axbeta = figbeta.add_subplot(1,1,1)
+    size = np.array( range(len(dH)) )
+    for conc in concs:
+        dS = kB*(size-1)*np.log(conc)
+        dS[0] = 0.0
+        barrier = []
+        crit_size = []
+        for i in range(len(T)):
+            F = dH - T[i]*dS
+            barrier.append( np.max(F) )
+            crit_size.append(np.argmax(F))
+        crit_size = np.array(crit_size)
+        barrier = np.array(barrier)
+        ax.plot( T[crit_size<49], barrier[crit_size<49], label="{}%".format(int(100*conc)), marker="o",mfc="none" )
+        beta = 1.0/(kB*T[crit_size<49])
+        axbeta.plot( T[crit_size<49], beta*barrier[crit_size<49], label="\${}\%$".format(int(100*conc)), marker="o",mfc="none" )
+
+    ax.legend(frameon=False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    ax.set_xlabel( "Temperature (K)" )
+    ax.set_ylabel( "Free energy barrier (eV)"  )
+    axbeta.legend(frameon=False)
+    axbeta.spines["right"].set_visible(False)
+    axbeta.spines["top"].set_visible(False)
+    axbeta.set_xlabel( "Temperature (K)" )
+    axbeta.set_ylabel( "\$\\beta \Delta F\$" )
 
 
 def main():
@@ -120,6 +153,7 @@ def main():
     ax_shape.spines["right"].set_visible(False)
     ax_shape.spines["top"].set_visible(False)
     print ("Slope: {}. interscept: {}".format(slope,interscept))
+    barrier_vs_temp(dH)
     plt.show()
 
 if __name__ == "__main__":

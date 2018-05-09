@@ -96,8 +96,8 @@ def main( argv ):
     elif ( option == "popvar" ):
         explore_population(bs)
 
-def find_all_gs(BC, struct_gen, mg_conc_min=0.5,mg_conc_max=0.7):
-    mg_concs = np.linspace(mg_conc_min,mg_conc_max,20)
+def find_all_gs(BC, struct_gen, mg_conc_min=0.4,mg_conc_max=0.8):
+    mg_concs = np.linspace(mg_conc_min,mg_conc_max,26)
     insert_count = 0
     for mg_conc in mg_concs:
         fname = find_gs(BC,mg_conc)

@@ -85,7 +85,8 @@ def main( argv ):
             temps = "all"
         excess(temps)
     elif ( option == "save_free_eng" ):
-        free_energies_to_file( "data/free_energies_fcc.json" )
+        fname = argv[1]
+        free_energies_to_file( fname )
 
 def plot(formula):
     db = connect( mc_db_name )

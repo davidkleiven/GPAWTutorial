@@ -1,4 +1,5 @@
 import sys
+sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1")
 from cemc.mcmc import Montecarlo
 from ase.ce import BulkCrystal
 from cemc.wanglandau.ce_calculator import get_ce_calc
@@ -11,7 +12,7 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 
 mc_db_name = "data/almgsi_fixed_composition.db"
-def run(T,mg_conc,si_conc):
+def run(T,mg_conc,si_conc,precs):
     conc_args = {
         "conc_ratio_min_1":[[64,0,0]],
         "conc_ratio_max_1":[[24,40,0]],
@@ -52,11 +53,10 @@ def run(T,mg_conc,si_conc):
         "Al":1.0-mg_conc-si_conc
     }
     calc.set_composition(comp)
-    for temp in T:
+    for temp,prec in zip(T,precs):
         print ("Current temperature {}K".format(temp))
         mc_obj = Montecarlo( ceBulk.atoms, temp, mpicomm=comm )
         mode = "prec"
-        prec = 1E-3
         mc_obj.runMC( mode=mode, prec=prec )
         thermo = mc_obj.get_thermodynamic()
         thermo["temperature"] = temp
@@ -70,7 +70,10 @@ def run(T,mg_conc,si_conc):
 
 if __name__ == "__main__":
     T = np.linspace(100,800,20)[::-1]
+    precs = np.array([1E-3 for i in range(len(T))])
+    #precs[-3:] = 1E-5
+    precs[-1] = 1E-6
     mg_conc = float(sys.argv[1])
     si_conc = float(sys.argv[2])
     if ( mg_conc+si_conc < 1.0 and not np.allclose([mg_conc,si_conc],0.0) ):
-        run(T,mg_conc,si_conc)
+        run(T,mg_conc,si_conc,precs)

@@ -23,6 +23,7 @@ from ase.calculators.cluster_expansion.cluster_expansion import ClusterExpansion
 from ase.db import connect
 from ase.units import mol, kJ
 from atomtools.ce import CVScoreHistory
+from scipy.spatial import ConvexHull
 
 eci_fname = "data/almgsi_fcc_eci.json"
 db_name = "almgsi.db"
@@ -167,13 +168,23 @@ def enthalpy_of_formation(ceBulk):
     enthalpy_ce = np.array(enthalpy_ce)*mol/kJ
     ax.plot( x, enthalpy_dft, "o", mfc="none" )
     ax.plot( x, enthalpy_ce, "x" )
+    qhull_color = "#bdbdbd"
+    hull = ConvexHull( np.vstack((x, enthalpy_dft)).T )
+    for simplex in hull.simplices:
+        E1 = enthalpy_dft[simplex[0]]
+        E2 = enthalpy_dft[simplex[1]]
+        if ( E1 <= 0.0 and E2 <= 0.0 ):
+            x1 = x[simplex[0]]
+            x2 = x[simplex[1]]
+            ax.plot( [x1,x2], [E1,E2], color=qhull_color )
+
     ax.set_xlabel( "\$c_{Mg}/(c_{Mg}+c_{Si})")
     ax.set_ylabel( "Enthalpy of formation (kJ/mol)")
     ax.spines["right"].set_visible(False)
     ax.spines["top"].set_visible(False)
 
-    for i in range(len(formulas)):
-        ax.text( x[i], enthalpy_dft[i], formulas[i] )
+    #for i in range(len(formulas)):
+    #    ax.text( x[i], enthalpy_dft[i], formulas[i] )
     plt.show()
 
 def find_all_gs(ceBulk,struct_gen):
