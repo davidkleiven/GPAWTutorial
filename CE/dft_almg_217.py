@@ -60,7 +60,7 @@ def main( argv ):
     if ( single_point ):
         calc = gp.GPAW( mode=gp.PW(500), xc="PBE", kpts=kpts, nbands=nbands )
         atoms.set_calculator( calc )
-        
+
     logfile = "almg_bcc%d.log"%(runID)
     traj = "almg_bcc{}.traj".format(name)
     db.update( runID, trajfile=traj )
@@ -99,7 +99,7 @@ def main( argv ):
         orig_atoms = db.get_atoms(runID)
         single_p_calc = SinglePointCalculator( orig_atoms, energy=energy )
         orig_atoms.set_calculator( single_p_calc )
-        kvp = db.get(name=name).key_value_pairs
+        kvp = db.get(id=runID).key_value_pairs
         del db[runID]
         newID = db.write( orig_atoms, key_value_pairs=kvp )
 
