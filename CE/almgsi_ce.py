@@ -24,6 +24,7 @@ from ase.db import connect
 from ase.units import mol, kJ
 from atomtools.ce import CVScoreHistory
 from scipy.spatial import ConvexHull
+from atomtools.ce import ChemicalPotentialEstimator
 
 eci_fname = "data/almgsi_fcc_eci.json"
 db_name = "almgsi.db"
@@ -81,7 +82,8 @@ def main(argv):
         history.get_history( lambdas=lambdas )
         history.plot()
         plt.show()
-
+    elif( option == "chempot" ):
+        estimate_chemical_potentials(ceBulk)
 
 def update_in_conc_range():
     db = connect( db_name )
@@ -113,6 +115,41 @@ def evaluate(BC):
     with open(eci_fname,'w') as outfile:
         json.dump( eci_name, outfile, indent=2, separators=(",",":"))
     print ( "ECIs written to {}".format(eci_fname))
+
+def estimate_chemical_potentials(ceBulk):
+    c1_0 = []
+    c1_1 = []
+    F = []
+    db = connect( ceBulk.db_name )
+    for row in db.select(converged=1):
+        e_dft = row.energy/row.natoms
+        count = row.count_atoms()
+        c_mg = 0.0
+        c_si = 0.0
+        if ( "Mg" in count.keys() ):
+            c_mg = float(count["Mg"])/row.natoms
+        if ( "Si" in count.keys() ):
+            c_si = float(count["Si"])/row.natoms
+        c_al = 1.0-c_mg-c_si
+        F.append(row.energy/row.natoms)
+        c1_0.append( row["c1_0"] )
+        c1_1.append( row["c1_1"] )
+    singl = np.vstack((c1_0,c1_1) ).T
+    estimator = ChemicalPotentialEstimator( singlets=singl, energies=F )
+    estimator.plot()
+    mu0 = []
+    mu1 = []
+    for i in range(len(c1_0)):
+        x = np.array( [c1_0[i],c1_1[i]] )
+        mu0.append( estimator.deriv( x, 0 ) )
+        mu1.append( estimator.deriv( x, 1 ) )
+
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+    ax.plot( c1_0, mu0, "o", mfc="none", label="mu0" )
+    ax.plot( c1_1, mu1, "o", mfc="none", label="mu1" )
+    ax.legend()
+    plt.show()
 
 def enthalpy_of_formation(ceBulk):
     with open( "data/almgsi_fcc_eci.json", 'r' ) as infile:
@@ -163,19 +200,30 @@ def enthalpy_of_formation(ceBulk):
 
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
-    x = conc_mg/(conc_mg+conc_si)
+    srt_indx = np.argsort(conc_mg)
+    conc_mg = np.array( [conc_mg[indx] for indx in srt_indx] )
+    conc_si = np.array( [conc_si[indx] for indx in srt_indx] )
+    enthalpy_dft = np.array( [enthalpy_dft[indx] for indx in srt_indx] )
+    enthalpy_ce = np.array( [enthalpy_ce[indx] for indx in srt_indx] )
+    formulas = [formulas[indx] for indx in srt_indx]
     enthalpy_dft = np.array(enthalpy_dft)*mol/kJ
     enthalpy_ce = np.array(enthalpy_ce)*mol/kJ
-    ax.plot( x, enthalpy_dft, "o", mfc="none" )
-    ax.plot( x, enthalpy_ce, "x" )
+    cm = plt.cm.get_cmap('RdYlBu')
+    vmin = np.min(conc_si)
+    vmax = np.max(conc_si)
+    ax.plot( conc_mg, enthalpy_dft, "o", mfc="none", color="#bdbdbd"  )
+    im = ax.scatter( conc_mg, enthalpy_ce, s=30, marker="x", c=conc_si, cmap=cm, vmin=vmin,vmax=vmax )
+
     qhull_color = "#bdbdbd"
-    hull = ConvexHull( np.vstack((x, enthalpy_dft)).T )
+    hull = ConvexHull( np.vstack((conc_mg, enthalpy_dft)).T )
     for simplex in hull.simplices:
         E1 = enthalpy_dft[simplex[0]]
         E2 = enthalpy_dft[simplex[1]]
+        x1 = conc_mg[simplex[0]]
+        x2 = conc_mg[simplex[1]]
+        ax.text( x1, E1, formulas[simplex[0]])
+        ax.text( x2, E2, formulas[simplex[1]])
         if ( E1 <= 0.0 and E2 <= 0.0 ):
-            x1 = x[simplex[0]]
-            x2 = x[simplex[1]]
             ax.plot( [x1,x2], [E1,E2], color=qhull_color )
 
     ax.set_xlabel( "\$c_{Mg}/(c_{Mg}+c_{Si})")

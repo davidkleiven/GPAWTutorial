@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1")
-from cemc.mcmc import Montecarlo
+from cemc.mcmc import SGCMonteCarlo
 from ase.ce import BulkCrystal
 from cemc.wanglandau.ce_calculator import get_ce_calc
 from mpi4py import MPI
@@ -11,8 +11,8 @@ import json
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 
-mc_db_name = "data/almgsi_fixed_composition.db"
-def run(T,mg_conc,si_conc,precs):
+mc_db_name = "data/almgsi_sgc.db"
+def run(T,chem_pot):
     conc_args = {
         "conc_ratio_min_1":[[64,0,0]],
         "conc_ratio_max_1":[[24,40,0]],
@@ -47,22 +47,18 @@ def run(T,mg_conc,si_conc,precs):
     ceBulk = calc.BC
     ceBulk.atoms.set_calculator( calc )
 
-    comp = {
-        "Mg":mg_conc,
-        "Si":si_conc,
-        "Al":1.0-mg_conc-si_conc
-    }
-    calc.set_composition(comp)
-    for temp,prec in zip(T,precs):
+    prec = 1E-4
+    for temp in T:
         print ("Current temperature {}K".format(temp))
-        mc_obj = Montecarlo( ceBulk.atoms, temp, mpicomm=comm )
-        mode = "prec"
-        mc_obj.runMC( mode=mode, prec=prec )
+        mc_obj = SGCMonteCarlo( ceBulk.atoms, temp, mpicomm=comm, symbols=["Al","Mg","Si"] )
+        mc_obj.runMC( mode="prec", prec=prec, chem_potential=chem_pot )
         thermo = mc_obj.get_thermodynamic()
         thermo["temperature"] = temp
         thermo["prec"] = prec
         thermo["internal_energy"] = thermo.pop("energy")
         thermo["converged"] = True
+        thermo["muc1_0"] = chem_pot["c1_0"]
+        thermo["muc1_1"] = chem_pot["c1_1"]
 
         if ( rank == 0 ):
             db = connect( mc_db_name )
@@ -70,10 +66,7 @@ def run(T,mg_conc,si_conc,precs):
 
 if __name__ == "__main__":
     T = np.linspace(100,800,20)[::-1]
-    precs = np.array([1E-3 for i in range(len(T))])
-    #precs[-3:] = 1E-5
-    precs[-1] = 1E-5
-    mg_conc = float(sys.argv[1])
-    si_conc = float(sys.argv[2])
-    if ( mg_conc+si_conc <= 1.0 and not np.allclose([mg_conc,si_conc],0.0) ):
-        run(T,mg_conc,si_conc,precs)
+    c1_0 = float(sys.argv[1])
+    c1_1 = float(sys.argv[2])
+    chem_pot = {"c1_0":c1_0,"c1_1":c1_1}
+    run(T,chem_pot)
