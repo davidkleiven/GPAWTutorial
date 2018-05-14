@@ -10,6 +10,9 @@ from matplotlib import pyplot as plt
 from ase.units import kJ, mol
 from scipy.interpolate import griddata
 from mpl_toolkits.mplot3d import axes3d, Axes3D
+from ase.calculators.cluster_expansion import ClusterExpansion
+from ase.ce import BulkCrystal
+from ase.ce import CorrFunction
 plt.switch_backend("TkAgg")
 
 mc_db_name = "data/almgsi_fixed_composition.db"
@@ -45,12 +48,68 @@ def get_free_energies():
         result[formula]["conc"] = conc
     return result
 
+def get_ref_energies():
+    conc_args = {
+        "conc_ratio_min_1":[[64,0,0]],
+        "conc_ratio_max_1":[[0,64,0]],
+        "conc_ratio_min_2":[[64,0,0]],
+        "conc_ratio_max_2":[[0,0,64]]
+    }
+    orig_spin_dict = {
+        "Mg":1.0,
+        "Si":-1.0,
+        "Al":0.0
+    }
+
+    kwargs = {
+        "crystalstructure":"fcc",
+        "a":4.05,
+        "size":[4,4,4],
+        "basis_elements":[["Mg","Si","Al"]],
+        "conc_args":conc_args,
+        "db_name":"data/almgsi_excess.db",
+        "max_cluster_size":4
+    }
+    ceBulk = BulkCrystal( **kwargs )
+    ceBulk.spin_dict = orig_spin_dict
+    ceBulk.basis_functions = ceBulk._get_basis_functions()
+    ceBulk._get_cluster_information()
+    ceBulk.reconfigure_settings()
+    eci_file = "data/almgsi_fcc_eci.json"
+    with open( eci_file, 'r' ) as infile:
+        ecis = json.load( infile )
+    cf = CorrFunction( ceBulk )
+    atoms = ceBulk.atoms
+    cluster_names = ecis.keys()
+    for atom in atoms:
+        atom.symbol = "Al"
+    corr_func = cf.get_cf_by_cluster_names(atoms, cluster_names)
+    ref_energies = {}
+    ref_energies["Al"] = get_energy( corr_func, ecis )
+    for atom in atoms:
+        atom.symbol = "Mg"
+    corr_func = cf.get_cf_by_cluster_names(atoms, cluster_names)
+    ref_energies["Mg"] =  get_energy( corr_func, ecis )
+    for atom in atoms:
+        atom.symbol = "Si"
+    corr_func = cf.get_cf_by_cluster_names(atoms, cluster_names)
+    ref_energies["Si"] =  get_energy( corr_func, ecis )
+    return ref_energies
+
+def get_energy( cf, eci ):
+    energy = 0.0
+    for key,value in eci.iteritems():
+        energy += value*cf[key]
+    return energy
+
 def excess():
     ref_energies = {
         "Mg":-1.599,
         "Si":-4.864,
         "Al":-3.737
     }
+    ref_energies = get_ref_energies()
+    print (ref_energies)
     res = get_free_energies()
 
     temp_indx = [-1]
@@ -63,6 +122,8 @@ def excess():
     axcont = figcont.add_subplot(1,1,1)
     figscat = plt.figure()
     axscat = figscat.add_subplot(1,1,1)
+    fig_solute = plt.figure()
+    ax_solute = fig_solute.add_subplot(1,1,1)
     for indx in temp_indx:
         mg_concs = []
         si_concs = []
@@ -83,9 +144,6 @@ def excess():
                 if ( key in data["conc"].keys() ):
                     form -= data["conc"][key]*value
             form_energy.append( form )
-        #mg_concs.append(0.0)
-        #si_concs.append(0.0)
-        #form_energy.append(0.0)
         mg_concs.append(1.0)
         si_concs.append(0.0)
         form_energy.append(0.0)
@@ -106,8 +164,10 @@ def excess():
         form_energy = [form_energy[indx] for indx in srt_indx]
         form_energy = np.array(form_energy)*mol/kJ
         unique_si_concs = np.unique( si_concs )
+        unique_si_concs = unique_si_concs[unique_si_concs<0.9]
         cm = plt.cm.get_cmap('viridis')
         convex_hull3D( mg_concs, si_concs, form_energy, formulas )
+        x_sol = si_concs/(mg_concs+si_concs)
         for c_si in unique_si_concs:
             c_mg = mg_concs[si_concs==c_si]
             e_form = form_energy[si_concs==c_si]
@@ -117,7 +177,7 @@ def excess():
             e_form = [e_form[indx] for indx in srt]
             print (c_mg)
 
-            scaled_si_conc = (c_si-np.min(si_concs))/(np.max(si_concs)-np.min(si_concs))
+            scaled_si_conc = (c_si-np.min(unique_si_concs))/(np.max(unique_si_concs)-np.min(unique_si_concs))
             color=cm(scaled_si_conc)
             print (scaled_si_conc)
             ax.plot(c_mg, e_form, marker="o", mfc="none", color=color )
@@ -141,11 +201,17 @@ def excess():
         axcont.set_xlabel( "Mg concentration" )
         axcont.set_ylabel( "Si concentration" )
         axscat.scatter( mg_concs, si_concs, c=form_energy, s=50 )
+
+        # Solute plot
+        ax_solute.scatter( x_sol, form_energy, c=si_concs, cmap="copper" )
     plt.show()
 
 def convex_hull3D( mg_conc, si_conc, E, formulas ):
     hull = ConvexHull( np.vstack((mg_conc,si_conc,E)).T )
     printed = []
+    mg_concs = []
+    si_concs = []
+    eng = []
     for simplex in hull.simplices:
         for s in simplex:
             if ( formulas[s] not in printed ):

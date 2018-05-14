@@ -43,7 +43,7 @@ def run(T,chem_pot):
         ecis = json.load( infile )
     print (ecis)
     #calc = CE( ceBulk, ecis, size=(3,3,3) )
-    calc = get_ce_calc( ceBulk, kwargs, ecis, size=[10,10,10] )
+    calc = get_ce_calc( ceBulk, kwargs, ecis, size=[12,12,12] )
     ceBulk = calc.BC
     ceBulk.atoms.set_calculator( calc )
 

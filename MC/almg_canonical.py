@@ -16,6 +16,7 @@ import json
 plt.switch_backend("TkAgg")
 
 mc_db_name = "data/almg_fcc_canonical.db"
+mc_db_name = "data/almg217_formation.db"
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 
@@ -195,8 +196,19 @@ def excess( temps ):
                 all_temps.append( row.temperature )
         temps = all_temps
     res = get_free_energies()
-    plt.plot( res["Al950Mg50"]["temperature"], res["Al950Mg50"]["free_energy"], "x" )
-    plt.show()
+    try:
+        for key,value in res.iteritems():
+            F = np.array( value["free_energy"] )
+            F -= F[0]
+            plt.plot( value["temperature"], F)
+        plt.show()
+        for key,value in res.iteritems():
+            E = np.array( value["internal_energy"])
+            E -= E[0]
+            plt.plot( value["temperature"], E )
+        plt.show()
+    except Exception as exc:
+        print (str(exc))
 
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
@@ -207,9 +219,12 @@ def excess( temps ):
 
     fig_mg_weighted = plt.figure()
     ax_mg_weighted = fig_mg_weighted.add_subplot(1,1,1)
+    fig_F = plt.figure()
+    ax_F = fig_F.add_subplot(1,1,1)
 
     Tmin = np.min(temps)
     Tmax = np.max(temps)
+    print ("Min temp: {}, Max temp: {}".format(Tmin,Tmax))
     all_excess = []
     all_concs = []
     all_temps = []
@@ -217,6 +232,7 @@ def excess( temps ):
         excess = []
         concs = []
         entropy = []
+        free_eng = []
         temperature = None
         for key,entry in res.iteritems():
             if ( "Mg" in entry["conc"].keys() ):
@@ -228,26 +244,31 @@ def excess( temps ):
             indx = np.argmin( diff )
             if ( diff[indx] > 1.0 ):
                 print ("Warning! Difference {}. Temperature might not be simulated!".format(diff[indx]) )
-            excess.append( entry["free_energy"][indx]-ref_energies["Al"]*entry["conc"]["Al"] - ref_energies["Mg"]*entry["conc"]["Mg"] )
+            excess.append( entry["internal_energy"][indx]-ref_energies["Al"]*entry["conc"]["Al"] - ref_energies["Mg"]*entry["conc"]["Mg"] )
+            free_eng.append( entry["free_energy"][indx]-ref_energies["Al"]*entry["conc"]["Al"] - ref_energies["Mg"]*entry["conc"]["Mg"] )
             if ( temperature is None ):
                 temperature = entry["temperature"][indx]
-            excess[-1] += entry["TS"][indx]
+            #excess[-1] += entry["TS"][indx]
             entropy.append( entry["entropy"][indx] )
             #excess.append( entry["free_energy"][indx]+entry["TS"][indx] )
             #excess.append( entry["free_energy"][indx] )
         concs += [0.0,1.0]
         excess += [0.0,0.0]
         entropy += [0.0,0.0]
+        free_eng += [0.0,0.0]
         srt_indx = np.argsort(concs)
         concs = [concs[indx] for indx in srt_indx]
         excess = np.array( [excess[indx] for indx in srt_indx] )
         entropy = np.array( [entropy[indx] for indx in srt_indx])
+        free_eng = np.array( [free_eng[indx] for indx in srt_indx])
         all_excess.append(excess)
         all_concs.append(concs)
-        mapped_temp = (temperature-Tmin)/(Tmax-Tmin)
+        mapped_temp = float(temperature-Tmin)/(Tmax-Tmin)
+        print(mapped_temp)
         all_temps.append( temperature )
         ax.plot( concs, excess*mol/kJ, marker=markers[count%len(markers)], label="{}K".format(temperature), mfc="none", color=cm.copper(mapped_temp),lw=2 )
         ax_entropy.plot( concs, 1000.0*entropy*mol/kJ, marker=markers[count%len(markers)], label="{}K".format(temperature), color=cm.copper(mapped_temp),lw=2 , mfc="none")
+        ax_F.plot( concs, excess*mol/kJ, marker=markers[count%len(markers)], label="{}K".format(temperature), mfc="none", color=cm.copper(mapped_temp),lw=2 )
         ax_mg_weighted.plot( concs, (excess/concs)*mol/kJ,  marker=markers[count%len(markers)], color=cm.copper(mapped_temp),lw=2 , mfc="none" )
     ax.legend(frameon=False)
     ax.set_xlabel( "Mg concentration" )
@@ -281,6 +302,8 @@ def excess( temps ):
     cbar2.set_label( "Temperature (K)" )
 
     all_maxima, all_minima = find_extremal_points( all_concs, all_excess, show_plot=False )
+
+    ax_F.set_ylabel( "Free Energy of Formation (kJ/mol)")
 
     all_data = []
     for temp,maxima,minima in zip(all_temps,all_maxima,all_minima):
