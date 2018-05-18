@@ -13,10 +13,13 @@ from ase.units import kJ,mol
 from matplotlib import cm
 from scipy.interpolate import UnivariateSpline
 import json
+from cemc.mfa import CanonicalMeanField
 
-mc_db_name = "data/almg217_formation.db"
+mc_db_name = "data/almg217_formation_fixed.db"
+mf_outfile = "data/mean_field_217.json"
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
+run_mfa =True
 
 def run( mg_conc ):
     bs_kwargs = {
@@ -47,14 +50,25 @@ def run( mg_conc ):
 
     calc.set_composition(comp)
     print ("Number of atoms: {}".format(len(bs.atoms)) )
-    T = [800,700,600,500,400,375,350,325,300,275,250,225,200,175,150,100]
+    high_temps = [10000,9000,8000,7000,6000,5000,4000,3000,2000,1000]
+    low_temps = range(200,1000,50)[::-1]
+    T = np.array(high_temps+low_temps)
+    #T = np.array([10000,9000,8000,7000,6000,5000,4000,3000,2000,1000,800,700,600,500,400,375,350,325,300,275,250,225,200,175,150])
+    #T = np.array([1E6,100000])
+    precs = np.zeros(len(T))+1E-4
+    #precs[T<=500] = 1E-5
     print (bs.atoms.get_chemical_formula())
-    for temp in T:
+    mc_obj = Montecarlo( bs.atoms, T[0], mpicomm=comm )
+    mc_obj.accept_first_trial_move_after_reset = False
+    for prec,temp in zip(precs,T):
+        mc_obj.T = temp
+        mc_obj.reset()
+        #if ( temp==T[0] ):
+        #    mc_obj.is_first = False # Do not accept the first move
+
         print ("Current temperature {}K".format(temp))
-        mc_obj = Montecarlo( bs.atoms, temp, mpicomm=comm )
-        mode = "prec"
-        prec = 1E-4
-        mc_obj.runMC( mode=mode, prec=prec )
+        mode = "fixed"
+        mc_obj.runMC( mode=mode, prec=prec, steps=1000000 )
         thermo = mc_obj.get_thermodynamic()
         thermo["temperature"] = temp
         thermo["prec"] = prec
@@ -62,8 +76,20 @@ def run( mg_conc ):
         thermo["converged"] = True
 
         if ( rank == 0 ):
+            cf = calc.get_cf()
             db = connect( mc_db_name )
+            thermo.update(cf)
             db.write( bs.atoms, key_value_pairs=thermo )
+
+    if ( rank == 0 and run_mfa ):
+        # At this point a ground state should have been reached
+        mfa = CanonicalMeanField( atoms=bs.atoms, T=T )
+        mfa.relax()
+        res = mfa.calculate()
+        formula = bs.atoms.get_chemical_formula()
+        fname = "data/mfa217/{}mfa.json".format(formula)
+        with open(fname,'w') as outfile:
+            json.dump( res, outfile, indent=2, separators=(",",":") )
 
 if __name__  == "__main__":
     mg_conc = float(sys.argv[1])
