@@ -1,5 +1,6 @@
 import glob
 import json
+import gpaw as gp
 
 def extract(fname):
     atoms, calc = gp.restart(fname){}
