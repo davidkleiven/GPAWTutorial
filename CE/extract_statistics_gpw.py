@@ -3,7 +3,8 @@ import json
 import gpaw as gp
 
 def extract(fname):
-    atoms, calc = gp.restart(fname){}
+    atoms, calc = gp.restart(fname)
+    result = {}
     result["cell"] = atoms.get_cell().tolist()
     result["cellpar"] = atoms.get_cell_lengths_and_angles().tolist()
     return result
