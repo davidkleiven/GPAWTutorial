@@ -1,7 +1,7 @@
 import sys
 from ase.spacegroup import crystal
 from ase.visualize import view
-from ase.ce.settings_bulk import BulkSpacegroup
+from ase.ce import BulkSpacegroup
 from ase.ce.newStruct import GenerateStructures
 
 def get_atoms():

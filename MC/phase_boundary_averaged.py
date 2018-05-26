@@ -16,6 +16,44 @@ gau_et_al = {
     "temperature":[353,383],
     "mg_conc":[0.13,0.16]
 }
+
+"""
+@Article{osamura1984metastable,
+  Title                    = {Metastable phases in the early stage of precipitation in Al-Mg alloys},
+  Author                   = {Osamura, Kozo and Ogura, Tetsuzo},
+  Journal                  = {Metallurgical Transactions A},
+  Year                     = {1984},
+  Number                   = {5},
+  Pages                    = {835--842},
+  Volume                   = {15},
+
+  File                     = {:metastable_almg.pdf:PDF},
+  Publisher                = {Springer}
+}
+"""
+osamura_et_al = {
+"temperature":[293.1945531682533,313.36613178107734,334.48348310556446],
+"mg_conc":[0.04984653056697305,0.10711334554831997,0.14508759169238714]
+}
+
+"""
+@Article{sato1982modulated,
+  Title                    = {Modulated structures and GP zones in Al-Mg alloys},
+  Author                   = {Sato, T and Kojima, Y and Takahashi, T},
+  Journal                  = {Metallurgical Transactions A},
+  Year                     = {1982},
+  Number                   = {8},
+  Pages                    = {1373--1378},
+  Volume                   = {13},
+
+  File                     = {:al3mg_spinodal.pdf:PDF},
+  Publisher                = {Springer}
+}
+"""
+sato_et_al = {
+    "temperature":[297.68793339917204,318.7745695070422],
+    "mg_conc":[0.05778129485968053,0.10937262037058765]
+}
 def get_all_results():
     all_data = []
     for i in range(1,N):
@@ -104,11 +142,14 @@ def plot_res( res ):
     ax_comp.plot( mg_conc2, res["temperature"] )
     ax_comp.fill_betweenx( res["temperature"], mg_conc1_minus, mg_conc1_pluss, color="#d9d9d9")
     ax_comp.fill_betweenx( res["temperature"], mg_conc2_minus, mg_conc2_pluss, color="#d9d9d9")
-    ax_comp.plot( gau_et_al["mg_conc"], gau_et_al["temperature"], "x" )
+    ax_comp.plot( gau_et_al["mg_conc"], gau_et_al["temperature"], "x", label="Gault \emph{et al.}" )
+    ax_comp.plot( osamura_et_al["mg_conc"], osamura_et_al["temperature"], "o", mfc="none", label="Osamura \emph{et al.}")
+    ax_comp.plot( sato_et_al["mg_conc"], sato_et_al["temperature"], "D", mfc="none", label="Sato \emph{et al.}")
     ax_comp.set_xlabel( "Mg concentration" )
     ax_comp.set_ylabel( "Temperature (K)" )
     ax_comp.spines["right"].set_visible(False)
     ax_comp.spines["top"].set_visible(False)
+    ax_comp.legend(loc="best", frameon=False)
 
 def main():
     all_data = get_all_results()

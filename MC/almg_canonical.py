@@ -9,14 +9,15 @@ import numpy as np
 from matplotlib import pyplot as plt
 from mpi4py import MPI
 from cemc.tools import CanonicalFreeEnergy
-from ase.units import kJ,mol
+from ase.units import kJ,mol,kB
 from matplotlib import cm
 from scipy.interpolate import UnivariateSpline
 import json
+from cemc.mfa import CanonicalMeanField
 plt.switch_backend("TkAgg")
 
 mc_db_name = "data/almg_fcc_canonical.db"
-mc_db_name = "data/almg217_formation.db"
+mc_db_name = "data/almg217_formation_fixed.db"
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 
@@ -125,7 +126,7 @@ def free_energies_to_file(fname):
         json.dump( free_eng, outfile, indent=2, separators=(",",":") )
     print ("Free energies written to {}".format(fname))
 
-def get_free_energies():
+def get_free_energies( mfa=False ):
     """
     Compute the Free Energy for all entries in the database
     """
@@ -199,8 +200,15 @@ def excess( temps ):
     try:
         for key,value in res.iteritems():
             F = np.array( value["free_energy"] )
+            plt_set = False
+            for i in range(1,len(F)):
+                if ( F[i] < F[i-1] ):
+                    print (value["temperature"][i])
+                    plt_set = True
             F -= F[0]
-            plt.plot( value["temperature"], F)
+            if ( plt_set ):
+                print (key)
+                plt.plot( value["temperature"], F)
         plt.show()
         for key,value in res.iteritems():
             E = np.array( value["internal_energy"])
@@ -268,7 +276,7 @@ def excess( temps ):
         all_temps.append( temperature )
         ax.plot( concs, excess*mol/kJ, marker=markers[count%len(markers)], label="{}K".format(temperature), mfc="none", color=cm.copper(mapped_temp),lw=2 )
         ax_entropy.plot( concs, 1000.0*entropy*mol/kJ, marker=markers[count%len(markers)], label="{}K".format(temperature), color=cm.copper(mapped_temp),lw=2 , mfc="none")
-        ax_F.plot( concs, excess*mol/kJ, marker=markers[count%len(markers)], label="{}K".format(temperature), mfc="none", color=cm.copper(mapped_temp),lw=2 )
+        ax_F.plot( concs, free_eng*mol/kJ, marker=markers[count%len(markers)], label="{}K".format(temperature), mfc="none", color=cm.copper(mapped_temp),lw=2 )
         ax_mg_weighted.plot( concs, (excess/concs)*mol/kJ,  marker=markers[count%len(markers)], color=cm.copper(mapped_temp),lw=2 , mfc="none" )
     ax.legend(frameon=False)
     ax.set_xlabel( "Mg concentration" )

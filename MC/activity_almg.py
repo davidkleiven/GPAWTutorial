@@ -2,7 +2,7 @@ import sys
 sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1")
 sys.path.insert(2,"/home/dkleiven/Documents/aseJin")
 
-from cemc.mcmc import SGCFreeEnergyBarrier
+from cemc.mcmc import ActivitySampler
 #from cemc.mcmc import TransitionPathRelaxer
 from ase.ce import BulkCrystal
 from cemc.wanglandau.ce_calculator import get_ce_calc
@@ -36,33 +36,26 @@ def main():
     ceBulk = calc.BC
     ceBulk.atoms.set_calculator( calc )
 
-    chem_pot = {"c1_0":-1.069}
+    T = 500
+    temps = [200,300,400,500,600,700,800]
+    mg_concs = [0.005,0.01,0.025,0.05,0.075,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.70,0.75,0.8,0.85,0.9]
+    mg_concs = np.linspace(0.005,0.995,100)
+    act_coeffs = []
+    eff_conc = []
+    for T in temps:
+        for c_mg in mg_concs:
+            comp = {"Mg":c_mg,"Al":1.0-c_mg}
+            calc.set_composition(comp)
+            act_sampler = ActivitySampler( ceBulk.atoms, T, moves=[("Al","Mg")], mpicomm=comm)
+            act_sampler.runMC( mode="fixed", steps=100000 )
+            thermo = act_sampler.get_thermodynamic()
+            act_sampler.save( fname="data/effective_concentration_full_range.json" )
+    #res = ActivitySampler.effective_composition("data/effective_concentration.json")
+    #mg_concs = res[500]["conc"]["Mg"]
+    #eff = res[500]["eff_conc"]["Mg"]
+    #plt.plot( mg_concs, eff, marker="x" )
+    #plt.show()
 
-    T = 300
-    #mc = SGCFreeEnergyBarrier( ceBulk.atoms, T, symbols=["Al","Mg"], \
-    #n_windows=20, n_bins=10, min_singlet=0.5, max_singlet=1.0, mpicomm=comm )
-    mc = SGCFreeEnergyBarrier.load( ceBulk.atoms, "data/free_energy_barrier_restart.json", mpicomm=comm )
-    #mc.run( nsteps=100000, chem_pot=chem_pot )
-    #mc.save( fname="data/free_energy_barrier_restart.json" )
-    mc.plot( fname="data/free_energy_barrier_restart.json" )
-    plt.show()
-
-
-def plot(fname):
-    with h5.File(fname,'r') as hf:
-        hist = np.array( hf["overall_hist"])
-
-    beta_G = -np.log(hist)
-    beta_G -= beta_G[0]
-
-    fig = plt.figure()
-    ax = fig.add_subplot(1,1,1)
-    ax.plot( beta_G, ls="steps" )
-    ax.spines["right"].set_visible(False)
-    ax.spines["top"].set_visible(False)
-    ax.set_xlabel( "Number of Mg atoms" )
-    ax.set_ylabel( "\$\\beta \Delta G\$" )
-    plt.show()
 
 if __name__ == "__main__":
     main()
