@@ -32,7 +32,7 @@ def main( argv ):
     new_run = not db.get( id=runID ).key_value_pairs["started"]
     # Update the databse
     db.update( runID, started=True, converged=False )
-    db.update( runID, nkpt=nkpt )
+    db.update( runID, kpt_density=kpt_density )
 
     atoms = db.get_atoms(id=runID)
     atoms = delete_vacancies(atoms)
@@ -46,7 +46,7 @@ def main( argv ):
     try:
         fname = SaveRestartFiles.restart_name(name)
         atoms, calc = gp.restart(fname)
-        if ( nkpt != 2 ):
+        if ( kpt_density > 1.5 ):
             calc = gp.GPAW( mode=gp.PW(600), xc="PBE", kpts=kpts, nbands=nbands )
             atoms.set_calculator(calc)
     except:
@@ -86,7 +86,7 @@ def main( argv ):
         row = db.get( id=newID )
         conv_force = row.get( "converged_force", default=0 )
         conv_stress = row.get( "converged_stress", default=0 )
-        if ( (conv_force==1) and (conv_stress==1) and (nkpt==4) ):
+        if ( (conv_force==1) and (conv_stress==1) and (kpt_density>1.5) ):
             db.update( newID, converged=True )
     except Exception as exc:
         print (exc)
