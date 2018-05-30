@@ -25,9 +25,12 @@ from ase.units import mol, kJ
 from atomtools.ce import CVScoreHistory
 from scipy.spatial import ConvexHull
 from atomtools.ce import ChemicalPotentialEstimator
+from ase.calculators.singlepoint import SinglePointCalculator
+from ase.visualize import view
 
 eci_fname = "data/almgsi_fcc_eci.json"
 db_name = "almgsi.db"
+db_name_cubic = "almgsi_cubic.db"
 def main(argv):
     option = argv[0]
     conc_args = {
@@ -84,6 +87,39 @@ def main(argv):
         plt.show()
     elif( option == "chempot" ):
         estimate_chemical_potentials(ceBulk)
+    elif (option == "convert2cubic"):
+        convert_to_cubic(ceBulk)
+
+def convert_to_cubic(setting_prim):
+    conc_args = {
+        "conc_ratio_min_1":[[64,0,0]],
+        "conc_ratio_max_1":[[24,40,0]],
+        "conc_ratio_min_2":[[64,0,0]],
+        "conc_ratio_max_2":[[22,21,21]]
+    }
+    setting_cubic = BulkCrystal( crystalstructure="fcc", a=4.05, size=[3,3,3], basis_elements=[["Mg","Si","Al",]], \
+    conc_args=conc_args, db_name=db_name_cubic, max_cluster_size=4, cubic=True )
+    view(setting_cubic.atoms)
+    atoms = setting_prim.atoms.copy()
+    a = 4.05
+    atoms.set_cell([[4*a,0,0],[0,4*a,0],[0,0,4*a]])
+    atoms.wrap()
+    view(atoms)
+    print (setting_prim.atoms.get_cell())
+    exit()
+    out_file = "data/temp_out.xyz"
+    target_cell = setting_cubic.atoms.get_cell()
+    cubic_str_gen = struc_generator = GenerateStructures( setting_cubic, struct_per_gen=10 )
+    db = connect(db_name)
+    for row in db.select(converged=1):
+        energy = row.energy
+        atoms = row.toatoms()
+        atoms.set_cell(target_cell)
+        atoms.wrap()
+        write(out_file,atoms)
+        calc = SinglePointCalculator(atoms,energy=energy)
+        atoms.set_calculator(calc)
+        cubic_str_gen.insert_structure(init_struct=out_file,final_struct=atoms)
 
 def update_in_conc_range():
     db = connect( db_name )
