@@ -6,9 +6,17 @@ from ase.visualize import view
 from ase.build import bulk
 from ase.spacegroup import get_spacegroup
 from cemc.mcmc import CollectiveJumpMove
+from cemc.tools import GSFinder
 from ase.ce import BulkSpacegroup, GenerateStructures
 from numpy.random import randint
+from random import shuffle
 from ase.io import write
+from ase.ce.evaluate import Evaluate
+from atomtools.ce import ECIPlotter
+import numpy as np
+from matplotlib import pyplot as plt
+plt.switch_backend("TkAgg")
+import json
 #from ase.spacegroup import *
 
 L = 4.05
@@ -32,7 +40,7 @@ orig_positions = [(0,0,0),
 si = ["Si" for _ in range(6)]
 mg = ["Mg" for _ in range(8)]
 symbols = mg+si
-
+eci_fname = "data/pre_beta_eci.json"
 def prebeta(type="orig"):
     orig = Atoms(symbols=symbols,positions=orig_positions,cell=[[L,0,0],[0,L,0],[0,0,L]])
     view(orig)
@@ -90,7 +98,94 @@ def prebeta_ce(options):
     if action == "insert":
         fname = options[1]
         struct_gen.insert_structure(init_struct=fname)
+    elif action == "rand_struct":
+        insert_random_struct(bs, struct_gen,n_structs=10)
+    elif action == "eval":
+        evaluate(bs)
+    elif action == "gs":
+        insert_gs_struct(bs,struct_gen)
 
+def insert_gs_struct(bs,struct_gen,n_structs=20):
+    n_X = 8
+    N = float(len(bs.atoms))
+    assert len(bs.atoms) == 40
+    gs_searcher = GSFinder()
+    counter = 0
+    with open(eci_fname,'r') as infile:
+        ecis = json.load(infile)
+
+    for _ in range(n_structs):
+        natoms = len(bs.atoms)-n_X
+        max_Si = 0.5
+        n_al = randint(low=15,high=natoms)
+        natoms -= n_al
+        n_mg = randint(low=0,high=natoms)
+        n_si = N-n_al-n_mg-n_X
+        if ( n_si/N > 0.5 ):
+            continue
+        conc = {
+            "X":8.0/N,
+            "Al":n_al/N,
+            "Mg":n_mg/N,
+            "Si":n_si/N
+        }
+        T = np.linspace(50,2000,20)[::-1]
+        result = gs_searcher.get_gs(bs, ecis, composition=conc, temps=T)
+        fname = "data/gs_serach.xyz"
+        write(fname, result["atoms"])
+        print ("Lowest energy: {} eV".format(result["energy"]/natoms))
+        try:
+            struct_gen.insert_structure( init_struct=fname )
+            counter += 1
+        except Exception as exc:
+            print (str(exc))
+    print ("Insert {} ground state strutures".format(counter))
+
+
+def insert_random_struct(bs,struct_gen,n_structs=10):
+    n_X = 8
+
+    assert len(bs.atoms) == 40
+
+    for _ in range(n_structs):
+        natoms = len(bs.atoms)-n_X
+        max_Si = 0.5
+        n_al = randint(low=15,high=natoms)
+        natoms -= n_al
+        n_mg = randint(low=0,high=natoms)
+
+        symbs = ["X"]*n_X
+        symbs += ["Al"]*n_al
+        symbs += ["Mg"]*n_mg
+        while (len(symbs) < len(bs.atoms)):
+            symbs.append("Si")
+        shuffle(symbs)
+        for i in range(len(bs.atoms)):
+            bs.atoms[i].symbol = symbs[i]
+        fname = "data/random_prebeta_structs.xyz"
+        write(fname,bs.atoms)
+        struct_gen.insert_structure(init_struct=fname)
+
+def evaluate(bs):
+    lambs = np.logspace(-8,-4,num=50)
+    cvs = []
+    s_cond = []
+    for i in range(len(lambs)):
+        print (lambs[i])
+        evaluator = Evaluate( bs, lamb=float(lambs[i]), penalty="l1", select_cond=s_cond )
+        cvs.append(evaluator._cv_loo())
+    indx = np.argmin(cvs)
+    print ("Selected penalization: {}".format(lambs[indx]))
+    evaluator = Evaluate( bs, lamb=float(lambs[indx]), penalty="l1", select_cond=s_cond )
+    eci_name = evaluator.get_cluster_name_eci_dict
+    evaluator.plot_energy()
+    plotter = ECIPlotter(eci_name)
+    plotter.plot()
+    plt.show()
+
+    with open(eci_fname,'w') as outfile:
+        json.dump( eci_name, outfile, indent=2, separators=(",",":"))
+    print ( "ECIs written to {}".format(eci_fname))
 
 def main():
     #prebeta()

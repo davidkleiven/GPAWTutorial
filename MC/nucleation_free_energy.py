@@ -38,11 +38,11 @@ def main(outfname,action):
 
     chem_pot = {"c1_0":-1.0651526881167124}
     chem_pot = {"c1_0":-1.069}
-    sampler = NucleationSampler( size_window_width=3, \
-    chemical_potential=chem_pot, max_cluster_size=15, \
+    sampler = NucleationSampler( size_window_width=10, \
+    chemical_potential=chem_pot, max_cluster_size=150, \
     merge_strategy="normalize_overlap", mpicomm=comm, max_one_cluster=True )
 
-    T = 700
+    T = 300
     mc = SGCNucleation( ceBulk.atoms, T, nucleation_sampler=sampler, \
     network_name="c2_1414_1",  network_element="Mg", symbols=["Al","Mg"], \
     chem_pot=chem_pot, allow_solutes=True )

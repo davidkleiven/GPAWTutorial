@@ -49,7 +49,7 @@ def main():
             act_sampler = ActivitySampler( ceBulk.atoms, T, moves=[("Al","Mg")], mpicomm=comm)
             act_sampler.runMC( mode="fixed", steps=100000 )
             thermo = act_sampler.get_thermodynamic()
-            act_sampler.save( fname="data/effective_concentration_full_range.json" )
+            act_sampler.save( fname="data/effective_concentration_full_range.db" )
     #res = ActivitySampler.effective_composition("data/effective_concentration.json")
     #mg_concs = res[500]["conc"]["Mg"]
     #eff = res[500]["eff_conc"]["Mg"]

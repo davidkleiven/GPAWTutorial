@@ -1,7 +1,6 @@
 import sys
 sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1")
 import numpy as np
-from ase.db import connect
 import json
 from scipy.spatial import ConvexHull
 from scipy.interpolate import griddata
@@ -13,30 +12,34 @@ from mpl_toolkits.mplot3d import axes3d, Axes3D
 from ase.calculators.cluster_expansion import ClusterExpansion
 from ase.ce import BulkCrystal
 from ase.ce import CorrFunction
+import dataset
 plt.switch_backend("TkAgg")
 
-mc_db_name = "data/almgsi_fixed_composition.db"
+mc_db_name = "data/enthalpy_formation_almgsi.db"
 #fig = mlab.figure()
 
-def get_free_energies():
-    db = connect( mc_db_name )
-    unique_formulas = []
-    for row in db.select():
-        if ( row.formula not in unique_formulas ):
-            unique_formulas.append(row.formula)
+def get_formula(mg_conc,si_conc):
+    n_mg = int(100*mg_conc)
+    n_si = int(100*si_conc)
+    formula = "Al{}Mg{}Si{}".format(100-n_mg-n_si,n_mg,n_si)
+    return formula
 
+def get_free_energies():
+    db = dataset.connect( "sqlite:///"+mc_db_name )
+    tbl = db["systems"]
     result = {}
-    for formula in unique_formulas:
+    res_tbl = db["results"]
+    for row in tbl.find(status="finished"):
+        formula = get_formula(row["mg_conc"],row["si_conc"])
         internal_energy = []
         temperature = []
-        conc = None
-        for row in db.select( formula=formula ):
-            if ( conc is None ):
-                conc = {}
-                for key,value in row.count_atoms().iteritems():
-                    conc[key] = float(value)/row.natoms
-            internal_energy.append( row.internal_energy/row.natoms )
-            temperature.append( row.temperature )
+        mg_conc = row["mg_conc"]
+        si_conc = row["si_conc"]
+        conc = {"Mg":mg_conc,"Si":si_conc,"Al":1.0-mg_conc-si_conc}
+        n_atoms = 1000
+        for resrow in res_tbl.find(sysID=row["id"]):
+            internal_energy.append( resrow["internal_energy"]/n_atoms )
+            temperature.append( resrow["temperature"] )
         free_eng = CanonicalFreeEnergy(conc)
         temp,internal,F = free_eng.get( temperature, internal_energy )
         result[formula] = {}
@@ -179,7 +182,6 @@ def excess():
 
             scaled_si_conc = (c_si-np.min(unique_si_concs))/(np.max(unique_si_concs)-np.min(unique_si_concs))
             color=cm(scaled_si_conc)
-            print (scaled_si_conc)
             ax.plot(c_mg, e_form, marker="o", mfc="none", color=color )
             #add_covnex_hull( c_mg, e_form, ax, color=color, formulas=forms )
 
@@ -203,7 +205,15 @@ def excess():
         axscat.scatter( mg_concs, si_concs, c=form_energy, s=50 )
 
         # Solute plot
-        ax_solute.scatter( x_sol, form_energy, c=si_concs, cmap="copper" )
+        im = ax_solute.scatter( x_sol, form_energy, c=si_concs, cmap="copper", marker="v", vmin=0,vmax=0.5 )
+
+    cbar = fig_solute.colorbar(im, orientation="horizontal")
+    cbar.set_label("Si concentration")
+    ax_solute.set_ylabel("Enthalpy of formation (kJ/mol)")
+    ax_solute.set_xlabel( "\$c_\mathrm{Si}/(\c_\mathrm{Si}+c_\mathrm{Mg})\$")
+    ax_solute.spines["right"].set_visible(False)
+    ax_solute.spines["top"].set_visible(False)
+    add_covnex_hull(x_sol[1:], form_energy[1:], ax_solute, formulas=formulas[1:])
     plt.show()
 
 def convex_hull3D( mg_conc, si_conc, E, formulas ):
