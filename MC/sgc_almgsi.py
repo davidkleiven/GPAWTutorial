@@ -1,5 +1,6 @@
 import sys
 sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1")
+import os
 from cemc.mcmc import SGCMonteCarlo
 from ase.ce import BulkCrystal
 from cemc.wanglandau.ce_calculator import get_ce_calc
@@ -14,7 +15,16 @@ from ase.io import Trajectory
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 
-mc_db_name = "data/almgsi_sgc_roi2.db"
+idun_path="/home/davidkl/AlMgSiCooling"
+folders = ["/home/davidkl/AlMgSiCooling","data/"]
+mc_db_name = "almgsi_sgc_roi2.db"
+
+for folder in folders:
+    if os.path.exists(folders+mc_db_name):
+        mc_db_name = folder+mc_db_name
+        break
+
+
 def init_BC():
     conc_args = {
         "conc_ratio_min_1":[[64,0,0]],
@@ -54,8 +64,12 @@ def init_BC():
 def chem_pot_roi():
     ceBulk = init_BC()
     roi = ChemicalPotentialROI(ceBulk.atoms, symbols=["Al","Mg","Si"])
-    chem_pots = roi.chemical_potential_roi()
-    sampling, names = roi.suggest_mu(mu_roi=chem_pots, N=15, extend_fraction=1.0, elements=[("Al","Mg"),("Mg","Si")])
+    mg3si = {
+        "energy":-2565.33441122719/1000.0,
+        "singlets":{"c1_1":-0.706549871364011,"c1_0":0.61161922828621}
+    }
+    chem_pots = roi.chemical_potential_roi(internal_structure=mg3si)
+    sampling, names = roi.suggest_mu(mu_roi=chem_pots, N=5, extend_fraction=0.1)
     db = dataset.connect("sqlite:///"+mc_db_name)
     tbl = db["systems"]
     for line in sampling:
@@ -104,7 +118,7 @@ def run(T,sysID):
         db["systems"].update({"status":"finished","id":sysID}, ["id"])
 
 if __name__ == "__main__":
-    T = np.arange(200,2000,50)[::-1]
+    T = np.arange(100,2000,50)[::-1]
     sysID = int(sys.argv[1])
-    #run(T,sysID)
-    chem_pot_roi()
+    run(T,sysID)
+    #chem_pot_roi()
