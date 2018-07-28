@@ -16,6 +16,7 @@ import pickle as pck
 from ase.calculators.cluster_expansion.cluster_expansion import ClusterExpansion
 from ase.visualize import view
 
+
 def sort_based_on_temp( entry ):
     T = entry["temperature"]
     srt_indx = np.argsort(T)

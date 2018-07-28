@@ -1,6 +1,7 @@
 import sys
 sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1")
 sys.path.insert(2,"/home/dkleiven/Documents/aseJin")
+sys.path.insert(1,"/home/davidkl/Documents/aseJin")
 sys.path.append("/home/davidkl/Documents/GPAWTutorial/CE_extensions")
 sys.path.append("/home/dkleiven/Documents/GPAWTutorials/CE_extensions")
 from ase.build import bulk
@@ -10,7 +11,7 @@ from ase.ce.newStruct import GenerateStructures
 from atomtools.ce.corrmatrix import CovariancePlot
 #from convex_hull_plotter import QHull
 from ase.ce.evaluate import Evaluate
-from plot_eci import ECIPlotter
+from atomtools.ce import ECIPlotter
 import numpy as np
 from matplotlib import pyplot as plt
 from cemc.wanglandau.ce_calculator import CE
@@ -25,9 +26,12 @@ from ase.units import mol, kJ
 from atomtools.ce import CVScoreHistory
 from scipy.spatial import ConvexHull
 from atomtools.ce import ChemicalPotentialEstimator
+from ase.calculators.singlepoint import SinglePointCalculator
+from ase.visualize import view
 
-eci_fname = "data/almgsi_fcc_eci.json"
-db_name = "almgsi.db"
+eci_fname = "data/almgsi_fcc_eci_newconfig.json"
+db_name = "almgsi_newconfig.db"
+db_name_cubic = "almgsi_cubic.db"
 def main(argv):
     option = argv[0]
     conc_args = {
@@ -39,21 +43,15 @@ def main(argv):
     atoms = bulk( "Al" )
     N = 4
     atoms = atoms*(N,N,N)
-    orig_spin_dict = {
-        "Mg":1.0,
-        "Si":-1.0,
-        "Al":0.0
-    }
 
-    ceBulk = BulkCrystal( crystalstructure="fcc", a=4.05, size=[N,N,N], basis_elements=[["Mg","Si","Al",]], \
+    ceBulk = BulkCrystal( crystalstructure="fcc", a=4.05, size=[N,N,N], basis_elements=[["Al","Mg","Si"]], \
     conc_args=conc_args, db_name=db_name, max_cluster_size=4 )
-    #ceBulk.spin_dict = orig_spin_dict
-    #ceBulk.basis_functions = ceBulk._get_basis_functions()
-    #ceBulk._get_cluster_information()
-    print (ceBulk.basis_functions)
-    cf = CorrFunction( ceBulk )
-    #cf.reconfig_db_entries( select_cond=[("id",">=","2315")])
-    #exit()
+    # ceBulk.reconfigure_settings()
+    # print (ceBulk.basis_functions)
+    # cf = CorrFunction( ceBulk )
+    # cf.reconfig_db_entries(select_cond=[("converged","=","1"),("calculator","=","unknown")])
+    # exit()
+    print(ceBulk.basis_functions)
     struc_generator = GenerateStructures( ceBulk, struct_per_gen=10 )
     if ( option == "generateNew" ):
         struc_generator.generate_probe_structure()
@@ -84,6 +82,39 @@ def main(argv):
         plt.show()
     elif( option == "chempot" ):
         estimate_chemical_potentials(ceBulk)
+    elif (option == "convert2cubic"):
+        convert_to_cubic(ceBulk)
+
+def convert_to_cubic(setting_prim):
+    conc_args = {
+        "conc_ratio_min_1":[[64,0,0]],
+        "conc_ratio_max_1":[[24,40,0]],
+        "conc_ratio_min_2":[[64,0,0]],
+        "conc_ratio_max_2":[[22,21,21]]
+    }
+    setting_cubic = BulkCrystal( crystalstructure="fcc", a=4.05, size=[3,3,3], basis_elements=[["Mg","Si","Al",]], \
+    conc_args=conc_args, db_name=db_name_cubic, max_cluster_size=4, cubic=True )
+    view(setting_cubic.atoms)
+    atoms = setting_prim.atoms.copy()
+    a = 4.05
+    atoms.set_cell([[4*a,0,0],[0,4*a,0],[0,0,4*a]])
+    atoms.wrap()
+    view(atoms)
+    print (setting_prim.atoms.get_cell())
+    exit()
+    out_file = "data/temp_out.xyz"
+    target_cell = setting_cubic.atoms.get_cell()
+    cubic_str_gen = struc_generator = GenerateStructures( setting_cubic, struct_per_gen=10 )
+    db = connect(db_name)
+    for row in db.select(converged=1):
+        energy = row.energy
+        atoms = row.toatoms()
+        atoms.set_cell(target_cell)
+        atoms.wrap()
+        write(out_file,atoms)
+        calc = SinglePointCalculator(atoms,energy=energy)
+        atoms.set_calculator(calc)
+        cubic_str_gen.insert_structure(init_struct=out_file,final_struct=atoms)
 
 def update_in_conc_range():
     db = connect( db_name )
@@ -96,18 +127,28 @@ def update_in_conc_range():
             db.update( row.id, in_conc_range=0 )
 
 def evaluate(BC):
-    lambs = np.logspace(-5,-4,num=50)
-    cvs = []
-    s_cond = [("in_conc_range","=","1")]
-    for i in range(len(lambs)):
-        print (lambs[i])
-        evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1", select_cond=s_cond )
-        cvs.append(evaluator._cv_loo())
-    indx = np.argmin(cvs)
-    print ("Selected penalization: {}".format(lambs[indx]))
-    evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1", select_cond=s_cond )
-    eci_name = evaluator.get_cluster_name_eci_dict
-    evaluator.plot_energy()
+    try:
+        # This is the old version
+        lambs = np.logspace(-5,-4,num=50)
+        cvs = []
+        s_cond = [("in_conc_range","=","1")]
+        for i in range(len(lambs)):
+            print (lambs[i])
+            evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1", select_cond=s_cond )
+            cvs.append(evaluator._cv_loo())
+        indx = np.argmin(cvs)
+        print ("Selected penalization: {}".format(lambs[indx]))
+        evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1", select_cond=s_cond )
+        eci_name = evaluator.get_cluster_name_eci_dict
+        evaluator.plot_energy()
+    except:
+        evaluator = Evaluate( BC, penalty="l1", select_cond=s_cond)
+        best_alpha = evaluator.plot_CV(1E-5, 1E-3, num_alpha=16, logfile="almgsi_log.txt")
+        evaluator.plot_fit(best_alpha)
+        print("Best penalization value: {}".format(best_alpha))
+        eci_name = evaluator.get_cluster_name_eci(best_alpha, return_type="dict")
+        eci_name = dict(eci_name)
+        print(eci_name)
     plotter = ECIPlotter(eci_name)
     plotter.plot()
     plt.show()
