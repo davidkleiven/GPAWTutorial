@@ -1,5 +1,5 @@
 from cemc.mcmc import SGCMonteCarlo
-from cemc import CE
+from cemc import CE, get_ce_calc
 import dataset
 from ase.io import read
 from ase.ce import BulkCrystal
@@ -19,7 +19,7 @@ gs = {
 }
 
 canonical_db = "data/sa_aucu_only_pairs.db"
-sgc_db_name = "data/sgc_aucu.db"
+sgc_db_name = "data/sa_sgc_aucu.db"
 folder = "data/Au_Au3Cu/"
 
 
@@ -114,9 +114,36 @@ def run_mc(phase1, phase2):
             save_phase_boundary("{}/phase_boundary_almg_{}.h5".format(folder, i), res)
 
 
-    """
-    chem_pot = (np.linspace(0.15, 0.35, 10)).tolist()
-    T = np.arange(50, 550, 50).tolist()
+
+
+def sa_sgc():
+    alat = 3.8
+    conc_args = {}
+    conc_args['conc_ratio_min_1'] = [[1, 0]]
+    conc_args['conc_ratio_max_1'] = [[0, 1]]
+    kwargs = {
+        "crystalstructure": 'fcc',
+        "a": 3.8,
+        "size": [10, 10, 10],
+        # "size": [2, 2, 2],
+        "basis_elements": [['Cu', 'Au']],
+        "conc_args": conc_args,
+        "db_name": 'temp_sgc.db',
+        "max_cluster_size": 2,
+        "max_cluster_dist": 1.5*alat
+        }
+    with open("data/eci_aucu.json", 'r') as infile:
+        eci = json.load(infile)
+    bc = BulkCrystal(**kwargs)
+    with open("data/eci_aucu.json", 'r') as infile:
+        eci = json.load(infile)
+    calc = get_ce_calc(bc, kwargs, eci=eci, size=[10, 10, 10])
+    bc = calc.BC
+    bc.atoms.set_calculator(calc)
+    atoms = bc.atoms
+
+    chem_pot = (np.linspace(0.19, 0.35, 50)).tolist()
+    T = np.linspace(100, 1000, 50)[::-1]
     equil_param = {"mode": "fixed", "maxiter": 10*len(atoms)}
     nsteps = 100*len(atoms)
     init_formula = atoms.get_chemical_formula()
@@ -140,8 +167,7 @@ def run_mc(phase1, phase2):
                 cf = calc.get_cf()
                 cf["runID"] = uid
                 tbl_cf.insert(cf)
-    """
-
 
 if __name__ == "__main__":
-    run_mc("Au", "data/atoms_Au750Cu250.xyz")
+    # run_mc("Au", "data/atoms_Au750Cu250.xyz")
+    sa_sgc()
