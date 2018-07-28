@@ -1,5 +1,6 @@
 import sys
 sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1")
+#sys.path.insert(1,"/home/davidkl/Documents/aseJin")
 #sys.path.insert(1,"/home/davidkl/Documents/GPAWTutorial/CE_extensions")
 sys.path.append("/usr/local/lib/python2.7/dist-packages/pymatgen/cli/")
 import ase
@@ -56,7 +57,6 @@ class ExcludeHighMg(object):
             return False
         return True
 
-db_name = ""
 def main( argv ):
     lattice = argv[0]
     global db_name
@@ -65,7 +65,7 @@ def main( argv ):
         "conc_ratio_max_1":[[0,1]],
     }
     if ( lattice == "fcc" ):
-        db_name = "ce_hydrostatic.db"
+        db_name = "ce_hydrostatic_new_config.db"
         pickle_file = "data/BC_fcc.pkl"
         ceBulk = BulkCrystal( crystalstructure="fcc", a=4.05, size=[4,4,4], \
                               basis_elements=[["Al","Mg"]], conc_args=conc_args,
@@ -88,9 +88,9 @@ def main( argv ):
     #ceBulk.basis_functions[0]["Mg"] = -1.0
     #ceBulk._get_cluster_information()
     print (ceBulk.basis_functions)
-    #cf = CorrFunction(ceBulk)
-    #cf.reconfig_db_entries()
-    #exit()
+    cf = CorrFunction(ceBulk)
+    cf.reconfig_db_entries(select_cond=[("calculator","=","unknown")])
+    exit()
     #ceBulk.view_clusters()
     #ceBulk._get_cluster_information()
     #cf_names = cf.get_cf( ceBulk.atoms )

@@ -3,9 +3,9 @@ sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1")
 sys.path.insert(2,"/home/dkleiven/Documents/aseJin")
 
 from cemc.mcmc import NucleationSampler, SGCNucleation, CanonicalNucleationMC
-#from cemc.mcmc import TransitionPathRelaxer
+from cemc.mcmc import TransitionPathRelaxer
 from ase.ce import BulkCrystal
-from cemc.wanglandau.ce_calculator import get_ce_calc
+from cemc import get_ce_calc
 import json
 from matplotlib import pyplot as plt
 import h5py as h5
@@ -32,12 +32,14 @@ def main(outfname,action):
         ecis = json.load( infile )
     print (ecis)
     #calc = CE( ceBulk, ecis, size=(3,3,3) )
-    calc = get_ce_calc( ceBulk, kwargs, ecis, size=[10,10,10], free_unused_arrays_BC=True )
+    ecis = {"c1_0":1.0}
+    calc = get_ce_calc( ceBulk, kwargs, ecis, size=[10,10,10], free_unused_arrays_BC=True, convert_trans_matrix=False )
+    exit()
     ceBulk = calc.BC
     ceBulk.atoms.set_calculator( calc )
 
     chem_pot = {"c1_0":-1.0651526881167124}
-    chem_pot = {"c1_0":-1.069}
+    chem_pot = {"c1_0":-1.068}
     sampler = NucleationSampler( size_window_width=10, \
     chemical_potential=chem_pot, max_cluster_size=150, \
     merge_strategy="normalize_overlap", mpicomm=comm, max_one_cluster=True )
@@ -63,15 +65,16 @@ def main(outfname,action):
         mc_canonical.run( nsteps=50000 )
         sampler.save(fname=outfname)
     elif ( action == "trans_path" ):
-        mc.find_transition_path( initial_cluster_size=50, max_size_reactant=10, min_size_product=100, folder="data", path_length=50, max_attempts=10 )
-        plt.show()
+        mc.find_transition_path( initial_cluster_size=90, max_size_reactant=20, min_size_product=135, \
+        folder="data", path_length=1000, max_attempts=10, nsteps=int(0.1*len(ceBulk.atoms)), mpicomm=comm )
+        #plt.show()
     elif ( action == "relax_path" ):
         relaxer = TransitionPathRelaxer( nuc_mc=mc )
-        relaxer.relax_path( initial_path=outfname, n_shooting_moves=1000 )
+        relaxer.relax_path( initial_path=outfname, n_shooting_moves=50 )
         relaxer.path2trajectory(fname="data/relaxed_path.traj")
     elif( action == "generate_paths" ):
         relaxer = TransitionPathRelaxer( nuc_mc=mc )
-        relaxer.generate_paths( initial_path=outfname, n_paths=10, outfile="data/tse_ensemble.json" )
+        relaxer.generate_paths( initial_path=outfname, n_paths=4, outfile="data/tse_ensemble.json", mpicomm=comm )
     elif ( action == "view_tps_indicators" ):
         relaxer = TransitionPathRelaxer( nuc_mc=mc )
         relaxer.plot_path_statistics( path_file=outfname )

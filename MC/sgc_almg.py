@@ -1,4 +1,5 @@
 import sys
+sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1")
 from cemc.mcmc import sgc_montecarlo as sgc
 import json
 from ase.ce import BulkCrystal

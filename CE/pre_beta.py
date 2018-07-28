@@ -5,13 +5,13 @@ from ase.atoms import Atoms
 from ase.visualize import view
 from ase.build import bulk
 from ase.spacegroup import get_spacegroup
-from cemc.mcmc import CollectiveJumpMove
+from cemc.mcmc import CollectiveJumpMove, FixedElement
 from cemc.tools import GSFinder
 from ase.ce import BulkSpacegroup, GenerateStructures
-from numpy.random import randint
+from ase.ce import Evaluate, CorrFunction
+from numpy.random import randint, rand
 from random import shuffle
-from ase.io import write
-from ase.ce.evaluate import Evaluate
+from ase.io import write, read
 from atomtools.ce import ECIPlotter
 import numpy as np
 from matplotlib import pyplot as plt
@@ -93,6 +93,12 @@ def prebeta_ce(options):
     bs = BulkSpacegroup(basis_elements=basis_elements, cellpar=cellpar, spacegroup=221, basis=basis,\
     db_name=db_name,max_cluster_size=4, size=[2,2,2], grouped_basis=[[0,1,2]], conc_args=conc_args)
 
+    #cf = CorrFunction(bs)
+    #cf.reconfig_db_entries()
+    #exit()
+    print(bs.trans_matrix)
+    exit()
+
     struct_gen = GenerateStructures(bs,struct_per_gen=10)
     action = options[0]
     if action == "insert":
@@ -103,6 +109,8 @@ def prebeta_ce(options):
     elif action == "eval":
         evaluate(bs)
     elif action == "gs":
+        atoms = read("data/template_jump.xyz")
+        bs.atoms = atoms
         insert_gs_struct(bs,struct_gen)
 
 def insert_gs_struct(bs,struct_gen,n_structs=20):
@@ -110,6 +118,8 @@ def insert_gs_struct(bs,struct_gen,n_structs=20):
     N = float(len(bs.atoms))
     assert len(bs.atoms) == 40
     gs_searcher = GSFinder()
+    fixed_vac = FixedElement(element="X")
+    gs_searcher.add_constraint(fixed_vac)
     counter = 0
     with open(eci_fname,'r') as infile:
         ecis = json.load(infile)
@@ -117,20 +127,23 @@ def insert_gs_struct(bs,struct_gen,n_structs=20):
     for _ in range(n_structs):
         natoms = len(bs.atoms)-n_X
         max_Si = 0.5
-        n_al = randint(low=15,high=natoms)
-        natoms -= n_al
-        n_mg = randint(low=0,high=natoms)
-        n_si = N-n_al-n_mg-n_X
-        if ( n_si/N > 0.5 ):
-            continue
-        conc = {
-            "X":8.0/N,
-            "Al":n_al/N,
-            "Mg":n_mg/N,
-            "Si":n_si/N
-        }
+
+        n_si = 0
+        for atom in bs.atoms:
+            if atom.symbol == "X":
+                continue
+            val = rand()
+            if val < 0.5:
+                atom.symbol = "Al"
+            elif val < 0.75:
+                atom.symbol = "Mg"
+            else:
+                atom.symbol = "Si"
+                n_si += 1
+            if ( n_si/N > 0.5 ):
+                continue
         T = np.linspace(50,2000,20)[::-1]
-        result = gs_searcher.get_gs(bs, ecis, composition=conc, temps=T)
+        result = gs_searcher.get_gs(bs, ecis, temps=T)
         fname = "data/gs_serach.xyz"
         write(fname, result["atoms"])
         print ("Lowest energy: {} eV".format(result["energy"]/natoms))
@@ -167,18 +180,11 @@ def insert_random_struct(bs,struct_gen,n_structs=10):
         struct_gen.insert_structure(init_struct=fname)
 
 def evaluate(bs):
-    lambs = np.logspace(-8,-4,num=50)
-    cvs = []
-    s_cond = []
-    for i in range(len(lambs)):
-        print (lambs[i])
-        evaluator = Evaluate( bs, lamb=float(lambs[i]), penalty="l1", select_cond=s_cond )
-        cvs.append(evaluator._cv_loo())
-    indx = np.argmin(cvs)
-    print ("Selected penalization: {}".format(lambs[indx]))
-    evaluator = Evaluate( bs, lamb=float(lambs[indx]), penalty="l1", select_cond=s_cond )
-    eci_name = evaluator.get_cluster_name_eci_dict
-    evaluator.plot_energy()
+    evaluator = Evaluate( bs, penalty="l1" )
+    lambs = np.logspace(-5, -2, num=50)
+    best_alpha = evaluator.plot_CV(1E-5, 1E-2, num_alpha=50)
+    evaluator.plot_fit(best_alpha)
+    eci_name = evaluator.get_cluster_name_eci(best_alpha, return_type="dict")
     plotter = ECIPlotter(eci_name)
     plotter.plot()
     plt.show()

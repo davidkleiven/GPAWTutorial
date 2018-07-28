@@ -20,7 +20,7 @@ folders = ["/home/davidkl/AlMgSiCooling/","data/"]
 mc_db_name = "almgsi_sgc_roi2.db"
 
 for folder in folders:
-    if os.path.exists(folders+mc_db_name):
+    if os.path.exists(folder+mc_db_name):
         mc_db_name = folder+mc_db_name
         break
 

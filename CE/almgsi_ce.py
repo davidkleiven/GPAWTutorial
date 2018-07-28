@@ -1,6 +1,7 @@
 import sys
 sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1")
 sys.path.insert(2,"/home/dkleiven/Documents/aseJin")
+sys.path.insert(1,"/home/davidkl/Documents/aseJin")
 sys.path.append("/home/davidkl/Documents/GPAWTutorial/CE_extensions")
 sys.path.append("/home/dkleiven/Documents/GPAWTutorials/CE_extensions")
 from ase.build import bulk
@@ -10,7 +11,7 @@ from ase.ce.newStruct import GenerateStructures
 from atomtools.ce.corrmatrix import CovariancePlot
 #from convex_hull_plotter import QHull
 from ase.ce.evaluate import Evaluate
-from plot_eci import ECIPlotter
+from atomtools.ce import ECIPlotter
 import numpy as np
 from matplotlib import pyplot as plt
 from cemc.wanglandau.ce_calculator import CE
@@ -28,8 +29,8 @@ from atomtools.ce import ChemicalPotentialEstimator
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.visualize import view
 
-eci_fname = "data/almgsi_fcc_eci.json"
-db_name = "almgsi.db"
+eci_fname = "data/almgsi_fcc_eci_newconfig.json"
+db_name = "almgsi_newconfig.db"
 db_name_cubic = "almgsi_cubic.db"
 def main(argv):
     option = argv[0]
@@ -42,21 +43,15 @@ def main(argv):
     atoms = bulk( "Al" )
     N = 4
     atoms = atoms*(N,N,N)
-    orig_spin_dict = {
-        "Mg":1.0,
-        "Si":-1.0,
-        "Al":0.0
-    }
 
-    ceBulk = BulkCrystal( crystalstructure="fcc", a=4.05, size=[N,N,N], basis_elements=[["Mg","Si","Al",]], \
+    ceBulk = BulkCrystal( crystalstructure="fcc", a=4.05, size=[N,N,N], basis_elements=[["Al","Mg","Si"]], \
     conc_args=conc_args, db_name=db_name, max_cluster_size=4 )
-    #ceBulk.spin_dict = orig_spin_dict
-    #ceBulk.basis_functions = ceBulk._get_basis_functions()
-    #ceBulk._get_cluster_information()
-    print (ceBulk.basis_functions)
-    cf = CorrFunction( ceBulk )
-    #cf.reconfig_db_entries( select_cond=[("id",">=","2315")])
-    #exit()
+    # ceBulk.reconfigure_settings()
+    # print (ceBulk.basis_functions)
+    # cf = CorrFunction( ceBulk )
+    # cf.reconfig_db_entries(select_cond=[("converged","=","1"),("calculator","=","unknown")])
+    # exit()
+    print(ceBulk.basis_functions)
     struc_generator = GenerateStructures( ceBulk, struct_per_gen=10 )
     if ( option == "generateNew" ):
         struc_generator.generate_probe_structure()
@@ -132,18 +127,28 @@ def update_in_conc_range():
             db.update( row.id, in_conc_range=0 )
 
 def evaluate(BC):
-    lambs = np.logspace(-5,-4,num=50)
-    cvs = []
-    s_cond = [("in_conc_range","=","1")]
-    for i in range(len(lambs)):
-        print (lambs[i])
-        evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1", select_cond=s_cond )
-        cvs.append(evaluator._cv_loo())
-    indx = np.argmin(cvs)
-    print ("Selected penalization: {}".format(lambs[indx]))
-    evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1", select_cond=s_cond )
-    eci_name = evaluator.get_cluster_name_eci_dict
-    evaluator.plot_energy()
+    try:
+        # This is the old version
+        lambs = np.logspace(-5,-4,num=50)
+        cvs = []
+        s_cond = [("in_conc_range","=","1")]
+        for i in range(len(lambs)):
+            print (lambs[i])
+            evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1", select_cond=s_cond )
+            cvs.append(evaluator._cv_loo())
+        indx = np.argmin(cvs)
+        print ("Selected penalization: {}".format(lambs[indx]))
+        evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1", select_cond=s_cond )
+        eci_name = evaluator.get_cluster_name_eci_dict
+        evaluator.plot_energy()
+    except:
+        evaluator = Evaluate( BC, penalty="l1", select_cond=s_cond)
+        best_alpha = evaluator.plot_CV(1E-5, 1E-3, num_alpha=16, logfile="almgsi_log.txt")
+        evaluator.plot_fit(best_alpha)
+        print("Best penalization value: {}".format(best_alpha))
+        eci_name = evaluator.get_cluster_name_eci(best_alpha, return_type="dict")
+        eci_name = dict(eci_name)
+        print(eci_name)
     plotter = ECIPlotter(eci_name)
     plotter.plot()
     plt.show()
