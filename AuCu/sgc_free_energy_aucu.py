@@ -32,11 +32,11 @@ def run(chem_pot, min_c1, max_c1, T):
     if rank == 0:
         print("Number of atoms: {}".format(len(bc.atoms)))
 
-    mc = SGCFreeEnergyBarrier(bc.atoms, T, n_windows=20, n_bins=10,
+    mc = SGCFreeEnergyBarrier(bc.atoms, T, n_windows=10, n_bins=10,
                               min_singlet=min_c1, max_singlet=max_c1,
                               mpicomm=comm, symbols=["Au", "Cu"])
     mu = {"c1_0": chem_pot}
-    mc.run(nsteps=1000000, chem_pot=mu)
+    mc.run(nsteps=100000, chem_pot=mu)
     mc.save(fname="data/Cu_Cu3Au_free_eng_{}_{}.json".format(int(min_c1*100), int(max_c1*100)))
 
 if __name__ == "__main__":

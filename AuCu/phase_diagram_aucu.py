@@ -12,6 +12,13 @@ plt.switch_backend("TkAgg")
 
 db_name = "phase_boundary_aucu.db"
 
+Tmax = {
+    "AuCu3_Cu": 1000,
+    "AuCu3_AuCu": 650,
+    "AuCu_Au3Cu": 700,
+    "Au_Au3Cu": 1000
+}
+
 def average_results(boundary):
     folder = "data/{}_decrease/".format(boundary)
     Tmin = 100000
@@ -66,21 +73,28 @@ def average_results(boundary):
         db_name=db_name, table="mu_temperature",
         fields=field_dict, info=info)
 
-def plot(boundaries, db_name):
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
+def plot(boundaries, db_name, fig=None, colors=None, lw=2, std_fill=True):
+    fig_provided = False
+    if fig is not None:
+        ax = fig.get_axes()[0]
+        fig_provided = True
+    else:
+        fig = plt.figure()
+        ax = fig.add_subplot(1, 1, 1)
     db = dataset.connect("sqlite:///{}".format(db_name))
     tbl = db["composition_temperature"]
-    colors = ['#66c2a5','#fc8d62','#8da0cb','#e78ac3','#a6d854','#ffd92f']
+    if colors is None:
+        colors = ['#66c2a5','#fc8d62','#8da0cb','#e78ac3','#a6d854','#ffd92f']
     for num, b in enumerate(boundaries):
         for tag in ["first", "second"]:
             conc = []
             T = []
             std = []
             for res in tbl.find(boundary=b, name=tag):
-                conc.append(res["singlet"])
-                T.append(res["temperature"])
-                std.append(res["singlet_std"])
+                if res["temperature"] < Tmax[b]:
+                    conc.append(res["singlet"])
+                    T.append(res["temperature"])
+                    std.append(res["singlet_std"])
             if not T:
                 continue
 
@@ -90,14 +104,19 @@ def plot(boundaries, db_name):
             conc = np.array(conc)
             conc += 1.0
             conc /= 2.0
-            ax.plot(conc, T, color=colors[num], lw=2)
+            ax.plot(conc, T, color=colors[num%len(colors)], lw=lw)
             conc_minus = np.array(conc) - np.array(std)
             conc_plus = np.array(conc) + np.array(std)
-            ax.fill_betweenx(T, conc_minus, conc_plus, color="#d9d9d9")
-    ax.set_xlabel("Au concentration")
-    ax.set_ylabel("Temperature (K)")
-    ax.spines["right"].set_visible(False)
-    ax.spines["top"].set_visible(False)
+            if std_fill:
+                ax.fill_betweenx(T, conc_minus, conc_plus, color="#d9d9d9")
+    if not fig_provided:
+        ax.set_xlabel("Au concentration")
+        ax.set_ylabel("Temperature (K)")
+        ax.spines["right"].set_visible(False)
+        ax.spines["top"].set_visible(False)
+    else:
+        fig.canvas.draw()
+        fig.canvas.flush_events()
     return fig
 
 if __name__ == "__main__":
