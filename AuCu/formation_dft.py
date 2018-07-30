@@ -1,5 +1,5 @@
 from ase.db import connect
-db_name = "data/cu-au_fcc.db"
+db_name = "cu-au_fcc_final.db"
 from matplotlib import pyplot as plt
 import numpy as np
 

@@ -1,4 +1,8 @@
 from ase.ce import BulkCrystal, Evaluate, CorrFunction, GenerateStructures
+import matplotlib as mpl
+mpl.rcParams["svg.fonttype"] = "none"
+mpl.rcParams["axes.unicode_minus"] = False
+mpl.rcParams["font.size"] = 18
 from atomtools.ce import ECIPlotter
 from matplotlib import pyplot as plt
 import json
@@ -18,8 +22,8 @@ def main():
         # "size": [2, 2, 2],
         "basis_elements": [['Cu', 'Au']],
         "conc_args": conc_args,
-        "db_name": 'cu-au_fcc.db',
-        "max_cluster_size": 2,
+        "db_name": 'cu-au_fcc_final.db',
+        "max_cluster_size": 3,
         "max_cluster_dist": 1.5*alat
         }
 
@@ -38,8 +42,8 @@ def main():
     fcc = BulkCrystal(**kwargs_fcc)
     # fcc.reconfigure_settings()
     # gen_struct(fcc)
-    gs_struct(fcc)
-    # evaluate(fcc)
+    # gs_struct(fcc)
+    evaluate(fcc)
 
 def gen_struct(bc):
     struct_gen = GenerateStructures(bc)
@@ -72,14 +76,14 @@ def gs_struct(bc):
 def evaluate(bc):
     # reconfigure(bc)
 
-    eval_fcc = Evaluate(bc, penalty="l1")
-    min_alpha = eval_fcc.plot_CV(1E-5, 1E-3, num_alpha=20)
+    eval_fcc = Evaluate(bc, penalty="l2")
+    min_alpha = eval_fcc.plot_CV(1E-12, 1E-3, num_alpha=200)
     # min_alpha = 1E-6
     eval_fcc.plot_fit(min_alpha)
     eci_dict = eval_fcc.get_cluster_name_eci(min_alpha, return_type='dict')
-    eci_plotter = ECIPlotter(eci_dict)
+    eci_plotter = ECIPlotter(eci_dict, naming="normalized")
     eci_plotter.plot()
-    fname = "data/eci_aucu.json"
+    fname = "data/eci_aucu_L1vsL2.json"
     with open(fname, 'w') as outfile:
         json.dump(eci_dict, outfile, indent=2, separators=(",", ":"))
     print("ECI written to {}".format(fname))

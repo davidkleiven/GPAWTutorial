@@ -19,7 +19,7 @@ gs = {
 }
 
 canonical_db = "data/sa_aucu_only_pairs.db"
-sgc_db_name = "data/sa_sgc_aucu.db"
+sgc_db_name = "data/sa_sgc_aucu_new_eci_100T.db"
 folder = "data/Au_Au3Cu/"
 
 
@@ -114,8 +114,6 @@ def run_mc(phase1, phase2):
             save_phase_boundary("{}/phase_boundary_almg_{}.h5".format(folder, i), res)
 
 
-
-
 def sa_sgc():
     alat = 3.8
     conc_args = {}
@@ -142,11 +140,10 @@ def sa_sgc():
     bc.atoms.set_calculator(calc)
     atoms = bc.atoms
 
-    chem_pot = (np.linspace(0.19, 0.35, 50)).tolist()
-    T = np.linspace(100, 1000, 50)[::-1]
+    chem_pot = (np.linspace(0.19, 0.35, 25)).tolist()
+    T = np.linspace(100, 1000, 100)[::-1]
     equil_param = {"mode": "fixed", "maxiter": 10*len(atoms)}
     nsteps = 100*len(atoms)
-    init_formula = atoms.get_chemical_formula()
 
     sgc_db = dataset.connect("sqlite:///{}".format(sgc_db_name))
     tbl = sgc_db["results"]
@@ -157,6 +154,7 @@ def sa_sgc():
         calc.set_symbols(orig_symbs)
         for temp in T:
             mc = SGCMonteCarlo(atoms, temp, mpicomm=comm, symbols=["Au", "Cu"])
+            init_formula = atoms.get_chemical_formula()
             mc.runMC(steps=nsteps, equil_params=equil_param,
                      chem_potential=chemical_potential)
             thermo = mc.get_thermodynamic(reset_ecis=True)

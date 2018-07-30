@@ -73,6 +73,7 @@ def average_results(boundary):
         db_name=db_name, table="mu_temperature",
         fields=field_dict, info=info)
 
+
 def plot(boundaries, db_name, fig=None, colors=None, lw=2, std_fill=True):
     fig_provided = False
     if fig is not None:
@@ -85,6 +86,7 @@ def plot(boundaries, db_name, fig=None, colors=None, lw=2, std_fill=True):
     tbl = db["composition_temperature"]
     if colors is None:
         colors = ['#66c2a5','#fc8d62','#8da0cb','#e78ac3','#a6d854','#ffd92f']
+        
     for num, b in enumerate(boundaries):
         for tag in ["first", "second"]:
             conc = []
@@ -118,6 +120,7 @@ def plot(boundaries, db_name, fig=None, colors=None, lw=2, std_fill=True):
         fig.canvas.draw()
         fig.canvas.flush_events()
     return fig
+
 
 if __name__ == "__main__":
     # average_results("AuCu3_Cu")
