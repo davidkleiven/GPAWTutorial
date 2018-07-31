@@ -36,16 +36,18 @@ def run(chem_pot, min_c1, max_c1, T):
                               min_singlet=min_c1, max_singlet=max_c1,
                               mpicomm=comm, symbols=["Au", "Cu"])
     mu = {"c1_0": chem_pot}
-    mc.run(nsteps=100000, chem_pot=mu)
-    mc.save(fname="data/Cu_Cu3Au_free_eng_{}_{}.json".format(int(min_c1*100), int(max_c1*100)))
+    mc.run(nsteps=1000000, chem_pot=mu)
+    mc.save(fname="data/free_eng_{}_{}_{}_{}.json".format(int(min_c1*100), int(max_c1*100)), int(1E6*chem_pot), T)
 
 if __name__ == "__main__":
     from matplotlib import pyplot as plt
     T = 300
     min_c1 = -0.5
     max_c1 = -0.0
-    chem_pot = 0.243333
-    chem_pot = 0.241207
-    # run(chem_pot, min_c1, max_c1, T)
-    SGCFreeEnergyBarrier.plot(fname="data/Cu_Cu3Au_free_eng_-50_0.json")
-    plt.show()
+    chem_pots = [0.241207, 0.243333]
+    temps = [500, 400, 300, 200]
+    for chem_pot in chem_pots:
+        for T in temps:
+            run(chem_pot, min_c1, max_c1, T)
+    # SGCFreeEnergyBarrier.plot(fname="data/Cu_Cu3Au_free_eng_-50_0.json")
+    # plt.show()
