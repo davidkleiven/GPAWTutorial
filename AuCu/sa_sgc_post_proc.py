@@ -11,6 +11,7 @@ from cemc.tools import PeakExtractor
 
 db_name = "data/sa_sgc_aucu_new_eci_100T.db"
 
+tol = 1E-7
 def unique_chemical_pot():
     db = dataset.connect("sqlite:///{}".format(db_name))
     mu = []
@@ -25,7 +26,7 @@ def heat_capacity():
     ax = fig.add_subplot(1, 2, 1)
     for m in mu:
         sql = "SELECT temperature, sgc_heat_capacity, energy FROM results WHERE "
-        sql += "mu_c1_0 > {} AND mu_c1_0 < {}".format(m-0.001, m+0.001)
+        sql += "mu_c1_0 > {} AND mu_c1_0 < {}".format(m-tol, m+tol)
         T = []
         Cv = []
         energy = []
@@ -60,7 +61,7 @@ def show_cooling():
     db = dataset.connect("sqlite:///{}".format(db_name))
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
-    cmap = mpl.cm.inferno
+    cmap = mpl.cm.copper
     norm = mpl.colors.Normalize(vmin=np.min(mu), vmax=np.max(mu))
     scalar_map = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
     scalar_map.set_array(mu)
@@ -70,9 +71,10 @@ def show_cooling():
 
     fig_T_mu = plt.figure()
     ax_T_mu = fig_T_mu.add_subplot(1, 1, 1)
+    print("Number of unqitue chemical potentials: {}".format(len(mu)))
     for m in mu:
         sql = "SELECT temperature, singlet_c1_0, sgc_heat_capacity, energy FROM results WHERE "
-        sql += "mu_c1_0 > {} AND mu_c1_0 < {}".format(m-0.001, m+0.001)
+        sql += "mu_c1_0 > {} AND mu_c1_0 < {}".format(m-tol, m+tol)
         T = []
         x = []
         Cv = []
@@ -89,6 +91,11 @@ def show_cooling():
             order_disorder_comp.append(x[indx_max])
             order_disorder_temp.append(T[indx_max])
             mu_plot.append(m)
+
+        # Sort the results
+        sort_indx = np.argsort(T)
+        T = np.array([T[indx] for indx in sort_indx])
+        x = np.array([x[indx] for indx in sort_indx])
 
         ax.plot(x, T, color=scalar_map.to_rgba(m), lw=1)
     ax_divider = make_axes_locatable(ax)
