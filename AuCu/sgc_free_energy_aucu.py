@@ -20,7 +20,7 @@ def run(chem_pot, min_c1, max_c1, T):
         "basis_elements": [['Cu', 'Au']],
         "conc_args": conc_args,
         "db_name": 'temp_sgc.db',
-        "max_cluster_size": 2,
+        "max_cluster_size": 3,
         "max_cluster_dist": 1.5*alat
         }
     bc = BulkCrystal(**kwargs)
@@ -41,10 +41,11 @@ def run(chem_pot, min_c1, max_c1, T):
 
 if __name__ == "__main__":
     from matplotlib import pyplot as plt
-    T = 400
-    min_c1 = -1.0
-    max_c1 = -0.5
-    chem_pot = 0.204
+    T = 300
+    min_c1 = -0.5
+    max_c1 = -0.0
+    chem_pot = 0.243333
+    chem_pot = 0.241207
     # run(chem_pot, min_c1, max_c1, T)
-    SGCFreeEnergyBarrier.plot(fname="data/Cu_Cu3Au_free_eng_-100_-50.json")
+    SGCFreeEnergyBarrier.plot(fname="data/Cu_Cu3Au_free_eng_-50_0.json")
     plt.show()
