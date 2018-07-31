@@ -37,7 +37,7 @@ def run(chem_pot, min_c1, max_c1, T):
                               mpicomm=comm, symbols=["Au", "Cu"])
     mu = {"c1_0": chem_pot}
     mc.run(nsteps=1000000, chem_pot=mu)
-    mc.save(fname="data/free_eng_{}_{}_{}_{}.json".format(int(min_c1*100), int(max_c1*100)), int(1E6*chem_pot), T)
+    mc.save(fname="data/barriers/free_eng_{}_{}_{}_{}.json".format(int(min_c1*100), int(max_c1*100)), int(1E6*chem_pot), T)
 
 if __name__ == "__main__":
     from matplotlib import pyplot as plt

@@ -9,7 +9,7 @@ from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 from scipy.interpolate import UnivariateSpline
 from cemc.tools import PeakExtractor
 
-db_name = "data/sa_sgc_aucu_new_eci_100T.db"
+db_name = "data/sa_sgc_aucu_with_triplets.db"
 
 tol = 1E-7
 def unique_chemical_pot():
