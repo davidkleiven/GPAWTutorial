@@ -141,11 +141,6 @@ def sa_sgc():
     atoms = bc.atoms
 
     chem_pot = (np.linspace(0.19, 0.35, 50)).tolist()
-
-    all_chem_pot = [None]*(len(chem_pot) + len(chem_pot2))
-    all_chem_pot[::2] = chem_pot
-    all_chem_pot[1::2] = chem_pot2
-    chem_pot = all_chem_pot
     T = np.linspace(100, 1000, 50)[::-1]
     equil_param = {"mode": "fixed", "maxiter": 10*len(atoms)}
     nsteps = 100*len(atoms)
