@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 from scipy.interpolate import UnivariateSpline
 from cemc.tools import PeakExtractor
+from scipy.signal import find_peaks_cwt
 
 db_name = "data/sa_sgc_aucu_with_triplets.db"
 
@@ -74,7 +75,7 @@ def show_cooling():
     print("Number of unqitue chemical potentials: {}".format(len(mu)))
     for m in mu:
         sql = "SELECT temperature, singlet_c1_0, sgc_heat_capacity, energy FROM results WHERE "
-        sql += "mu_c1_0 > {} AND mu_c1_0 < {}".format(m-tol, m+tol)
+        sql += "mu_c1_0 > {} AND mu_c1_0 < {} order by temperature".format(m-tol, m+tol)
         T = []
         x = []
         Cv = []
@@ -84,18 +85,16 @@ def show_cooling():
             x.append(res["singlet_c1_0"])
             Cv.append(res["sgc_heat_capacity"])
             U.append(res["energy"])
-        indx_max = np.argmax(Cv)
+
+        peakind = find_peaks_cwt(Cv, np.arange(1, 40), noise_perc=10)
+
         x = np.array(x)
         x = (1.0+x)/2.0
-        if x[indx_max] > 0.0 and x[indx_max] < 1.0:
-            order_disorder_comp.append(x[indx_max])
-            order_disorder_temp.append(T[indx_max])
-            mu_plot.append(m)
-
-        # Sort the results
-        sort_indx = np.argsort(T)
-        T = np.array([T[indx] for indx in sort_indx])
-        x = np.array([x[indx] for indx in sort_indx])
+        for indx_max in peakind:
+            if x[indx_max] > 0.0 and x[indx_max] < 1.0:
+                order_disorder_comp.append(x[indx_max])
+                order_disorder_temp.append(T[indx_max])
+                mu_plot.append(m)
 
         ax.plot(x, T, color=scalar_map.to_rgba(m), lw=1)
     ax_divider = make_axes_locatable(ax)
@@ -144,8 +143,8 @@ if __name__ == "__main__":
     from phase_diagram_aucu import plot
     plt.switch_backend("TkAgg")
     fig = show_cooling()
-    plot(["AuCu3_AuCu", "AuCu_Au3Cu", "Au_Au3Cu", "AuCu3_Cu"],
-         "data/phase_boundary_aucu.db", fig=fig, colors=["black"], lw=3, std_fill=False)
+    # plot(["AuCu3_AuCu", "AuCu_Au3Cu", "Au_Au3Cu", "AuCu3_Cu"],
+    #      "data/phase_boundary_aucu.db", fig=fig, colors=["black"], lw=3, std_fill=False)
     fig = heat_capacity()
     # fig = plot_experimental(fig)
     plt.show()
