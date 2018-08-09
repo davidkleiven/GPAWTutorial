@@ -91,13 +91,14 @@ def prebeta_ce(options):
     cellpar = [a,a,a,90,90,90]
     basis_elements = [["Al","Mg","Si","X"],["Al","Mg","Si","X"],["Al","Mg","Si","X"]]
     bs = BulkSpacegroup(basis_elements=basis_elements, cellpar=cellpar, spacegroup=221, basis=basis,\
-    db_name=db_name,max_cluster_size=4, size=[2,2,2], grouped_basis=[[0,1,2]], conc_args=conc_args)
+    db_name=db_name, max_cluster_size=4, size=[2,2,2], grouped_basis=[[0,1,2]], conc_args=conc_args,
+    max_cluster_dist=4.048)
+    print(bs.max_cluster_dist)
 
-    #cf = CorrFunction(bs)
-    #cf.reconfig_db_entries()
-    #exit()
-    print(bs.trans_matrix)
-    exit()
+    # bs.reconfigure_settings()
+    # cf = CorrFunction(bs, parallel=True)
+    # cf.reconfig_db_entries()
+    # exit()
 
     struct_gen = GenerateStructures(bs,struct_per_gen=10)
     action = options[0]
@@ -111,15 +112,15 @@ def prebeta_ce(options):
     elif action == "gs":
         atoms = read("data/template_jump.xyz")
         bs.atoms = atoms
-        insert_gs_struct(bs,struct_gen)
+        insert_gs_struct(bs, struct_gen, n_structs=30)
 
 def insert_gs_struct(bs,struct_gen,n_structs=20):
     n_X = 8
     N = float(len(bs.atoms))
     assert len(bs.atoms) == 40
     gs_searcher = GSFinder()
-    fixed_vac = FixedElement(element="X")
-    gs_searcher.add_constraint(fixed_vac)
+    # fixed_vac = FixedElement(element="X")
+    # gs_searcher.add_constraint(fixed_vac)
     counter = 0
     with open(eci_fname,'r') as infile:
         ecis = json.load(infile)
@@ -176,11 +177,11 @@ def insert_random_struct(bs,struct_gen,n_structs=10):
         for i in range(len(bs.atoms)):
             bs.atoms[i].symbol = symbs[i]
         fname = "data/random_prebeta_structs.xyz"
-        write(fname,bs.atoms)
+        write(fname, bs.atoms)
         struct_gen.insert_structure(init_struct=fname)
 
 def evaluate(bs):
-    evaluator = Evaluate( bs, penalty="l1" )
+    evaluator = Evaluate( bs, penalty="l1", parallel=True )
     lambs = np.logspace(-5, -2, num=50)
     best_alpha = evaluator.plot_CV(1E-5, 1E-2, num_alpha=50)
     evaluator.plot_fit(best_alpha)
