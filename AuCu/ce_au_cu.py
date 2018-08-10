@@ -76,14 +76,14 @@ def gs_struct(bc):
 def evaluate(bc):
     # reconfigure(bc)
 
-    eval_fcc = Evaluate(bc, penalty="l2")
+    eval_fcc = Evaluate(bc, penalty="l1")
     min_alpha = eval_fcc.plot_CV(1E-12, 1E-3, num_alpha=200)
     # min_alpha = 1E-6
     eval_fcc.plot_fit(min_alpha)
     eci_dict = eval_fcc.get_cluster_name_eci(min_alpha, return_type='dict')
     eci_plotter = ECIPlotter(eci_dict, naming="normalized")
     eci_plotter.plot()
-    fname = "data/eci_aucu_L1vsL2.json"
+    fname = "data/eci_aucu.json"
     with open(fname, 'w') as outfile:
         json.dump(eci_dict, outfile, indent=2, separators=(",", ":"))
     print("ECI written to {}".format(fname))

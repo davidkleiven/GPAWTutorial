@@ -21,8 +21,8 @@ gs = {
 }
 
 canonical_db = "data/sa_aucu_only_pairs.db"
-# sgc_db_name = "data/sa_sgc_aucu_thermo_integrate.db"
-sgc_db_name = "data/fixed_composition_order_param.db"
+sgc_db_name = "data/sa_sgc_aucu_new_eci_weekend.db"
+#sgc_db_name = "data/fixed_composition_order_param.db"
 folder = "data/Au_Au3Cu/"
 
 
@@ -211,13 +211,14 @@ def sa_sgc():
         # "size": [2, 2, 2],
         "basis_elements": [['Cu', 'Au']],
         "conc_args": conc_args,
-        "db_name": 'temp_sgc.db',
+        "db_name": 'temp_sgc{}.db'.format(rank),
         "max_cluster_size": 3,
         "max_cluster_dist": 1.5*alat
         }
     with open("data/eci_aucu.json", 'r') as infile:
         eci = json.load(infile)
     bc = BulkCrystal(**kwargs)
+    bc.reconfigure_settings()
     with open("data/eci_aucu.json", 'r') as infile:
         eci = json.load(infile)
     calc = get_ce_calc(bc, kwargs, eci=eci, size=[10, 10, 10])
@@ -253,5 +254,5 @@ def sa_sgc():
 
 if __name__ == "__main__":
     # run_mc("Au", "data/atoms_Au750Cu250.xyz")
-    #sa_sgc()
-    thermodynamic_integration("data/atoms_Au750Cu250.xyz")
+    sa_sgc()
+    #thermodynamic_integration("data/atoms_Au750Cu250.xyz")

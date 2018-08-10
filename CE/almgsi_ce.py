@@ -14,7 +14,7 @@ from ase.ce.evaluate import Evaluate
 from atomtools.ce import ECIPlotter
 import numpy as np
 from matplotlib import pyplot as plt
-from cemc.wanglandau.ce_calculator import CE
+from cemc import CE
 from cemc.mcmc import mc_observers as mcobs
 import json
 from cemc.mcmc import montecarlo as mc
@@ -48,7 +48,7 @@ def main(argv):
     conc_args=conc_args, db_name=db_name, max_cluster_size=4 )
     # ceBulk.reconfigure_settings()
     # print (ceBulk.basis_functions)
-    # cf = CorrFunction( ceBulk )
+    # cf = CorrFunction( ceBulk, parallel=True)
     # cf.reconfig_db_entries(select_cond=[("converged","=","1"),("calculator","=","unknown")])
     # exit()
     print(ceBulk.basis_functions)

@@ -134,9 +134,9 @@ def insert_gs_struct(bs,struct_gen,n_structs=20):
             if atom.symbol == "X":
                 continue
             val = rand()
-            if val < 0.5:
+            if val < 0.75:
                 atom.symbol = "Al"
-            elif val < 0.75:
+            elif val < 0.875:
                 atom.symbol = "Mg"
             else:
                 atom.symbol = "Si"
@@ -186,8 +186,9 @@ def evaluate(bs):
     best_alpha = evaluator.plot_CV(1E-5, 1E-2, num_alpha=50)
     evaluator.plot_fit(best_alpha)
     eci_name = evaluator.get_cluster_name_eci(best_alpha, return_type="dict")
-    plotter = ECIPlotter(eci_name)
-    plotter.plot()
+    # plotter = ECIPlotter(eci_name)
+    # plotter.plot()
+    evaluator.plot_ECI()
     plt.show()
 
     with open(eci_fname,'w') as outfile:

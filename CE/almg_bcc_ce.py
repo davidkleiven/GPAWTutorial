@@ -7,7 +7,7 @@ from ase.ce.corrFunc import CorrFunction
 from atomtools.ce.eciplotter import ECIPlotter
 import numpy as np
 from matplotlib import pyplot as plt
-from cemc.wanglandau.ce_calculator import CE
+from cemc import CE
 from cemc.mcmc import montecarlo as mc
 from cemc.mcmc import mc_observers as mcobs
 from ase.units import mol, kJ
