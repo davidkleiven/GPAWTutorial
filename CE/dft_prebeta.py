@@ -18,6 +18,7 @@ def main(argv):
     single_point = False
     if len(argv) >= 3:
         single_point = int(argv[2]) == 1
+    optimizer = "lbfgs"
     if len(argv) >= 4:
         optimizer = argv[3]
 
