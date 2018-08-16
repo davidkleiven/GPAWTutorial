@@ -84,10 +84,10 @@ def main(argv):
         energy = atoms.get_potential_energy()
         print("Energy: {}".format(energy))
 
-        orig_atoms = db.get_atoms(name=name)
+        orig_atoms = db.get_atoms(id=runID)
         scalc = SinglePointCalculator(orig_atoms, energy=energy)
         orig_atoms.set_calculator(scalc)
-        kvp = db.get(name=name).key_value_pairs
+        kvp = db.get(id=runID).key_value_pairs
         del db[runID]
         newID = db.write(orig_atoms, key_value_pairs=kvp)
         db.update(newID, converged_stress=True, converged_force=True)
@@ -99,7 +99,8 @@ def main(argv):
         conv_stress = row.get("converged_stress", default=0)
         if ((conv_force == 1) and (conv_stress == 1) and (kpt_density > 1.5)):
             db.update(newID, converged=True)
-        db.write(atoms, name=name, state="relaxed")
+        else:
+            db.write(atoms, name=name, state="relaxed")
     except Exception as exc:
         print(exc)
 
