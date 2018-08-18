@@ -50,10 +50,10 @@ def run(chem_pot, T, N):
     # camera = Snapshot(atoms=mc.atoms, trajfile="data/window{}_{}.traj".format(N, rank))
     # mc.attach(camera, interval=50000)
     # print(mc.atoms_indx)
-    react_path = PseudoBinaryReactPath(mc, react_crd=[0, 400], n_windows=20,
-                                       n_bins=10)
+    react_path = PseudoBinaryReactPath(
+        mc, react_crd=[0, 400], n_windows=20, n_bins=10,
+        data_file="data/almgsi_barrier_{}.h5".format(N))
     react_path.run(nsteps=10000)
-    react_path.save(fname="data/almgsi_barrier_{}.h5".format(N))
 
 
 if __name__ == "__main__":
