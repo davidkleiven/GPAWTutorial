@@ -93,7 +93,7 @@ def main(argv):
         conv_stress = row.get("converged_stress", default=0)
         if ((conv_force == 1) and (conv_stress == 1) and (kpt_density > 1.5)):
             db.update(newID, converged=True)
-        else:name=name
+        else:
             db.write(atoms, name=name, state="relaxed")
     except Exception as exc:
         print(exc)
