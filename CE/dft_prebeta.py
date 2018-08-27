@@ -16,19 +16,13 @@ def main(argv):
     kpt_density = float(argv[1])
 
     single_point = False
-    if len(argv) >= 3:
-        single_point = int(argv[2]) == 1
+    single_point = int(argv[2]) == 1
     optimizer = "lbfgs"
-    if len(argv) >= 4:
-        optimizer = argv[3]
+    optimizer = argv[3]
+
+    db_name = argv[4]
 
     print("Running job: {}".format(runID))
-    db_paths = ["/home/ntnu/davidkl/GPAWTutorial/CE/pre_beta.db",
-                "pre_beta.db", "/home/davidkl/GPAWTutorial/CE/pre_beta.db"]
-    for path in db_paths:
-        if os.path.isfile(path):
-            db_name = path
-            break
 
     db = ase.db.connect(db_name)
 
@@ -99,7 +93,7 @@ def main(argv):
         conv_stress = row.get("converged_stress", default=0)
         if ((conv_force == 1) and (conv_stress == 1) and (kpt_density > 1.5)):
             db.update(newID, converged=True)
-        else:
+        else:name=name
             db.write(atoms, name=name, state="relaxed")
     except Exception as exc:
         print(exc)

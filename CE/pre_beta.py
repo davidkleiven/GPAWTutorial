@@ -15,6 +15,7 @@ from ase.io import write, read
 from atomtools.ce import ECIPlotter
 import numpy as np
 from matplotlib import pyplot as plt
+from ase.db import connect
 plt.switch_backend("TkAgg")
 import json
 #from ase.spacegroup import *
@@ -46,7 +47,7 @@ def prebeta(type="orig"):
     view(orig)
 
 def prebeta_spacegroup(n_template_structs=0):
-    atoms = bulk("Al",cubic=True)
+    atoms = bulk("Al", cubic=True)
 
     # Add one site at the center
     L = atoms.get_cell()[0,0]
@@ -91,11 +92,13 @@ def prebeta_ce(options):
     cellpar = [a,a,a,90,90,90]
     basis_elements = [["Al","Mg","Si","X"],["Al","Mg","Si","X"],["Al","Mg","Si","X"]]
     bs = BulkSpacegroup(basis_elements=basis_elements, cellpar=cellpar, spacegroup=221, basis=basis,\
-    db_name=db_name, max_cluster_size=4, size=[2,2,2], grouped_basis=[[0,1,2]], conc_args=conc_args,
-    max_cluster_dist=4.048)
-    print(bs.max_cluster_dist)
+    db_name=db_name, max_cluster_size=4, size=[1, 1, 1], grouped_basis=[[0,1,2]], conc_args=conc_args,
+    max_cluster_dia=4.048)
+    print(bs.max_cluster_dia)
 
     # bs.reconfigure_settings()
+    # view(bs.atoms_with_given_dim)
+    # exit()
     # cf = CorrFunction(bs, parallel=True)
     # cf.reconfig_db_entries()
     # exit()
@@ -107,6 +110,10 @@ def prebeta_ce(options):
         struct_gen.insert_structure(init_struct=fname)
     elif action == "rand_struct":
         insert_random_struct(bs, struct_gen,n_structs=10)
+    elif action == "small_rand_struct":
+        for i in range(100):
+            insert_small_rand_struct(bs, struct_gen)
+
     elif action == "eval":
         evaluate(bs)
     elif action == "gs":
@@ -114,8 +121,24 @@ def prebeta_ce(options):
         bs.atoms = atoms
         insert_gs_struct(bs, struct_gen, n_structs=30)
 
+def insert_small_rand_struct(bs, gen):
+    assert len(bs.atoms_with_given_dim) == 5
+    symbs = ["X", "Al", "Al", "Al", "Al"]
+    possible_symbs = ["Al", "Mg", "Si"]
+    from random import choice
+    for i in range(1, 5):
+        symbs[i] = choice(possible_symbs)
+    shuffle(symbs)
+    atoms = bs.atoms_with_given_dim
+    for i, atom in enumerate(atoms):
+        atom.symbol = symbs[i]
+    try:
+        gen.insert_structure(init_struct=atoms)
+    except Exception as exc:
+        print(str(exc))
+
 def insert_gs_struct(bs,struct_gen,n_structs=20):
-    n_X = 8
+    n_X = 16
     N = float(len(bs.atoms))
     assert len(bs.atoms) == 40
     gs_searcher = GSFinder()
@@ -134,9 +157,9 @@ def insert_gs_struct(bs,struct_gen,n_structs=20):
             if atom.symbol == "X":
                 continue
             val = rand()
-            if val < 0.75:
+            if val < 0.05:
                 atom.symbol = "Al"
-            elif val < 0.875:
+            elif val < 0.7:
                 atom.symbol = "Mg"
             else:
                 atom.symbol = "Si"
@@ -157,7 +180,7 @@ def insert_gs_struct(bs,struct_gen,n_structs=20):
 
 
 def insert_random_struct(bs,struct_gen,n_structs=10):
-    n_X = 8
+    n_X = 16
 
     assert len(bs.atoms) == 40
 
@@ -180,14 +203,39 @@ def insert_random_struct(bs,struct_gen,n_structs=10):
         write(fname, bs.atoms)
         struct_gen.insert_structure(init_struct=fname)
 
+
+def angles_filter(min_angle):
+    db = connect(db_name)
+    scond = []
+    for row in db.select(converged=1):
+        name = row.name
+        atoms = row.toatoms()
+        for struct in db.select(name=name):
+            if struct.get("state", default="initial") == "relaxed":
+                atoms = struct.toatoms()
+        angles = atoms.get_cell_lengths_and_angles()[3:]
+        if np.any(angles < min_angle):
+            scond.append(("id", "!=", row.id))
+    return scond
+
+
 def evaluate(bs):
-    evaluator = Evaluate( bs, penalty="l1", parallel=True )
-    lambs = np.logspace(-5, -2, num=50)
-    best_alpha = evaluator.plot_CV(1E-5, 1E-2, num_alpha=50)
-    evaluator.plot_fit(best_alpha)
+    from atomtools.ce import FilterCollapsed
+    scond = FilterCollapsed.get_selection_condition(
+        "data/filter_collapsed.db", 4000.0)
+    scond += [("name", "!=", "conc_1.000_1.000_164")]
+    print("Select condition: {}".format(scond))
+    evaluator = Evaluate(bs, penalty="l1", parallel=True, select_cond=scond,
+                         max_cluster_size=4)
+    # best_alpha = evaluator.plot_CV(1E-5, 1E-2, num_alpha=16)
+    best_alpha = 1E-2
+    evaluator.plot_fit(best_alpha, interactive=True)
     eci_name = evaluator.get_cluster_name_eci(best_alpha, return_type="dict")
-    # plotter = ECIPlotter(eci_name)
-    # plotter.plot()
+    # classifier = FilterCollapsed(evaluator, db_name="data/filter_collapsed.db",
+    #                              restart=False)
+    # classifier.run(best_alpha, n_points=10, update_alpha=False)
+    plotter = ECIPlotter(eci_name)
+    plotter.plot()
     evaluator.plot_ECI()
     plt.show()
 
