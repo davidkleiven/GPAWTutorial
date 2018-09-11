@@ -64,7 +64,7 @@ def main(argv):
         smax = 0.003
         if not single_point:
             if optimizer == "fire":
-                relaxer = PreconFIRE(atoms, logfile=logfile)
+                relaxer = PreconFIRE(atoms, logfile=logfile, variable_cell=True)
             else:
                 relaxer = PreconLBFGS(
                     atoms,
