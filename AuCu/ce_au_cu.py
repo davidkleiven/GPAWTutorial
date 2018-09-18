@@ -87,6 +87,7 @@ def evaluate(bc):
     with open(fname, 'w') as outfile:
         json.dump(eci_dict, outfile, indent=2, separators=(",", ":"))
     print("ECI written to {}".format(fname))
+    # eval_fcc.difference_pred_cosine_dist(min_alpha)
     plt.show()
 
 

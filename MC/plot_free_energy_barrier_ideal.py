@@ -77,6 +77,7 @@ def barrier_vs_temp(dH):
             barrier.append( np.max(F) )
             crit_size.append(np.argmax(F))
         crit_size = np.array(crit_size)
+        print(conc, crit_size, T)
         barrier = np.array(barrier)
         ax.plot( T[crit_size<49], barrier[crit_size<49], label="{}%".format(int(100*conc)), marker="o",mfc="none" )
         beta = 1.0/(kB*T[crit_size<49])

@@ -1,10 +1,14 @@
 import sys
-sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1")
+# sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1")
 import numpy as np
 import json
 from scipy.spatial import ConvexHull
 from scipy.interpolate import griddata
 from cemc.tools import CanonicalFreeEnergy
+import matplotlib as mpl
+mpl.rcParams["svg.fonttype"] = "none"
+mpl.rcParams["font.size"] = 18
+mpl.rcParams["axes.unicode_minus"] = False
 from matplotlib import pyplot as plt
 from ase.units import kJ, mol
 from scipy.interpolate import griddata
@@ -13,6 +17,7 @@ from ase.calculators.cluster_expansion import ClusterExpansion
 from ase.ce import BulkCrystal
 from ase.ce import CorrFunction
 import dataset
+from atomtools.plot import TernaryPlot
 plt.switch_backend("TkAgg")
 
 mc_db_name = "data/enthalpy_formation_almgsi.db"
@@ -76,9 +81,9 @@ def get_ref_energies():
     ceBulk = BulkCrystal( **kwargs )
     ceBulk.spin_dict = orig_spin_dict
     ceBulk.basis_functions = ceBulk._get_basis_functions()
-    ceBulk._get_cluster_information()
-    ceBulk.reconfigure_settings()
-    eci_file = "data/almgsi_fcc_eci.json"
+    # ceBulk._get_cluster_information()
+    # ceBulk.reconfigure_settings()
+    eci_file = "data/almgsi_fcc_eci_newconfig.json"
     with open( eci_file, 'r' ) as infile:
         ecis = json.load( infile )
     cf = CorrFunction( ceBulk )
@@ -107,11 +112,11 @@ def get_energy( cf, eci ):
 
 def excess():
     ref_energies = {
-        "Mg":-1.599,
-        "Si":-4.864,
-        "Al":-3.737
+        "Mg": -1.599,
+        "Si": -4.864,
+        "Al": -3.737
     }
-    ref_energies = get_ref_energies()
+    # ref_energies = get_ref_energies()
     print (ref_energies)
     res = get_free_energies()
 
@@ -171,6 +176,12 @@ def excess():
         cm = plt.cm.get_cmap('viridis')
         convex_hull3D( mg_concs, si_concs, form_energy, formulas )
         x_sol = si_concs/(mg_concs+si_concs)
+        al_concs = 1.0 - mg_concs - si_concs
+        labels = ["Al concentration", "Mg concentration", "Si concentration"]
+        ternary_plot = TernaryPlot(al_concs, mg_concs, si_concs,
+                                   color=form_energy, labels=labels,
+                                   cbar_label="Enthalpy of formation (kJ/mol)")
+        ternary_plot.plot()
         for c_si in unique_si_concs:
             c_mg = mg_concs[si_concs==c_si]
             e_form = form_energy[si_concs==c_si]
@@ -205,7 +216,7 @@ def excess():
         axscat.scatter( mg_concs, si_concs, c=form_energy, s=50 )
 
         # Solute plot
-        im = ax_solute.scatter( x_sol, form_energy, c=si_concs, cmap="copper", marker="v", vmin=0,vmax=0.5 )
+        im = ax_solute.scatter( mg_concs, form_energy, c=si_concs, cmap="copper", marker="v", vmin=0,vmax=0.5 )
 
     cbar = fig_solute.colorbar(im, orientation="horizontal")
     cbar.set_label("Si concentration")
@@ -213,7 +224,7 @@ def excess():
     ax_solute.set_xlabel( "\$c_\mathrm{Si}/(\c_\mathrm{Si}+c_\mathrm{Mg})\$")
     ax_solute.spines["right"].set_visible(False)
     ax_solute.spines["top"].set_visible(False)
-    add_covnex_hull(x_sol[1:], form_energy[1:], ax_solute, formulas=formulas[1:])
+    # add_covnex_hull(x_sol[1:], form_energy[1:], ax_solute, formulas=formulas[1:])
     plt.show()
 
 def convex_hull3D( mg_conc, si_conc, E, formulas ):

@@ -31,7 +31,8 @@ from ase.visualize import view
 
 eci_fname = "data/almgsi_fcc_eci_newconfig.json"
 db_name = "almgsi_newconfig.db"
-db_name_cubic = "almgsi_cubic.db"
+# db_name_cubic = "almgsi_cubic.db"
+db_name = "almgsi_sluiter.db"
 def main(argv):
     option = argv[0]
     conc_args = {
@@ -44,8 +45,9 @@ def main(argv):
     N = 4
     atoms = atoms*(N,N,N)
 
-    ceBulk = BulkCrystal( crystalstructure="fcc", a=4.05, size=[N,N,N], basis_elements=[["Al","Mg","Si"]], \
-    conc_args=conc_args, db_name=db_name, max_cluster_size=4 )
+    ceBulk = BulkCrystal(crystalstructure="fcc", a=4.05, size=[N,N,N], basis_elements=[["Al","Mg","Si"]], \
+    conc_args=conc_args, db_name=db_name, max_cluster_size=4,
+    basis_function="sluiter")
     # ceBulk.reconfigure_settings()
     # print (ceBulk.basis_functions)
     # cf = CorrFunction( ceBulk, parallel=True)
@@ -142,8 +144,8 @@ def evaluate(BC):
         eci_name = evaluator.get_cluster_name_eci_dict
         evaluator.plot_energy()
     except:
-        evaluator = Evaluate( BC, penalty="l1", select_cond=s_cond)
-        best_alpha = evaluator.plot_CV(1E-5, 1E-3, num_alpha=16, logfile="almgsi_log.txt")
+        evaluator = Evaluate(BC, penalty="l1", select_cond=s_cond, parallel=True)
+        best_alpha = evaluator.plot_CV(1E-4, 1E-2, num_alpha=80, logfile="almgsi_log.txt")
         evaluator.plot_fit(best_alpha)
         print("Best penalization value: {}".format(best_alpha))
         eci_name = evaluator.get_cluster_name_eci(best_alpha, return_type="dict")

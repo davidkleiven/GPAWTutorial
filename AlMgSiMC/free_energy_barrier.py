@@ -77,7 +77,7 @@ def init_bc(N):
         "basis_elements": [["Al", "Mg", "Si"]],
         "conc_args": conc_args,
         "db_name": "data/almgsi.db",
-        "max_cluster_dia": 4
+        "max_cluster_size": 4
     }
 
     ceBulk = BulkCrystal(**kwargs)
