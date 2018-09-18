@@ -39,6 +39,7 @@ def get_nanoparticle():
     print(atoms.get_chemical_formula())
     return atoms
 
+
 def update_bias(iter):
     import h5py as h5
     beta = 1.0/(kB*T)
