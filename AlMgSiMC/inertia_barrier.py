@@ -22,7 +22,23 @@ h5file = "data/inertia_barrier.h5"
 
 T = 400
 
-workdir = "data/inertia_barrier_full"
+workdir = "data/inertia_barrier_nanoparticle"
+
+
+def get_nanoparticle():
+    from ase.cluster.cubic import FaceCenteredCubic
+    from ase.visualize import view
+    from ase.geometry import get_layers
+    surfaces = [(1, 0, 0), (1, 1, 0), (1, 1, 1)]
+    layers = [7, 10, 6]
+    lc = 4.05
+    atoms = FaceCenteredCubic('Si', surfaces, layers, latticeconstant=lc)
+    tags, array = get_layers(atoms, (1, 0, 0))
+    for t, atom in zip(tags, atoms):
+        if t % 2 == 0:
+            atom.symbol = "Mg"
+    print(atoms.get_chemical_formula())
+    return atoms
 
 def update_bias(iter):
     import h5py as h5
@@ -44,6 +60,30 @@ def update_bias(iter):
     fig.savefig("{}/bias_potential{}.png".format(workdir, iter))
     bias.save(fname=inertia_bias_file_new)
 
+def insert_nano_particle(atoms, nanoparticle):
+    """Insert the nano particle into center of atoms."""
+    from scipy.spatial import cKDTree as KDTree
+    np_pos = nanoparticle.get_positions()
+    com = np.sum(np_pos, axis=0)/len(np_pos)
+    np_pos -= com
+    nanoparticle.set_positions(np_pos)
+
+    cell = atoms.get_cell()
+    diag = 0.5 * (cell[:, 0] + cell[:, 1] + cell[:, 2])
+    at_pos = atoms.get_positions() - diag
+    tree = KDTree(at_pos)
+
+    used_indices = []
+    for atom in nanoparticle:
+        dists, closest_indx = tree.query(atom.position)
+        if closest_indx in used_indices:
+            raise RuntimeError("Two indices map to the same!")
+        atoms[closest_indx].symbol = atom.symbol
+        used_indices.append(closest_indx)
+
+    symbols = [atom.symbol for atom in atoms]
+    return symbols
+
 
 def run(N, use_bias):
     bc = init_bc(N)
@@ -51,13 +91,16 @@ def run(N, use_bias):
         bc.atoms, T, network_name=["c2_4p050_3", "c2_2p864_2"],
         network_element=["Mg", "Si"], mpicomm=comm)
     mc.max_allowed_constraint_pass_attempts = 1
-    mc.insert_symbol_random_places("Mg", swap_symbs=["Al"])
-    elements = {
-        "Mg": 500,
-        "Si": 500
-    }
-
-    mc.grow_cluster(elements, shape="sphere", radius=17.0)
+    nanop = get_nanoparticle()
+    symbs = insert_nano_particle(bc.atoms.copy(), nanop)
+    mc.set_symbols(symbs)
+    # mc.insert_symbol_random_places("Mg", swap_symbs=["Al"])
+    # elements = {
+    #     "Mg": 500,
+    #     "Si": 500
+    # }
+    #
+    # mc.grow_cluster(elements, shape="sphere", radius=17.0)
     inert_init = InertiaCrdInitializer(
         fixed_nucl_mc=mc, matrix_element="Al", cluster_elements=["Mg", "Si"],
         formula="(I1+I2)/(2*I3)")
@@ -69,7 +112,7 @@ def run(N, use_bias):
         bias.inertia_range = inert_rng_constraint
         mc.add_bias(bias)
 
-    nsteps = 100000
+    nsteps = 10000
 
     if rank == 0:
         snap = Snapshot(atoms=bc.atoms, trajfile="{}/inertia.traj".format(workdir))
