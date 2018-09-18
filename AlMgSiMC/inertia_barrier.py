@@ -27,7 +27,6 @@ workdir = "data/inertia_barrier_nanoparticle"
 
 def get_nanoparticle():
     from ase.cluster.cubic import FaceCenteredCubic
-    from ase.visualize import view
     from ase.geometry import get_layers
     surfaces = [(1, 0, 0), (1, 1, 0), (1, 1, 1)]
     layers = [7, 10, 6]
@@ -94,12 +93,13 @@ def run(N, use_bias):
     nanop = get_nanoparticle()
     symbs = insert_nano_particle(bc.atoms.copy(), nanop)
     mc.set_symbols(symbs)
+    mc.init_cluster_info()
     # mc.insert_symbol_random_places("Mg", swap_symbs=["Al"])
     # elements = {
-    #     "Mg": 500,
-    #     "Si": 500
+    #     "Mg": 0,
+    #     "Si": 0
     # }
-    #
+
     # mc.grow_cluster(elements, shape="sphere", radius=17.0)
     inert_init = InertiaCrdInitializer(
         fixed_nucl_mc=mc, matrix_element="Al", cluster_elements=["Mg", "Si"],
@@ -118,7 +118,7 @@ def run(N, use_bias):
         snap = Snapshot(atoms=bc.atoms, trajfile="{}/inertia.traj".format(workdir))
         mc.attach(snap, interval=nsteps/5)
     reac_path = ReactionPathSampler(
-        mc_obj=mc, react_crd=[0.0, 1.0], react_crd_init=inert_init,
+        mc_obj=mc, react_crd=[0.0, 0.9], react_crd_init=inert_init,
         react_crd_range_constraint=inert_rng_constraint, n_windows=30,
         n_bins=10, data_file=h5file)
     reac_path.run(nsteps=nsteps)
