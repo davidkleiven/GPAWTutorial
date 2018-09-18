@@ -60,6 +60,7 @@ def update_bias(iter):
     fig.savefig("{}/bias_potential{}.png".format(workdir, iter))
     bias.save(fname=inertia_bias_file_new)
 
+
 def insert_nano_particle(atoms, nanoparticle):
     """Insert the nano particle into center of atoms."""
     from scipy.spatial import cKDTree as KDTree
