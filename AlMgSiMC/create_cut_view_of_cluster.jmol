@@ -1,0 +1,14 @@
+select magnesium
+select silicon or selected
+select within (30.0, selected) or selected
+define full_blob selected
+
+define cut_al aluminium and within(-80.0, plane, {0 0 1 -118}) and within (-800.0, plane, {1 0 0 -120}) and full_blob
+
+define bkg_wall aluminium and within(200.0, plane, {0 1 0, -119}) and full_blob
+select full_blob and not cut_al
+select selected or bkg_wall
+color magnesium [0.9877, 0.4845, 0.0847]
+color silicon [0.10596, 0.23226, 0.98096]
+color aluminium [0.50718, 0.70056, 0.84062]
+display selected

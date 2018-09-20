@@ -41,20 +41,19 @@ elif postproc:
     #eigenstrain_princ = [-0.06497269, -0.06497269, 0.04, 0.0, 0.0, 0.0]
     eigenstrain = [-0.01129197, -0.01129197, -0.01129197, 0.05368072,
                    0.05368072, 0.05368072]
-    #eigenstrain = eigenstrain_princ
     strain_eng = StrainEnergy(poisson=mu, eigenstrain=eigenstrain)
     ellipsoid = {
-        "aspect": [10000.0, 10000.0, 1.0],
+        "aspect": [1000.0, 1000.0, 1.0],
         "scale_factor": 0.83
     }
-    strain_eng.explore_aspect_ratios(0.83, C)
-    res = strain_eng.explore_orientations(ellipsoid, C, step=20, print_summary=True)
-    opt_res = strain_eng.optimize_rotation(ellipsoid, C, res[0]["rot_seq"])
-    strain_eng.show_ellipsoid(ellipsoid, res[0]["rot_seq"])
+    # strain_eng.explore_aspect_ratios(0.83, C)
+    res = strain_eng.explore_orientations(ellipsoid, C, step=5)
+    # opt_res = strain_eng.optimize_rotation(ellipsoid, C, res[0]["rot_seq"])
+    # strain_eng.show_ellipsoid(ellipsoid, res[0]["rot_seq"])
     strain_eng.plot_explore_result(res)
-    print(opt_res)
+    # print(opt_res)
     # fig = strain_eng.plot(0.83, C, rot_seq=res[0]["rot_seq"])
-    fig = strain_eng.plot(0.83, C, rot_seq=res[0]["rot_seq"], latex=True)
+    # fig = strain_eng.plot(0.83, C, rot_seq=res[0]["rot_seq"], latex=True)
     plt.show()
 elif eigenstrain:
     ref_atoms = bulk("Al")
