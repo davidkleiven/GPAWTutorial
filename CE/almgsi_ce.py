@@ -32,7 +32,6 @@ from ase.visualize import view
 eci_fname = "data/almgsi_fcc_eci_newconfig.json"
 db_name = "almgsi_newconfig.db"
 # db_name_cubic = "almgsi_cubic.db"
-db_name = "almgsi_sluiter.db"
 def main(argv):
     option = argv[0]
     conc_args = {

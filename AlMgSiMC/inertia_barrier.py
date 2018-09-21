@@ -114,7 +114,7 @@ def run(N, use_bias):
         bias.inertia_range = inert_rng_constraint
         mc.add_bias(bias)
 
-    nsteps = 100000
+    nsteps = 300000
 
     if rank == 0:
         snap = Snapshot(atoms=bc.atoms, trajfile="{}/inertia.traj".format(workdir))

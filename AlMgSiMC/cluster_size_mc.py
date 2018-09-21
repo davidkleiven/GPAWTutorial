@@ -82,7 +82,7 @@ def plot_order():
 
 def equil_and_relax():
     bc = init_bc(50)
-    T = 500
+    T = 400
     mc = Montecarlo(bc.atoms, T)
     nanop = get_nanoparticle()
     symbs = insert_nano_particle(bc.atoms.copy(), nanop)
@@ -99,6 +99,37 @@ def equil_and_relax():
     mc.attach(camera, interval=nsteps/20)
     mc.runMC(steps=nsteps, equil=False)
 
+
+def extract_largest_cluster():
+    from cemc.mcmc import NetworkObserver
+    from ase.io import read
+    from ase.visualize import view
+    bc = init_bc(50)
+    calc = bc.atoms.get_calculator()
+    atoms = read("data/large_cluster/final_293K_droplet.xyz")
+    symbs = [atom.symbol for atom in atoms]
+    calc.set_symbols(symbs)
+    print(calc.atoms.get_chemical_formula())
+    network = NetworkObserver(
+        calc=calc, cluster_name=["c2_4p050_3", "c2_2p864_2"],
+        element=["Mg", "Si"])
+
+    network(None)
+    indices = network.get_indices_of_largest_cluster_with_neighbours()
+    # indices = network.get_indices_of_largest_cluster()
+    cluster = bc.atoms[indices]
+    view(cluster)
+
+
+def wulff():
+    from ase.io import read
+    from ase.visualize import view
+    from cemc.tools import WulffConstruction
+    atoms = read("data/large_cluster/cluster_only293K.xyz")
+    wulff = WulffConstruction(cluster=atoms, max_dist_in_element=5.0)
+    surface = wulff.surface_atoms
+    wulff.interface_energy_poly_expansion(order=3, show=True)
+    view(surface)
 
 def run(N, T):
     bc = init_bc(N)
@@ -123,7 +154,9 @@ def run(N, T):
     write(fname, mc.atoms)
 
 if __name__ == "__main__":
-    equil_and_relax()
+    wulff()
+    # extract_largest_cluster()
+    # equil_and_relax()
     # plot_order()
     # T = int(sys.argv[1])
     # run(50, T)
