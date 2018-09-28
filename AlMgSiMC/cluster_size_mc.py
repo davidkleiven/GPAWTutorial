@@ -1,6 +1,6 @@
 from cemc.mcmc import Montecarlo
 import dataset
-from cemc.mcmc import SiteOrderParameter, Snapshot
+from cemc.mcmc import SiteOrderParameter, Snapshot, MCBackup, EnergyEvolution
 from free_energy_barrier import init_bc
 import numpy as np
 from mpi4py import MPI
@@ -87,17 +87,15 @@ def equil_and_relax():
     nanop = get_nanoparticle()
     symbs = insert_nano_particle(bc.atoms.copy(), nanop)
     mc.set_symbols(symbs)
-    nsteps = int(1E7)
+    nsteps = int(1E8)
     camera = Snapshot(atoms=mc.atoms, trajfile=workdir+"/snapshots_equil.traj")
+    energy_evol = EnergyEvolution(mc)
+    mc_backup = MCBackup(mc, backup_file=workdir+"/mc_backup{}.pkl".format(T))
+    mc.attach(energy_evol, interval=1000)
     mc.attach(camera, interval=nsteps/20)
+    mc.attach(mc_backup, interval=500000)
     mc.runMC(steps=nsteps, equil=False)
     write(workdir+"/equillibriated600K.xyz", mc.atoms)
-    T = 293
-    mc = Montecarlo(bc.atoms, T)
-    nsteps = int(1E7)
-    camera = Snapshot(atoms=mc.atoms, trajfile=workdir+"/snapshots.traj")
-    mc.attach(camera, interval=nsteps/20)
-    mc.runMC(steps=nsteps, equil=False)
 
 
 def extract_largest_cluster():
