@@ -91,7 +91,7 @@ def equil_and_relax():
     camera = Snapshot(atoms=mc.atoms, trajfile=workdir+"/snapshots_equil.traj")
     energy_evol = EnergyEvolution(mc)
     mc_backup = MCBackup(mc, backup_file=workdir+"/mc_backup{}.pkl".format(T))
-    mc.attach(energy_evol, interval=1000)
+    mc.attach(energy_evol, interval=100000)
     mc.attach(camera, interval=nsteps/20)
     mc.attach(mc_backup, interval=500000)
     mc.runMC(steps=nsteps, equil=False)
@@ -152,9 +152,9 @@ def run(N, T):
     write(fname, mc.atoms)
 
 if __name__ == "__main__":
-    wulff()
+    # wulff()
     # extract_largest_cluster()
-    # equil_and_relax()
+    equil_and_relax()
     # plot_order()
     # T = int(sys.argv[1])
     # run(50, T)

@@ -6,8 +6,8 @@ def plot_evolution(fname):
     mc = Montecarlo.load(fname)
     energy_obs = None
     for obs in mc.observers:
-        if obs.name == "EnergyEvolution":
-            energy_obs = obs
+        if obs[1].name == "EnergyEvolution":
+            energy_obs = obs[1]
 
     if energy_obs is None:
         raise RuntimeError("Did not find an energy evolution observer!")
