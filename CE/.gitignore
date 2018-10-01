@@ -3,3 +3,6 @@
 *.aux
 *.tex
 *.pkl
+data/*
+phonon_files/*
+*.cif

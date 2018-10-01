@@ -1,0 +1,20 @@
+~temp_step=50
+~T=1950
+
+for (var i=0;i<35;i++){
+	~T -= ~temp_step
+	~fname="/home/davidkl/Documents/GPAWTutorial/MC/data/almgsi_sgc/traj_16/atoms"+i+".cif"
+	load @~fname
+	font echo 60
+	color echo white
+	set echo top center
+	hide bonds
+	axes off
+	unitcell off
+	moveto 0 1 0 0 -70
+	~msg = "T = " + ~T +"K"
+	echo @~msg
+	~prefix = "/home/davidkl/Documents/Dump/cooling_almgsi/"
+	~fname = ~prefix+"img"+i + ".jpg"
+	write image jpg @~fname
+}
