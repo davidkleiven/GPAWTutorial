@@ -21,7 +21,7 @@ def main(argv):
     atoms.set_cell(cell, scale_atoms=True)
 
     kpt = {"density": kpts_density, "even": True}
-    calc = gp.GPAW(h=0.18, kpt=kpt, xc="PBE", nbands="120%")
+    calc = gp.GPAW(h=0.18, kpts=kpt, xc="PBE", nbands="120%")
     atoms.set_calculator(calc)
 
     if relax_atoms == 0 and final_structure == 0:
