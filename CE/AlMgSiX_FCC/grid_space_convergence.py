@@ -15,7 +15,7 @@ def run(h, symb):
     atoms.get_potential_energy()
 
     db = connect(DB_NAME)
-    db.write(atoms)
+    db.write(atoms, grid_spacing=h)
 
 if __name__ == "__main__":
     h = float(sys.argv[1])
