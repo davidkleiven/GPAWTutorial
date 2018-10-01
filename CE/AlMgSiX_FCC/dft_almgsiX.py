@@ -1,3 +1,4 @@
+import sys
 import gpaw as gp
 from ase.db import connect
 
