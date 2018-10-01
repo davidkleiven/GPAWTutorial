@@ -1,6 +1,7 @@
 import sys
 import gpaw as gp
 from ase.db import connect
+from atomtools.ase import delete_vacancies
 
 db_name = "/home/davidkl/GPAWTutorial/CE/AlMgSiX_FCC/almgsiX_fcc.db"
 
@@ -13,6 +14,7 @@ def main(argv):
 
     db = connect(db_name)
     atoms = db.get(id=uid).toatoms()
+    atoms = delete_vacancies(atoms)
     name = db.get(id=uid).name
 
     # Scale the volume
