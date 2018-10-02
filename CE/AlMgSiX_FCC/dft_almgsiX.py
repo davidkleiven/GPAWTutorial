@@ -1,7 +1,7 @@
 import sys
 import gpaw as gp
 from ase.db import connect
-from atomtools.ase import delete_vacancies
+from atomtools.ase import delete_vacancies, SaveRestartFiles
 
 db_name = "/home/davidkl/GPAWTutorial/CE/AlMgSiX_FCC/almgsiX_fcc.db"
 
@@ -32,7 +32,15 @@ def main(argv):
 
         # Store the energy of the atoms object with the correct name
         # and lattice parameter
-        db.write(atoms, name=name, lattice_param=lattice_param)
+        db.write(atoms, name=name, lattice_param=lattice_param,
+                 run_type="lattice_param_estimation")
+    elif relax_atoms == 1:
+        restart_saver = SaveRestartFiles(calc, name)
+        db.update(id=uid, restart_file=SaveRestartFiles.restart_name(name))
+        relaxer = BFGS(atoms. logfile="log_{}.txt".format(name))
+        relaxer.attach(restart_saver, interval=1)
+        relaxer.run(fmax=0.025)
+        db.write(atoms, name=name, lattice_param=lattice_param, run_type="geometry_opt", restart_file=SaveRestartFiles.restart_name(name))
 
 if __name__ == "__main__":
     main(sys.argv[1:])
