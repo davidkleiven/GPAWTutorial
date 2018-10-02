@@ -2,6 +2,7 @@ import sys
 import gpaw as gp
 from ase.db import connect
 from atomtools.ase import delete_vacancies, SaveRestartFiles
+from ase.io.trajectory import Trajectory
 
 db_name = "/home/davidkl/GPAWTutorial/CE/AlMgSiX_FCC/almgsiX_fcc.db"
 
@@ -36,9 +37,11 @@ def main(argv):
                  run_type="lattice_param_estimation")
     elif relax_atoms == 1:
         restart_saver = SaveRestartFiles(calc, name)
-        db.update(id=uid, restart_file=SaveRestartFiles.restart_name(name))
+        db.update(uid, restart_file=SaveRestartFiles.restart_name(name))
+        trajObj = Trajectory("trajectory{}.traj".format(name), 'w', atoms)
         relaxer = BFGS(atoms, logfile="log_{}.txt".format(name))
         relaxer.attach(restart_saver, interval=1)
+        relaxer.attach(trajObj)
         relaxer.run(fmax=0.025)
         db.write(atoms, name=name, lattice_param=lattice_param, run_type="geometry_opt", restart_file=SaveRestartFiles.restart_name(name))
 
