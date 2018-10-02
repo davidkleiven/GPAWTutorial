@@ -37,7 +37,7 @@ def main(argv):
     elif relax_atoms == 1:
         restart_saver = SaveRestartFiles(calc, name)
         db.update(id=uid, restart_file=SaveRestartFiles.restart_name(name))
-        relaxer = BFGS(atoms. logfile="log_{}.txt".format(name))
+        relaxer = BFGS(atoms, logfile="log_{}.txt".format(name))
         relaxer.attach(restart_saver, interval=1)
         relaxer.run(fmax=0.025)
         db.write(atoms, name=name, lattice_param=lattice_param, run_type="geometry_opt", restart_file=SaveRestartFiles.restart_name(name))
