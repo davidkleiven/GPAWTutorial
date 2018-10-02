@@ -1,9 +1,12 @@
 import dill
 from cemc.mcmc import Montecarlo
 from matplotlib import pyplot as plt
+from ase.io import write
 
 def plot_evolution(fname):
     mc = Montecarlo.load(fname)
+    atoms_fname = "data/large_cluster/equillibrated_cluster.xyz"
+    write(atoms_fname, mc.atoms)
     energy_obs = None
     for obs in mc.observers:
         if obs[1].name == "EnergyEvolution":
