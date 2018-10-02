@@ -3,6 +3,7 @@ import gpaw as gp
 from ase.db import connect
 from atomtools.ase import delete_vacancies, SaveRestartFiles
 from ase.io.trajectory import Trajectory
+from ase.optimize import BFGS
 
 db_name = "/home/davidkl/GPAWTutorial/CE/AlMgSiX_FCC/almgsiX_fcc.db"
 
