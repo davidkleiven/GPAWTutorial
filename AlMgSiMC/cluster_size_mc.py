@@ -80,15 +80,23 @@ def plot_order():
     plt.show()
 
 
-def equil_and_relax():
+def equil_and_relax(T, fname=""):
     bc = init_bc(50)
-    T = 400
     mc = Montecarlo(bc.atoms, T)
-    nanop = get_nanoparticle()
-    symbs = insert_nano_particle(bc.atoms.copy(), nanop)
-    mc.set_symbols(symbs)
+    print ("Running at temperature {}K. Initializing from {}".format(T, fname))
+    if fname != "":
+        # Initialize atoms object from file
+        from ase.io import read
+        atoms = read(fname)
+        symbs = [atom.symbol for atom in atoms]
+        mc.atoms.get_calculator().set_symbols(symbs)
+    else:
+        # Initialize by setting a nano particle at the center
+        nanop = get_nanoparticle()
+        symbs = insert_nano_particle(bc.atoms.copy(), nanop)
+        mc.set_symbols(symbs)
     nsteps = int(1E8)
-    camera = Snapshot(atoms=mc.atoms, trajfile=workdir+"/snapshots_equil.traj")
+    camera = Snapshot(atoms=mc.atoms, trajfile=workdir+"/snapshots_equil{}.traj".format(T))
     energy_evol = EnergyEvolution(mc)
     mc_backup = MCBackup(mc, backup_file=workdir+"/mc_backup{}.pkl".format(T))
     mc.attach(energy_evol, interval=100000)
@@ -152,9 +160,16 @@ def run(N, T):
     write(fname, mc.atoms)
 
 if __name__ == "__main__":
+    fname = ""
+    T = 400
+    for arg in sys.argv:
+        if arg.find("--fname=") != -1:
+            fname = arg.split("--fname=")[1]
+        elif arg.find("--T=") != -1:
+            T = int(arg.split("--T=")[1])
     # wulff()
     # extract_largest_cluster()
-    equil_and_relax()
+    equil_and_relax(T, fname)
     # plot_order()
     # T = int(sys.argv[1])
     # run(50, T)
