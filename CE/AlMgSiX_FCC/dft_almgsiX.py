@@ -38,11 +38,11 @@ def main(argv):
         db.write(atoms, name=name, lattice_param=lattice_param,
                  run_type="lattice_param_estimation")
     elif relax_atoms == 1:
-        restart_saver = SaveRestartFiles(calc, name)
         if restart_file != "":
             atoms, calc = gp.restart(restart_file)
         else:
             db.update(uid, restart_file=SaveRestartFiles.restart_name(name))
+        restart_saver = SaveRestartFiles(calc, name)
         trajObj = Trajectory("trajectory{}.traj".format(name), 'w', atoms)
         relaxer = BFGS(atoms, logfile="log_{}.txt".format(name))
         relaxer.attach(restart_saver, interval=1)
