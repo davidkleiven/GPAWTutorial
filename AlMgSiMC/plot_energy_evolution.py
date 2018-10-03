@@ -1,3 +1,4 @@
+import sys
 import dill
 from cemc.mcmc import Montecarlo
 from matplotlib import pyplot as plt
@@ -5,7 +6,7 @@ from ase.io import write
 
 def plot_evolution(fname):
     mc = Montecarlo.load(fname)
-    atoms_fname = "data/large_cluster/equillibrated_cluster.xyz"
+    atoms_fname = fname.rpartition(".")[0]+"_final_atoms.xyz"
     write(atoms_fname, mc.atoms)
     energy_obs = None
     for obs in mc.observers:
@@ -22,4 +23,5 @@ def plot_evolution(fname):
     plt.show()
 
 
-plot_evolution("data/large_cluster/mc_backup400.pkl")
+if __name__ == "__main__":
+    plot_evolution(sys.argv[1])

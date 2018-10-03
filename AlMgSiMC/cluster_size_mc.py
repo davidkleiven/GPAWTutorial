@@ -17,13 +17,13 @@ rank = comm.Get_rank()
 
 workdir = "data/large_cluster"
 mc_db_name = workdir + "/nanoparticle_stability.db"
+np_layers = [[22, 25, 22], [21, 24, 21], [20, 23, 20], [19, 22, 19], [18, 21, 28]]
 
-
-def get_nanoparticle():
+def get_nanoparticle(layer=0):
     from ase.cluster.cubic import FaceCenteredCubic
     from ase.geometry import get_layers
     surfaces = [(1, 0, 0), (1, 1, 0), (1, 1, 1)]
-    layers = [22, 25, 22]
+    layers = np_layers[layer]
     lc = 4.05
     atoms = FaceCenteredCubic('Si', surfaces, layers, latticeconstant=lc)
     tags, array = get_layers(atoms, (1, 0, 0))
@@ -80,25 +80,28 @@ def plot_order():
     plt.show()
 
 
-def equil_and_relax(T, fname=""):
+def equil_and_relax(T, fname="", np_layer=0):
     bc = init_bc(50)
     mc = Montecarlo(bc.atoms, T)
     print ("Running at temperature {}K. Initializing from {}".format(T, fname))
+    layer_str = "-".join((str(item) for item in np_layers[np_layer]))
+    run_identifier = "{}K_layer{}".format(T, layer_str)
     if fname != "":
         # Initialize atoms object from file
         from ase.io import read
         atoms = read(fname)
         symbs = [atom.symbol for atom in atoms]
-        mc.atoms.get_calculator().set_symbols(symbs)
+        mc.set_symbols(symbs)
     else:
         # Initialize by setting a nano particle at the center
-        nanop = get_nanoparticle()
+        nanop = get_nanoparticle(layer=np_layer)
         symbs = insert_nano_particle(bc.atoms.copy(), nanop)
         mc.set_symbols(symbs)
-    nsteps = int(1E8)
-    camera = Snapshot(atoms=mc.atoms, trajfile=workdir+"/snapshots_equil{}.traj".format(T))
+    print("Chemical formula: {}".format(mc.atoms.get_chemical_formula()))
+    nsteps = int(5E7)
+    camera = Snapshot(atoms=mc.atoms, trajfile=workdir+"/snapshots_equil{}.traj".format(run_identifier))
     energy_evol = EnergyEvolution(mc)
-    mc_backup = MCBackup(mc, backup_file=workdir+"/mc_backup{}.pkl".format(T))
+    mc_backup = MCBackup(mc, backup_file=workdir+"/mc_backup{}.pkl".format(run_identifier))
     mc.attach(energy_evol, interval=100000)
     mc.attach(camera, interval=nsteps/20)
     mc.attach(mc_backup, interval=500000)
@@ -106,13 +109,13 @@ def equil_and_relax(T, fname=""):
     write(workdir+"/equillibriated600K.xyz", mc.atoms)
 
 
-def extract_largest_cluster():
+def extract_largest_cluster(fname):
     from cemc.mcmc import NetworkObserver
     from ase.io import read
     from ase.visualize import view
     bc = init_bc(50)
     calc = bc.atoms.get_calculator()
-    atoms = read("data/large_cluster/final_293K_droplet.xyz")
+    atoms = read(fname)
     symbs = [atom.symbol for atom in atoms]
     calc.set_symbols(symbs)
     print(calc.atoms.get_chemical_formula())
@@ -124,18 +127,24 @@ def extract_largest_cluster():
     indices = network.get_indices_of_largest_cluster_with_neighbours()
     # indices = network.get_indices_of_largest_cluster()
     cluster = bc.atoms[indices]
-    view(cluster)
+    return cluster
 
-
-def wulff():
-    from ase.io import read
+def wulff(fname):
+    from ase.io import read, write
     from ase.visualize import view
     from cemc.tools import WulffConstruction
-    atoms = read("data/large_cluster/cluster_only293K.xyz")
+    atoms = read(fname)
+    atoms = extract_largest_cluster(fname)
+    surface_file = fname.rpartition(".")[0] + "_onlycluster.xyz"
+    write(surface_file, atoms)
     wulff = WulffConstruction(cluster=atoms, max_dist_in_element=5.0)
     surface = wulff.surface_atoms
-    wulff.interface_energy_poly_expansion(order=3, show=True)
     view(surface)
+    mesh_file = fname.rpartition(".")[0]+"_surfmesh.msh"
+    wulff.save_surface_mesh(mesh_file)
+    # wulff.fit_harmonics(show=True, order=100, penalty=0.1)
+    wulff.interface_energy_poly_expansion(order=4, show=True, spg=225)
+    wulff.wulff_plot(show=True)
 
 def run(N, T):
     bc = init_bc(N)
@@ -162,14 +171,23 @@ def run(N, T):
 if __name__ == "__main__":
     fname = ""
     T = 400
+    layer = 0
+    option = "run"
     for arg in sys.argv:
         if arg.find("--fname=") != -1:
             fname = arg.split("--fname=")[1]
         elif arg.find("--T=") != -1:
             T = int(arg.split("--T=")[1])
-    # wulff()
+        elif arg.find("--layer=") != -1:
+            layer = int(arg.split("--layer=")[1])
+        elif arg.find("--option=") != -1:
+            option = arg.split("--option=")[1]
+
+    if option == "wulff":
+        wulff(fname)
+    elif option == "run":
+        equil_and_relax(T, fname, np_layer=layer)
     # extract_largest_cluster()
-    equil_and_relax(T, fname)
     # plot_order()
     # T = int(sys.argv[1])
     # run(50, T)
