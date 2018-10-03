@@ -28,6 +28,7 @@ def main(argv):
     kpt = {"density": kpts_density, "even": True}
     calc = gp.GPAW(h=0.18, kpts=kpt, xc="PBE", nbands="120%")
     atoms.set_calculator(calc)
+    restart_file = db.get(id=uid).get("restart_file", "")
 
     if relax_atoms == 0 and final_structure == 0:
         atoms.get_potential_energy()
@@ -38,7 +39,10 @@ def main(argv):
                  run_type="lattice_param_estimation")
     elif relax_atoms == 1:
         restart_saver = SaveRestartFiles(calc, name)
-        db.update(uid, restart_file=SaveRestartFiles.restart_name(name))
+        if restart_file != "":
+            atoms, calc = gp.restart(restart_file)
+        else:
+            db.update(uid, restart_file=SaveRestartFiles.restart_name(name))
         trajObj = Trajectory("trajectory{}.traj".format(name), 'w', atoms)
         relaxer = BFGS(atoms, logfile="log_{}.txt".format(name))
         relaxer.attach(restart_saver, interval=1)
