@@ -1,4 +1,5 @@
 import sys
+import os
 import gpaw as gp
 from ase.db import connect
 from atomtools.ase import delete_vacancies, SaveRestartFiles
@@ -38,7 +39,7 @@ def main(argv):
         db.write(atoms, name=name, lattice_param=lattice_param,
                  run_type="lattice_param_estimation")
     elif relax_atoms == 1:
-        if restart_file != "":
+        if os.path.exists(restart_file):
             atoms, calc = gp.restart(restart_file)
         else:
             db.update(uid, restart_file=SaveRestartFiles.restart_name(name))
