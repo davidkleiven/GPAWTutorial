@@ -23,5 +23,25 @@ def main(argv):
     elif option == "insert":
         fname = argv[1]
         struc_generator.insert_structure(init_struct=fname)
+    elif option == "random":
+        atoms = get_random_structure()
+        struc_generator.insert_structure(init_struct=atoms)
+
+
+def get_random_structure():
+    from ase.build import bulk
+    from random import choice
+    atoms = bulk("Al")*(6, 6, 6)
+    symbs = ["Al", "Mg", "Si"]
+
+    for atom in atoms:
+        atom.symbol = choice(symbs)
+
+    indx1 = choice(range(len(atoms)))
+    indx2 = choice(range(len(atoms)))
+    atoms[indx1].symbol = "X"
+    atoms[indx2].symbol = "X"
+    return atoms
+
 if __name__ == "__main__":
     main(sys.argv[1:])

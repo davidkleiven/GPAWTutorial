@@ -22,7 +22,7 @@ h5file = "data/inertia_barrier.h5"
 
 T = 400
 
-workdir = "data/inertia_barrier_nanoparticle"
+workdir = "data/inertia_barrier_nanoparticle_plate"
 
 
 def get_nanoparticle():
@@ -103,9 +103,11 @@ def run(N, use_bias):
     # }
 
     # mc.grow_cluster(elements, shape="sphere", radius=17.0)
+    formula = "(I1+I2)/(2*I3)" # Needle
+    formula = "2*I1/(I2+I3)" # Plate
     inert_init = InertiaCrdInitializer(
         fixed_nucl_mc=mc, matrix_element="Al", cluster_elements=["Mg", "Si"],
-        formula="(I1+I2)/(2*I3)")
+        formula=formula)
     inert_rng_constraint = InertiaRangeConstraint(
         fixed_nuc_mc=mc, inertia_init=inert_init, verbose=True)
 
@@ -114,7 +116,7 @@ def run(N, use_bias):
         bias.inertia_range = inert_rng_constraint
         mc.add_bias(bias)
 
-    nsteps = 1000000
+    nsteps = 100000
 
     if rank == 0:
         snap = Snapshot(atoms=bc.atoms, trajfile="{}/inertia.traj".format(workdir))

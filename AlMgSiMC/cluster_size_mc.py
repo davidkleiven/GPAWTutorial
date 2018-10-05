@@ -92,6 +92,7 @@ def equil_and_relax(T, fname="", np_layer=0):
         atoms = read(fname)
         symbs = [atom.symbol for atom in atoms]
         mc.set_symbols(symbs)
+        run_identifier = "{}K_{}".format(T, atoms.get_chemical_formula())
     else:
         # Initialize by setting a nano particle at the center
         nanop = get_nanoparticle(layer=np_layer)
@@ -136,15 +137,18 @@ def wulff(fname):
     atoms = read(fname)
     atoms = extract_largest_cluster(fname)
     surface_file = fname.rpartition(".")[0] + "_onlycluster.xyz"
-    write(surface_file, atoms)
     wulff = WulffConstruction(cluster=atoms, max_dist_in_element=5.0)
+    wulff.filter_neighbours(num_neighbours=9, elements=["Mg", "Si"], cutoff=4.5)
+    write(surface_file, wulff.cluster)
+    print("Cluster written to {}".format(surface_file))
     surface = wulff.surface_atoms
     view(surface)
     mesh_file = fname.rpartition(".")[0]+"_surfmesh.msh"
-    wulff.save_surface_mesh(mesh_file)
     # wulff.fit_harmonics(show=True, order=100, penalty=0.1)
-    wulff.interface_energy_poly_expansion(order=4, show=True, spg=225)
-    wulff.wulff_plot(show=True)
+    wulff.interface_energy_poly_expansion(order=12, show=True, spg=225, 
+                                          average_cutoff=10.0, penalty=0.1)
+    wulff.save_surface_mesh(mesh_file)
+    wulff.wulff_plot(show=True, n_angles=60)
 
 def run(N, T):
     bc = init_bc(N)
