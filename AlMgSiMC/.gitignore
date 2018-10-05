@@ -3,3 +3,4 @@ data/*
 *.h5
 sphere.geo
 sphere.msh
+*.json
