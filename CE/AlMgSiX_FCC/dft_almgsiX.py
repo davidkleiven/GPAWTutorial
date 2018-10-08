@@ -5,6 +5,7 @@ from ase.db import connect
 from atomtools.ase import delete_vacancies, SaveRestartFiles
 from ase.io.trajectory import Trajectory
 from ase.optimize import BFGS
+from ase.parallel import barrier
 
 db_name = "/home/davidkl/GPAWTutorial/CE/AlMgSiX_FCC/almgsiX_fcc.db"
 
@@ -43,6 +44,7 @@ def main(argv):
             atoms, calc = gp.restart(restart_file)
         else:
             db.update(uid, restart_file=SaveRestartFiles.restart_name(name))
+        barrier()
         restart_saver = SaveRestartFiles(calc, name)
         trajObj = Trajectory("trajectory{}.traj".format(name), 'w', atoms)
         relaxer = BFGS(atoms, logfile="log_{}.txt".format(name))
