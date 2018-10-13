@@ -1,17 +1,17 @@
 import sys
-sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1")
-sys.path.insert(2,"/home/dkleiven/Documents/aseJin")
-sys.path.insert(1,"/home/davidkl/Documents/aseJin")
-sys.path.append("/home/davidkl/Documents/GPAWTutorial/CE_extensions")
-sys.path.append("/home/dkleiven/Documents/GPAWTutorials/CE_extensions")
+# sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1")
+# sys.path.insert(2,"/home/dkleiven/Documents/aseJin")
+# sys.path.insert(1,"/home/davidkl/Documents/aseJin")
+# sys.path.append("/home/davidkl/Documents/GPAWTutorial/CE_extensions")
+# sys.path.append("/home/dkleiven/Documents/GPAWTutorials/CE_extensions")
 from ase.build import bulk
-from ase.ce.settings_bulk import BulkCrystal
-from ase.ce.corrFunc import CorrFunction
-from ase.ce.newStruct import GenerateStructures
-from atomtools.ce.corrmatrix import CovariancePlot
+from ase.clease import CEBulk as BulkCrystal
+from ase.clease.corrFunc import CorrFunction
+from ase.clease.newStruct import GenerateStructures
+# from atomtools.ce.corrmatrix import CovariancePlot
 #from convex_hull_plotter import QHull
-from ase.ce.evaluate import Evaluate
-from atomtools.ce import ECIPlotter
+from ase.clease.evaluate import Evaluate
+# from atomtools.ce import ECIPlotter
 import numpy as np
 from matplotlib import pyplot as plt
 from cemc import CE
@@ -19,18 +19,19 @@ from cemc.mcmc import mc_observers as mcobs
 import json
 from cemc.mcmc import montecarlo as mc
 from ase.io import write, read
-from almg_bcc_ce import insert_specific_structure
-from ase.calculators.cluster_expansion.cluster_expansion import ClusterExpansion
+from ase.calculators.clease import Clease as ClusterExpansion
 from ase.db import connect
 from ase.units import mol, kJ
-from atomtools.ce import CVScoreHistory
+# from atomtools.ce import CVScoreHistory
 from scipy.spatial import ConvexHull
-from atomtools.ce import ChemicalPotentialEstimator
+# from atomtools.ce import ChemicalPotentialEstimator
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.visualize import view
 
 eci_fname = "data/almgsi_fcc_eci_newconfig.json"
 db_name = "almgsi_newconfig.db"
+db_name = "almgsi_sluiter.db"
+eci_fname = "data/almgsi_fcc_eci_sluiter.json"
 # db_name_cubic = "almgsi_cubic.db"
 def main(argv):
     option = argv[0]
@@ -128,28 +129,13 @@ def update_in_conc_range():
             db.update( row.id, in_conc_range=0 )
 
 def evaluate(BC):
-    try:
-        # This is the old version
-        lambs = np.logspace(-5,-4,num=50)
-        cvs = []
-        s_cond = [("in_conc_range","=","1")]
-        for i in range(len(lambs)):
-            print (lambs[i])
-            evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1", select_cond=s_cond )
-            cvs.append(evaluator._cv_loo())
-        indx = np.argmin(cvs)
-        print ("Selected penalization: {}".format(lambs[indx]))
-        evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1", select_cond=s_cond )
-        eci_name = evaluator.get_cluster_name_eci_dict
-        evaluator.plot_energy()
-    except:
-        evaluator = Evaluate(BC, penalty="l1", select_cond=s_cond, parallel=True)
-        best_alpha = evaluator.plot_CV(1E-4, 1E-2, num_alpha=80, logfile="almgsi_log.txt")
-        evaluator.plot_fit(best_alpha)
-        print("Best penalization value: {}".format(best_alpha))
-        eci_name = evaluator.get_cluster_name_eci(best_alpha, return_type="dict")
-        eci_name = dict(eci_name)
-        print(eci_name)
+    evaluator = Evaluate(BC, fitting_scheme="l2", parallel=False,
+                         max_cluster_size=4, scoring_scheme="loocv_fast")
+
+    best_alpha = evaluator.plot_CV(alpha_min=1E-3, alpha_max=1E-1, num_alpha=16)
+    evaluator.set_fitting_scheme("l2", best_alpha)
+    evaluator.plot_fit(interactive=True)
+    eci_name = evaluator.get_cluster_name_eci(return_type="dict")
     plotter = ECIPlotter(eci_name)
     plotter.plot()
     plt.show()

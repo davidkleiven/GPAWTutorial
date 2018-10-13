@@ -1,10 +1,10 @@
 import sys
-from ase.ce import BulkCrystal
-from ase.ce import GenerateStructures
+from ase.clease import CEBulk as BulkCrystal
+from ase.clease import GenerateStructures
 from ase.build import bulk
-from ase.ce import CorrFunction
-from ase.ce import Evaluate
-from atomtools.ce import ECIPlotter
+from ase.clease import CorrFunction
+from ase.clease import Evaluate
+# from atomtools.ce import ECIPlotter
 import numpy as np
 from matplotlib import pyplot as plt
 import json
@@ -55,7 +55,7 @@ def reconfig(bc):
 def gen_gs_prebeta(bc, struct_gen, n_structs=10, lattice="prebeta"):
     from cemc.tools import GSFinder
     from cemc.mcmc import FixedElement
-    from ase.ce.tools import wrap_and_sort_by_position
+    from ase.clease.tools import wrap_and_sort_by_position
     from random import choice
     from ase.build import cut
     constraint = FixedElement(element="X")
@@ -106,7 +106,7 @@ def gen_gs_prebeta(bc, struct_gen, n_structs=10, lattice="prebeta"):
             print(str(exc))
 
 def get_fcc_template():
-    from ase.ce.tools import wrap_and_sort_by_position
+    from ase.clease.tools import wrap_and_sort_by_position
     atoms = bulk("Al", crystalstructure="sc", a=a)
     atoms = atoms*(2, 2, 2)
 
@@ -129,7 +129,7 @@ def get_fcc_template():
 
 
 def get_pre_beta_template():
-    from ase.ce.tools import wrap_and_sort_by_position
+    from ase.clease.tools import wrap_and_sort_by_position
     atoms = get_fcc_template()
     atoms = atoms * (2, 2, 1)
     atoms = wrap_and_sort_by_position(atoms)
@@ -159,17 +159,15 @@ def gen_random_struct(bc, struct_gen, n_structs=20, lattice="fcc"):
             print(str(exc))
 
 def evaluate(bc):
-    evaluator = Evaluate(bc, penalty="l1", parallel=True,
-                         max_cluster_size=4)
-    best_alpha = evaluator.plot_CV(5E-5, 5E-4, num_alpha=16)
-    evaluator.plot_fit(best_alpha, interactive=True)
-    eci_name = evaluator.get_cluster_name_eci(best_alpha, return_type="dict")
-    # classifier = FilterCollapsed(evaluator, db_name="data/filter_collapsed.db",
-    #                              restart=False)
-    # classifier.run(best_alpha, n_points=10, update_alpha=False)
-    plotter = ECIPlotter(eci_name)
-    plotter.plot()
-    evaluator.plot_ECI()
+    evaluator = Evaluate(bc, fitting_scheme="l2", parallel=False,
+                         max_cluster_size=4, scoring_scheme="loocv_fast")
+
+    best_alpha = evaluator.plot_CV(alpha_min=1E-3, alpha_max=1E-1, num_alpha=16)
+    np.savetxt("data/cfm_prebeta_sc.csv", evaluator.cf_matrix, delimiter=",")
+    np.savetxt("data/e_dft_prebeta_sc.csv", evaluator.e_dft)
+    evaluator.set_fitting_scheme("l2", best_alpha)
+    evaluator.plot_fit(interactive=True)
+    eci_name = evaluator.get_cluster_name_eci(return_type="dict")
     plt.show()
 
     with open(eci_fname,'w') as outfile:

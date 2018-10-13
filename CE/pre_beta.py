@@ -7,7 +7,8 @@ from ase.build import bulk
 from ase.spacegroup import get_spacegroup
 from cemc.mcmc import CollectiveJumpMove, FixedElement
 from cemc.tools import GSFinder
-from ase.ce import BulkSpacegroup, GenerateStructures
+from ase.clease import CECrystal as BulkSpacegrou
+from ase.clease import GenerateStructures
 from ase.ce import Evaluate, CorrFunction
 from numpy.random import randint, rand
 from random import shuffle
@@ -225,12 +226,14 @@ def evaluate(bs):
         "data/filter_collapsed.db", 4000.0)
     scond += [("name", "!=", "conc_1.000_1.000_164")]
     print("Select condition: {}".format(scond))
-    evaluator = Evaluate(bs, penalty="l1", parallel=True, select_cond=scond,
+    evaluator = Evaluate(bs, fitting_scheme"l2", parallel=True, select_cond=scond,
                          max_cluster_size=4)
-    # best_alpha = evaluator.plot_CV(1E-5, 1E-2, num_alpha=16)
-    best_alpha = 1E-2
-    evaluator.plot_fit(best_alpha, interactive=True)
-    eci_name = evaluator.get_cluster_name_eci(best_alpha, return_type="dict")
+    print(evaluate.get_cluster_correlation())
+    exit()
+    best_alpha = evaluator.plot_CV(alpha_min=1E-5, alpha_max=1E-2, num_alpha=16)
+    evaluator.set_fitting_scheme(fitting_scheme="l2", alpha=best_alpha)
+    evaluator.plot_fit(interactive=True)
+    eci_name = evaluator.get_cluster_name_eci(return_type="dict")
     # classifier = FilterCollapsed(evaluator, db_name="data/filter_collapsed.db",
     #                              restart=False)
     # classifier.run(best_alpha, n_points=10, update_alpha=False)
