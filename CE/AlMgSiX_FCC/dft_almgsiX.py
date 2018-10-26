@@ -14,7 +14,6 @@ db_name = "/home/davidkl/GPAWTutorial/CE/AlMgSiX_FCC/almgsiX_fcc.db"
 
 def main(argv):
     uid = int(argv[0])
-    final_structure = int(argv[4])
 
     atoms_from_file = None
     attempt_restart = 1
