@@ -38,7 +38,7 @@ def main(argv):
         elif "--final=" in arg:
             final_structure = int(arg.split("--final=")[1])
         elif "--opt=" in arg:
-            optimizer = arg.splot("--opt=")[1]
+            optimizer = arg.split("--opt=")[1]
 
     db = connect(db_name)
     atoms = db.get(id=uid).toatoms()
