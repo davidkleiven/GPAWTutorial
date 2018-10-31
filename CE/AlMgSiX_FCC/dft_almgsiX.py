@@ -5,7 +5,8 @@ from ase.db import connect
 from atomtools.ase import delete_vacancies, SaveRestartFiles
 from ase.io.trajectory import Trajectory
 from ase.optimize import BFGS
-from ase.optimize.precon import PreconLBFGS
+from ase.optimize.precon import PreconLBFGS, PreconFIRE
+from ase.optimize.sciopt import SciPyFminCG
 from ase.parallel import barrier
 from ase.io import read
 from ase.constraints import UnitCellFilter
@@ -21,6 +22,7 @@ def main(argv):
     lattice_param = 4.05
     relax_atoms = 0
     final_structure = 0
+    optimizer = "lbfgs"
     for arg in argv:
         if arg.find("--atoms=") != -1:
             fname = arg.split("--atoms=")[1]
@@ -35,6 +37,8 @@ def main(argv):
             relax_atoms = int(arg.split("--relax=")[1])
         elif "--final=" in arg:
             final_structure = int(arg.split("--final=")[1])
+        elif "--opt=" in arg:
+            optimizer = arg.splot("--opt=")[1]
 
     db = connect(db_name)
     atoms = db.get(id=uid).toatoms()
@@ -73,7 +77,13 @@ def main(argv):
         restart_saver = SaveRestartFiles(calc, name)
         trajObj = Trajectory("trajectory{}.traj".format(name), 'w', atoms)
         ucf = UnitCellFilter(atoms, hydrostatic_strain=True)
-        relaxer = PreconLBFGS(ucf, logfile="log_{}.txt".format(name))
+        logfile = "log_{}.txt".format(name)
+        if opt == "cg":
+            relaxer = SciPyFminCG(ucf, logfile=logfile)
+        elif opt == "fire":
+            relaxer = PrconFIRE(ucf, logfile=logfile)
+        else:
+            relaxer = PreconLBFGS(ucf, logfile=logfile)
         relaxer.attach(trajObj)
         relaxer.attach(restart_saver, interval=1)
         relaxer.run(fmax=0.025, smax=0.003)
