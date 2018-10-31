@@ -5,7 +5,7 @@ from ase.db import connect
 from atomtools.ase import delete_vacancies, SaveRestartFiles
 from ase.io.trajectory import Trajectory
 from ase.optimize import BFGS
-from ase.optimize.precon import PreconLBFGS, PreconFIRE
+from ase.optimize.precon <<<<<<< HEAD
 from ase.optimize.sciopt import SciPyFminCG
 from ase.parallel import barrier
 from ase.io import read
@@ -45,16 +45,6 @@ def main(argv):
     atoms = delete_vacancies(atoms)
     name = db.get(id=uid).name
 
-    if atoms_from_file is not None:
-        assert atoms.get_chemical_formula() == atoms_from_file.get_chemical_formula()
-        atoms = atoms_from_file
-    else:
-        # Scale the volume
-        pos_scaling = lattice_param/4.05
-        cell = atoms.get_cell()
-        cell *= pos_scaling
-        atoms.set_cell(cell, scale_atoms=True)
-
     kpt = {"density": kpts_density, "even": True}
     # calc = gp.GPAW(h=0.32, kpts=kpt, xc="PBE", nbands="120%")
     calc = gp.GPAW(mode=gp.PW(600), kpts=kpt, xc="PBE", nbands="120%")
@@ -73,7 +63,6 @@ def main(argv):
             atoms, calc = gp.restart(restart_file)
         else:
             db.update(uid, restart_file=SaveRestartFiles.restart_name(name))
-        barrier()
         restart_saver = SaveRestartFiles(calc, name)
         trajObj = Trajectory("trajectory{}.traj".format(name), 'w', atoms)
         ucf = UnitCellFilter(atoms, hydrostatic_strain=True)
@@ -84,6 +73,7 @@ def main(argv):
             relaxer = PrconFIRE(ucf, logfile=logfile)
         else:
             relaxer = PreconLBFGS(ucf, logfile=logfile)
+
         relaxer.attach(trajObj)
         relaxer.attach(restart_saver, interval=1)
         relaxer.run(fmax=0.025, smax=0.003)
