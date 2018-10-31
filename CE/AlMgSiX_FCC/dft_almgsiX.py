@@ -5,7 +5,7 @@ from ase.db import connect
 from atomtools.ase import delete_vacancies, SaveRestartFiles
 from ase.io.trajectory import Trajectory
 from ase.optimize import BFGS
-from ase.optimize.precon <<<<<<< HEAD
+from ase.optimize.precon
 from ase.optimize.sciopt import SciPyFminCG
 from ase.parallel import barrier
 from ase.io import read
