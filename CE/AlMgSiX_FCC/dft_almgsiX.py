@@ -67,10 +67,10 @@ def main(argv):
         trajObj = Trajectory("trajectory{}.traj".format(name), 'w', atoms)
         ucf = UnitCellFilter(atoms, hydrostatic_strain=True)
         logfile = "log_{}.txt".format(name)
-        if opt == "cg":
+        if optimizer == "cg":
             relaxer = SciPyFminCG(ucf, logfile=logfile)
-        elif opt == "fire":
-            relaxer = PrconFIRE(ucf, logfile=logfile)
+        elif optimizer == "fire":
+            relaxer = PreconFIRE(ucf, logfile=logfile)
         else:
             relaxer = PreconLBFGS(ucf, logfile=logfile)
 
