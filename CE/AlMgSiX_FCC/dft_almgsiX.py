@@ -76,7 +76,7 @@ def main(argv):
 
         relaxer.attach(trajObj)
         relaxer.attach(restart_saver, interval=1)
-        relaxer.run(fmax=0.025, smax=0.003)
+        relaxer.run(fmax=0.025)
         db.write(atoms, name=name, lattice_param=lattice_param, run_type="geometry_opt", restart_file=SaveRestartFiles.restart_name(name))
 
 if __name__ == "__main__":
