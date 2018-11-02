@@ -22,6 +22,7 @@ def main(argv):
     relax_atoms = 0
     final_structure = 0
     optimizer = "lbfgs"
+    init_from_traj = 0
     for arg in argv:
         if arg.find("--restart=") != -1:
             attempt_restart = int(arg.split("--restart")[1])
@@ -35,6 +36,8 @@ def main(argv):
             final_structure = int(arg.split("--final=")[1])
         elif "--opt=" in arg:
             optimizer = arg.split("--opt=")[1]
+        elif "--traj=" in arg:
+            init_from_traj = int(arg.split("--traj=")[1])
 
     db = connect(db_name)
     atoms = db.get(id=uid).toatoms()
@@ -57,10 +60,15 @@ def main(argv):
     elif relax_atoms == 1:
         if os.path.exists(restart_file) and attempt_restart == 1:
             atoms, calc = gp.restart(restart_file)
+        elif init_from_traj:
+            trajfile = "trajectory{}.traj".format(name)
+            traj = Trajectory(trajfile, 'r')
+            atoms = traj[-1]
+            atoms.set_calculator(calc)
         else:
             db.update(uid, restart_file=SaveRestartFiles.restart_name(name))
         restart_saver = SaveRestartFiles(calc, name)
-        trajObj = Trajectory("trajectory{}.traj".format(name), 'w', atoms)
+        trajObj = Trajectory("trajectory{}.traj".format(name), 'a', atoms)
         ucf = UnitCellFilter(atoms, hydrostatic_strain=True)
         logfile = "log_{}.txt".format(name)
         if optimizer == "cg":
