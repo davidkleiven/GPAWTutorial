@@ -16,7 +16,6 @@ db_name = "/home/davidkl/GPAWTutorial/CE/AlMgSiX_FCC/almgsiX_fcc.db"
 def main(argv):
     uid = int(argv[0])
 
-    atoms_from_file = None
     attempt_restart = 1
     kpts_density = 1.37
     lattice_param = 4.05
@@ -24,10 +23,7 @@ def main(argv):
     final_structure = 0
     optimizer = "lbfgs"
     for arg in argv:
-        if arg.find("--atoms=") != -1:
-            fname = arg.split("--atoms=")[1]
-            atoms_from_file = read(fname)
-        elif arg.find("--restart=") != -1:
+        if arg.find("--restart=") != -1:
             attempt_restart = int(arg.split("--restart")[1])
         elif "--kpt=" in arg:
             kpts_density = float(arg.split("--kpt=")[1])
@@ -78,6 +74,10 @@ def main(argv):
         relaxer.attach(restart_saver, interval=1)
         relaxer.run(fmax=0.025)
         db.write(atoms, name=name, lattice_param=lattice_param, run_type="geometry_opt", restart_file=SaveRestartFiles.restart_name(name))
+    elif final_structure:
+        atoms.get_potential_energy()
+        db.write(atoms, name=name, struct_type="final", kpts_density=kpts_density)
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
