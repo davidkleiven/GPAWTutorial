@@ -15,9 +15,9 @@ def main(fname):
         com = cluster[0].position + dists.sum(axis=0)/len(cluster)
         cell = cluster.get_cell()
         diag = 0.5 * (cell[:, 0] + cell[:, 1] + cell[:, 2])
-        cluster.translate(diag-com)
-        cluster.wrap()
-        cluster.center()
+        # cluster.translate(diag-com)
+        # cluster.wrap()
+        # cluster.center()
         traj_out.write(cluster)
     print("Only clusters written to file {}".format(fname_out))
 

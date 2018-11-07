@@ -10,6 +10,7 @@ from scipy.stats import linregress
 
 n_atoms = 15**3
 energy_file = "data/cluster_struct_new_trialmove/energies_run2.txt"
+energy_file = "data/cluster_struct_new_trialmove/energies_backup.txt"
 
 ref_en_al = -239.147/64.0 # DFT value
 ref_en_mg = -101.818/64.0 # DFT value
@@ -67,7 +68,8 @@ def barrier_vs_temp(dH):
     figbeta = plt.figure()
     axbeta = figbeta.add_subplot(1,1,1)
     size = np.array( range(len(dH)) )
-    for conc in concs:
+    colors = ["#5D5C61", "#878796", "#7395AE", "#557A95", "#B1A296"]
+    for num, conc in enumerate(concs):
         dS = kB*(size-1)*np.log(conc)
         dS[0] = 0.0
         barrier = []
@@ -79,9 +81,9 @@ def barrier_vs_temp(dH):
         crit_size = np.array(crit_size)
         print(conc, crit_size, T)
         barrier = np.array(barrier)
-        ax.plot( T[crit_size<49], barrier[crit_size<49], label="{}%".format(int(100*conc)), marker="o",mfc="none" )
+        ax.plot( T[crit_size<49], barrier[crit_size<49], label="{}%".format(int(100*conc)), marker="o", mfc="none", color=colors[num] )
         beta = 1.0/(kB*T[crit_size<49])
-        axbeta.plot( T[crit_size<49], beta*barrier[crit_size<49], label="\${}\%$".format(int(100*conc)), marker="o",mfc="none" )
+        axbeta.plot( T[crit_size<49], beta*barrier[crit_size<49], label="\${}\%$".format(int(100*conc)), marker="o", mfc="none", color=colors[num])
 
     ax.legend(frameon=False)
     ax.spines["right"].set_visible(False)
@@ -102,15 +104,21 @@ def main():
     #energy -= en_al63mg_form*size
     size_temp = np.linspace(0,np.max(size),len(size))
     dilution_limit = (energy[1]-energy[0])*size_temp
+    strain_per_atom = 5.417643731247179E-3
+    #eshelby_strian = 4*strain_per_atom*size_temp
 
     dH = energy - size*(energy[1]-energy[0])
 
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
-    ax.plot( size, energy, marker="o", mfc="none" )
-    ax.plot( size_temp, dilution_limit )
-    ax.set_xlabel( "Cluster size" )
-    ax.set_ylabel( "Cluster energy (eV)" )
+    ax.fill_between(size, 0, energy, color="#5D5C61", alpha=0.4)
+    ax.plot(size, energy,color="#5D5C61")
+    ax.plot(size_temp, dilution_limit, color="#7395AE")
+    #ax.plot(size_temp, eshelby_strian, color="#557A95")
+    ax.fill_between(size, energy, energy + 4*strain_per_atom*size, color="#557A95", alpha=0.4)
+    ax.plot(size, energy + 4*strain_per_atom*size, color="#557A95")
+    ax.set_xlabel( "Number of Mg atoms" )
+    ax.set_ylabel( "Energy (eV)" )
     ax.spines["right"].set_visible(False)
     ax.spines["top"].set_visible(False)
 

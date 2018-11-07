@@ -1,6 +1,7 @@
 from cemc.mcmc import PseudoBinaryReactPath, PseudoBinarySGC
 from cemc.mcmc import PseudoBinaryFreeEnergyBias
-from ase.ce import BulkCrystal
+from ase.clease import CEBulk as BulkCrystal
+from ase.clease import Concentration
 from cemc import get_ce_calc
 import json
 from cemc.mcmc import Snapshot
@@ -69,13 +70,13 @@ def init_bc(N):
         "conc_ratio_min_2": [[64, 0, 0]],
         "conc_ratio_max_2": [[22, 21, 21]]
     }
+    conc = Concentration(basis_elements=[["Al", "Mg", "Si"]])
 
     kwargs = {
         "crystalstructure": "fcc",
         "a": 4.05,
         "size": [4, 4, 4],
-        "basis_elements": [["Al", "Mg", "Si"]],
-        "conc_args": conc_args,
+        "concentration": conc,
         "db_name": "data/almgsi.db",
         "max_cluster_size": 4
     }

@@ -5,12 +5,12 @@ sys.path.insert(1,"/home/davidkl/Documents/ase-ce0.1")
 sys.path.append("/usr/local/lib/python2.7/dist-packages/pymatgen/cli/")
 import ase
 print (ase.__file__)
-from ase.ce.settings_bulk import BulkCrystal
-from ase.ce.evaluate import Evaluate
+from ase.clease import CEBulk as BulkCrystal
+from ase.clease import Evaluate
 from ase.build import bulk
-from ase.ce.newStruct import GenerateStructures
+from ase.clease import NewStructures as GenerateStructures
+from ase.clease import CorrFunction
 #from evaluateL1min import EvaluateL1min
-from ase.ce.evaluate import Evaluate
 #from convergence import ConvergenceCheck
 import matplotlib as mpl
 mpl.rcParams["svg.fonttype"]="none"
@@ -27,17 +27,16 @@ import numpy as np
 #from plot_corr_matrix import CovariancePlot
 from atomtools.ce.corrmatrix import CovariancePlot
 #from convex_hull_plotter import QHull
-from ase.ce.corrFunc import CorrFunction
 import json
 from atomtools.ce.evaluate_deviation import EvaluateDeviation
 from atomtools.ce.phonon_ce_eval import PhononEval
 from atomtools.ce.population_variance import PopulationVariance
-from cemc.wanglandau.ce_calculator import CE
+from cemc import CE
 from cemc.mcmc import montecarlo as mc
 from cemc.mcmc import mc_observers as mcobs
 from ase.io import write, read
 from ase.db import connect
-from ase.calculators.cluster_expansion.cluster_expansion import ClusterExpansion
+from ase.calculators.clease import Clease as ClusterExpansion
 import pickle as pck
 from atomtools.ce import CVScoreHistory
 
@@ -66,6 +65,7 @@ def main( argv ):
     }
     if ( lattice == "fcc" ):
         db_name = "ce_hydrostatic_new_config.db"
+        db_name = "ce_hydrostatic_only_relaxed.db"
         pickle_file = "data/BC_fcc.pkl"
         ceBulk = BulkCrystal( crystalstructure="fcc", a=4.05, size=[4,4,4], \
                               basis_elements=[["Al","Mg"]], conc_args=conc_args,
@@ -88,9 +88,9 @@ def main( argv ):
     #ceBulk.basis_functions[0]["Mg"] = -1.0
     #ceBulk._get_cluster_information()
     print (ceBulk.basis_functions)
-    cf = CorrFunction(ceBulk)
-    cf.reconfig_db_entries(select_cond=[("calculator","=","unknown")])
-    exit()
+    #cf = CorrFunction(ceBulk)
+    #cf.reconfig_db_entries(select_cond=[("calculator","=","unknown")])
+    #exit()
     #ceBulk.view_clusters()
     #ceBulk._get_cluster_information()
     #cf_names = cf.get_cf( ceBulk.atoms )
@@ -278,23 +278,20 @@ def find_gs_structure( ceBulk, mg_conc ):
     return lowest_struct.lowest_energy
 
 
-def evalCE( BC):
+def evalCE(BC):
+    db = connect(BC.db_name)
+    for row in db.select(converged=1):
+        print(row.id, row.c0)
     lambs = np.logspace(-7,-1,num=50)
     #fname = "data/exclude_set_1.txt"
     #scond = generate_exclusion_criteria( fname )
     print (lambs)
     cvs = []
-    for i in range(len(lambs)):
-        print (lambs[i])
-        evaluator = Evaluate( BC, lamb=float(lambs[i]), penalty="l1" )
-        cvs.append(evaluator._cv_loo())
-    indx = np.argmin(cvs)
-    print ("Selected penalization value: {}".format(lambs[indx]))
-    evaluator = Evaluate( BC, lamb=float(lambs[indx]), penalty="l1" )
-    print ( evaluator.cf_matrix[:,1] )
-    eci_name = evaluator.get_cluster_name_eci_dict
-    print (eci_name)
-    evaluator.plot_energy()
+    evaluator = Evaluate(BC, fitting_scheme="l1")
+    best_alpha = evaluator.plot_CV(alpha_min=1E-7, alpha_max=1E-1, num_alpha=50)
+    evaluator.set_fitting_scheme(fitting_scheme="l1", alpha=best_alpha)
+    eci_name = evaluator.get_cluster_name_eci()
+    evaluator.plot_fit()
     plotter = ECIPlotter(eci_name)
     plotter.plot( show_names=True )
 
@@ -303,9 +300,9 @@ def evalCE( BC):
         json.dump( eci_name, outfile )
     print ("ECIs stored in %s"%(eci_fname))
     plt.show()
-
+    
 def eval_phonons( ceBulk ):
-    lambs = np.logspace(-2,3,num=50)
+    lambs = np.logspace(-2, 3,num=50)
     cnames = None
     cvs = []
     T = 600 # Is not used when hte=True

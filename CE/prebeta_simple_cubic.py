@@ -1,9 +1,11 @@
 import sys
 from ase.clease import CEBulk as BulkCrystal
-from ase.clease import GenerateStructures
+from ase.clease import NewStructures as GenerateStructures
+from ase.clease import Concentration
 from ase.build import bulk
 from ase.clease import CorrFunction
 from ase.clease import Evaluate
+from ase.clease import GAFit
 # from atomtools.ce import ECIPlotter
 import numpy as np
 from matplotlib import pyplot as plt
@@ -24,10 +26,12 @@ def main(argv):
         "conc_ratio_max_2": [[1, 0, 1, 3]]
     }
     a = 2.025
+    conc = Concentration(basis_elements=[["Al", "X", "Mg", "Si"]],)
     bc = BulkCrystal(crystalstructure="sc", size=[8, 8, 2],
-                     conc_args=conc_args, max_cluster_size=4,
+                     max_cluster_size=4,
                      max_cluster_dia=[0, 0, 5.0, 3.0, 3.0],
-                     basis_elements=[["Al", "X", "Mg", "Si"]], a=a,
+                     a=a,
+                     concentration=conc,
                      db_name=db_name)
     # reconfig(bc)
     # bc.reconfigure_settings()
@@ -43,7 +47,75 @@ def main(argv):
         gen_gs_prebeta(bc, struct_gen, n_structs=10, lattice="fcc")
     elif option == "eval":
         evaluate(bc)
+    elif option == "score":
+        calculate_score()
+    elif option == "filter":
+        filter_atoms()
 
+
+def calculate_score():
+    from atomtools.ce import DistanceDistribution
+    from ase.db import connect
+    from ase.visualize import view
+    db = connect(db_name)
+    atoms = []
+    names = []
+    for row in db.select(converged=True):
+        names.append(row.name)
+
+    # Calculate the score
+    ks_dists = []
+    for name in names:
+        show = False
+        print("Current name: {}".format(name))
+        atoms = []
+        for row in db.select(name=name):
+            atoms.append(row.toatoms())
+        assert len(atoms) == 2
+        init = atoms[0]
+        final = atoms[1]
+        if len(final) < 6 or len(init) < 6:
+            continue
+        dist1 = DistanceDistribution(init)
+        dist2 = DistanceDistribution(final)
+        ks_dist = dist1.kolmogorov_smirnov_distance(dist2, show=show)
+        ks_dists.append(ks_dist)
+    
+    score_name = list(zip(ks_dists, names))
+    score_name.sort()
+    for item in score_name:
+        print("{}: {}".format(item[1], item[0]))
+
+def filter_atoms():
+    from atomtools.ce import FilterDisplacements
+    from ase.db import connect
+    from ase.visualize import view
+    from ase.io import Trajectory
+    db = connect(db_name)
+    names = []
+    uids = []
+    disp_filter = FilterDisplacements(max_displacement=1.5)
+    for row in db.select(converged=True):
+        names.append(row.name)
+        uids.append(row.id)
+
+    traj = Trajectory("data/prebeta_sc_valid.traj", mode="w")
+    num_valid = 0
+    for name, uid in zip(names, uids):
+        atoms = []
+        for row in db.select(name=name):
+            atoms.append(row.toatoms())
+        assert len(atoms) == 2
+        valid = disp_filter.is_valid(atoms[0], atoms[1], num_attempts=10)
+        if valid:
+            traj.write(atoms[0])
+            traj.write(atoms[1])
+            num_valid += 1
+            db.update(uid, is_valid=True)
+        else:
+            print(disp_filter.rejected_reason)
+            db.update(uid, is_valid=False)
+    print("Number of valid structures: {}".format(num_valid))
 
 def reconfig(bc):
     bc.reconfigure_settings()
@@ -159,13 +231,22 @@ def gen_random_struct(bc, struct_gen, n_structs=20, lattice="fcc"):
             print(str(exc))
 
 def evaluate(bc):
-    evaluator = Evaluate(bc, fitting_scheme="l2", parallel=False,
-                         max_cluster_size=4, scoring_scheme="loocv_fast")
+    scond = [("converged", "=", True)]
+    scheme = "l2"
+    evaluator = Evaluate(bc, fitting_scheme=scheme, parallel=False,
+                         max_cluster_size=4, scoring_scheme="loocv_fast",
+                         select_cond=scond)
+    
+    ga = GAFit(evaluator=evaluator, alpha=1E-8, mutation_prob=0.01, num_individuals="auto",
+               change_prob=0.2)
+    # ga.run(min_change=0.001)
+    # ga.plot_evolution()
+    # exit()
 
-    best_alpha = evaluator.plot_CV(alpha_min=1E-3, alpha_max=1E-1, num_alpha=16)
-    np.savetxt("data/cfm_prebeta_sc.csv", evaluator.cf_matrix, delimiter=",")
-    np.savetxt("data/e_dft_prebeta_sc.csv", evaluator.e_dft)
-    evaluator.set_fitting_scheme("l2", best_alpha)
+    #best_alpha = evaluator.plot_CV(alpha_min=1E-5, alpha_max=1E-1, num_alpha=16)
+    #np.savetxt("data/cfm_prebeta_sc.csv", evaluator.cf_matrix, delimiter=",")
+    #np.savetxt("data/e_dft_prebeta_sc.csv", evaluator.e_dft)
+    #evaluator.set_fitting_scheme(scheme, best_alpha)
     evaluator.plot_fit(interactive=True)
     eci_name = evaluator.get_cluster_name_eci(return_type="dict")
     plt.show()

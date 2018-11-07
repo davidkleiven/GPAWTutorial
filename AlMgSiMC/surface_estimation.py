@@ -18,7 +18,7 @@ def create_surface(sc_shape):
 
     # Create a cut such that a3 vector is the normal vector
     slab = cut(atoms, a=(1, 0, 0), b=(0, 1, 0), c=(0, 0, 1), nlayers=num_layers)
-    tags, array = get_layers(slab, (1, -1, 0)) 
+    tags, _ = get_layers(slab, (1, -1, 0)) 
     for tag, atom in zip(tags, slab):
         if tag%2 == 0:
             atom.symbol = "Mg"
@@ -27,7 +27,7 @@ def create_surface(sc_shape):
     tree = KDTree(atoms.get_positions())
     used_indices = []
     for atom in slab:
-        dists, closest_indx = tree.query(atom.position)
+        _, closest_indx = tree.query(atom.position)
         if closest_indx in used_indices:
             raise RuntimeError("Two atoms are mapped onto the same index!")
         atoms[closest_indx].symbol = atom.symbol
