@@ -84,7 +84,9 @@ def main(argv):
         db.write(atoms, name=name, lattice_param=lattice_param, run_type="geometry_opt", restart_file=SaveRestartFiles.restart_name(name))
     elif final_structure:
         atoms.get_potential_energy()
-        db.write(atoms, name=name, struct_type="final", kpts_density=kpts_density)
+        uid = db.write(atoms, name=name, struct_type="final", kpts_density=kpts_density)
+        init_id = db.get(name=name, struct_type='initial').id
+        db.update(init_id, final_struct_id=uid)
 
 
 if __name__ == "__main__":
