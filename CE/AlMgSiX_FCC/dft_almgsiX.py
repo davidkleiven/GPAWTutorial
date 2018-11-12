@@ -86,7 +86,7 @@ def main(argv):
         atoms.get_potential_energy()
         uid = db.write(atoms, name=name, struct_type="final", kpts_density=kpts_density)
         init_id = db.get(name=name, struct_type='initial').id
-        db.update(init_id, final_struct_id=uid)
+        db.update(init_id, final_struct_id=uid, converged=1)
 
 
 if __name__ == "__main__":
