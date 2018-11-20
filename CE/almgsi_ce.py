@@ -7,7 +7,7 @@ import sys
 from ase.build import bulk
 from ase.clease import CEBulk as BulkCrystal
 from ase.clease.corrFunc import CorrFunction
-from ase.clease.newStruct import GenerateStructures
+from ase.clease import NewStructures as GenerateStructures
 # from atomtools.ce.corrmatrix import CovariancePlot
 #from convex_hull_plotter import QHull
 from ase.clease.evaluate import Evaluate
@@ -27,27 +27,22 @@ from scipy.spatial import ConvexHull
 # from atomtools.ce import ChemicalPotentialEstimator
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.visualize import view
+from ase.clease import Concentration
 
 eci_fname = "data/almgsi_fcc_eci_newconfig.json"
 db_name = "almgsi_newconfig.db"
-db_name = "almgsi_sluiter.db"
-eci_fname = "data/almgsi_fcc_eci_sluiter.json"
+#db_name = "almgsi_sluiter.db"
+#eci_fname = "data/almgsi_fcc_eci_sluiter.json"
 # db_name_cubic = "almgsi_cubic.db"
 def main(argv):
     option = argv[0]
-    conc_args = {
-        "conc_ratio_min_1":[[64,0,0]],
-        "conc_ratio_max_1":[[24,40,0]],
-        "conc_ratio_min_2":[[64,0,0]],
-        "conc_ratio_max_2":[[22,21,21]]
-    }
     atoms = bulk( "Al" )
     N = 4
     atoms = atoms*(N,N,N)
-
-    ceBulk = BulkCrystal(crystalstructure="fcc", a=4.05, size=[N,N,N], basis_elements=[["Al","Mg","Si"]], \
-    conc_args=conc_args, db_name=db_name, max_cluster_size=4,
-    basis_function="sluiter")
+    conc = Concentration(basis_elements=[["Al","Mg","Si"]])
+    ceBulk = BulkCrystal(crystalstructure="fcc", a=4.05, size=[N,N,N], \
+        db_name=db_name, max_cluster_size=4, concentration=conc,
+        basis_function="sanchez")
     # ceBulk.reconfigure_settings()
     # print (ceBulk.basis_functions)
     # cf = CorrFunction( ceBulk, parallel=True)
@@ -129,16 +124,21 @@ def update_in_conc_range():
             db.update( row.id, in_conc_range=0 )
 
 def evaluate(BC):
+    from ase.clease import GAFit
     evaluator = Evaluate(BC, fitting_scheme="l2", parallel=False,
-                         max_cluster_size=4, scoring_scheme="loocv_fast")
+                         max_cluster_size=4, scoring_scheme="loocv_fast", select_cond=[("converged", "=", True)])
+    ga = GAFit(evaluator=evaluator, alpha=1E-8, mutation_prob=0.01, num_individuals="auto",
+               change_prob=0.2, fname="data/ga_fit_almgsi.csv")
+    #ga.run(min_change=0.001)
+    #exit()
 
-    best_alpha = evaluator.plot_CV(alpha_min=1E-3, alpha_max=1E-1, num_alpha=16)
-    evaluator.set_fitting_scheme("l2", best_alpha)
+    #best_alpha = evaluator.plot_CV(alpha_min=1E-3, alpha_max=1E-1, num_alpha=16)
+    #evaluator.set_fitting_scheme("l2", best_alpha)
     evaluator.plot_fit(interactive=True)
     eci_name = evaluator.get_cluster_name_eci(return_type="dict")
-    plotter = ECIPlotter(eci_name)
-    plotter.plot()
-    plt.show()
+    # plotter = ECIPlotter(eci_name)
+    # plotter.plot()
+    # plt.show()
 
     with open(eci_fname,'w') as outfile:
         json.dump( eci_name, outfile, indent=2, separators=(",",":"))

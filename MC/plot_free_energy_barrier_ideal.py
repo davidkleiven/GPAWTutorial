@@ -7,16 +7,21 @@ import numpy as np
 from ase.units import kB, kJ, mol
 from scipy.interpolate import UnivariateSpline
 from scipy.stats import linregress
+import json
 
 n_atoms = 15**3
 energy_file = "data/cluster_struct_new_trialmove/energies_run2.txt"
-energy_file = "data/cluster_struct_new_trialmove/energies_backup.txt"
+FREE_ENG_FILE = "data/almg_review/free_energy_size.json"
+#energy_file = "data/cluster_struct_new_trialmove/energies_backup.txt"
 
 ref_en_al = -239.147/64.0 # DFT value
 ref_en_mg = -101.818/64.0 # DFT value
 
 ref_en_al = -3.73659854515 # CE value
 ref_en_mg = -1.59155450937 # CE value
+
+ref_en_al = -3.7365039196426015 # CE value
+ref_en_mg = -1.5911398128049632 # CE value
 
 en_al63mg = -236.921
 en_al63mg_form = en_al63mg - (63*ref_en_al+ref_en_mg)
@@ -50,7 +55,6 @@ def critical_size( dH, size ):
     for i in range(len(T)):
         F = dH - kbtx[i]*(size-1)
         loc_max,fvals = extract_local_maxima(F,show=True)
-        print (loc_max)
         if ( len(loc_max) > 0 ):
             indx = np.argmax(fvals)
             nmax.append(loc_max[indx])
@@ -65,6 +69,7 @@ def barrier_vs_temp(dH):
     T = np.linspace(100,400,40)
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
+    #ax_cs = ax.twinx()
     figbeta = plt.figure()
     axbeta = figbeta.add_subplot(1,1,1)
     size = np.array( range(len(dH)) )
@@ -79,9 +84,10 @@ def barrier_vs_temp(dH):
             barrier.append( np.max(F) )
             crit_size.append(np.argmax(F))
         crit_size = np.array(crit_size)
-        print(conc, crit_size, T)
+        #print(conc, crit_size, T)
         barrier = np.array(barrier)
         ax.plot( T[crit_size<49], barrier[crit_size<49], label="{}%".format(int(100*conc)), marker="o", mfc="none", color=colors[num] )
+        #ax_cs.plot(T[crit_size<49], crit_size[crit_size<49], marker="v", mfc="none")
         beta = 1.0/(kB*T[crit_size<49])
         axbeta.plot( T[crit_size<49], beta*barrier[crit_size<49], label="\${}\%$".format(int(100*conc)), marker="o", mfc="none", color=colors[num])
 
@@ -117,33 +123,60 @@ def main():
     #ax.plot(size_temp, eshelby_strian, color="#557A95")
     ax.fill_between(size, energy, energy + 4*strain_per_atom*size, color="#557A95", alpha=0.4)
     ax.plot(size, energy + 4*strain_per_atom*size, color="#557A95")
-    ax.set_xlabel( "Number of Mg atoms" )
-    ax.set_ylabel( "Energy (eV)" )
+    ax.set_xlabel("Num. formula units")
+    ax.set_ylabel("Energy (eV)")
     ax.spines["right"].set_visible(False)
     ax.spines["top"].set_visible(False)
 
+    dH += 4*strain_per_atom*size
+
     T = [353,293]
-    concs = [0.05,0.1,0.15]
+    T = [293, 120]
+    concs = [0.01, 0.05,0.1]
     gw_kw = {"hspace":0.1}
     fig_F,axF = plt.subplots(nrows=2,sharex=True,gridspec_kw=gw_kw)
     axF[1].axhline( 0, ls="--", color="grey")
     axF[0].axhline( 0, ls="--", color="grey")
     #axF = fig_F.add_subplot(1,1,1)
+    colors = ["#5D5C61", "#878796", "#7395AE", "#557A95", "#B1A296"]
     for i in range(2):
-        for conc in concs:
+        for num, conc in enumerate(concs):
             dS = kB*(size-1)*np.log(conc)
             dS[0] = 0.0
             F = dH - T[i]*dS
-            axF[i].plot( size, F, marker="o", mfc="none",label="\${}\%\$".format(int(conc*100)) )
+            print("Critical size {}".format(size[np.argmax(F)]))
+            axF[i].plot( size, F, marker="o", mfc="none",label="\${}\%\$".format(int(conc*100)), color=colors[num] )
         axF[i].spines["right"].set_visible(False)
+        axF[i].spines["right"].set_visible(False)
+
+    try:
+        with open(FREE_ENG_FILE, 'r') as infile:
+            data = json.load(infile)
+        sizes_free_eng = np.array(data["sizes"])
+
+        for i, temp in enumerate(T):
+            print(temp)
+            F = np.array(data[str(temp)])
+            dF = F - (sizes_free_eng*ref_en_mg + (n_atoms-sizes_free_eng)*ref_en_al)
+            #dF = energy[-len(F):]
+            dF -= sizes_free_eng*(energy[1]-energy[0])
+            dF += 4*strain_per_atom*sizes_free_eng
+            for num, conc in enumerate(concs):
+                dS = kB*(sizes_free_eng-1)*np.log(conc)
+                # dS[0] = 0.0
+                #F = dH - T[i]*dS
+                #dF -= T[i]*dS
+                axF[i].plot(sizes_free_eng, dF-T[i]*dS, color=colors[num], ls="--" )
+    except Exception as exc:
+        print(str(exc))
     axF[0].spines["top"].set_visible(False)
     axF[1].spines["top"].set_visible(False)
     axF[0].legend( loc="best", frameon=False, ncol=3, columnspacing=0.05 )
     #axF[0].spines["bottom"].set_position("zero")
     #axF[1].spines["bottom"].set_position("zero")
-    axF[0].text( 5,100, "T=353K")
-    axF[1].text( 5,50, "T=293K")
-    axF[1].set_xlabel( "Cluster size" )
+    axF[0].text( 5,100, "T=293K")
+    axF[1].text( 5,50, "T=120K")
+    axF[1].set_xlabel( "Num. formula units" )
     axF[0].set_ylabel( "Free energy (eV)")
     #axF[0].set_xticklabels([])
 

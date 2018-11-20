@@ -39,8 +39,9 @@ def get_pure_energies(eci):
     return al,mg
 
 folder = "data/cluster_struct_new_trialmove/"
+folder = "/work/sophus/cluster_size_free_energy"
 
-def cluster_entropy(mc):
+def cluster_entropy(mc, size=8):
     from ase.io import read
     from cemc.mcmc import EnergyEvolution
     import dataset
@@ -48,15 +49,15 @@ def cluster_entropy(mc):
     T = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 150, 200, 220, 240, 260, 280, 300,
          320, 340, 360, 380, 400, 420, 440, 460, 480, 500]
     
-    atoms = read("data/cluster_struct_new_trialmove/cluster50_all.cif")
+    atoms = read("data/cluster_struct_new_trialmove/cluster{}_all.cif".format(size))
     symbs = [atom.symbol for atom in atoms]
     mc.set_symbols(symbs)
     energy_evol = EnergyEvolution(mc)
     mc.attach(energy_evol, interval=10000)
-    db = dataset.connect("sqlite:///data/heat_almg_cluster3.db")
+    db = dataset.connect("sqlite:///{}/heat_almg_cluster_size.db".format(folder, size))
     syst = db["thermodynamic"]
     energy_evol_tab = db["energy_evolution"]
-    camera = Snapshot(trajfile="data/cluster_entropy.traj", atoms=mc.atoms)
+    camera = Snapshot(trajfile=folder+"/cluster_entropy_size{}.traj".format(size), atoms=mc.atoms)
     mc.attach(camera, interval=50000)
     for temp in T:
         print("Temperature: {}".format(temp))
@@ -65,6 +66,7 @@ def cluster_entropy(mc):
         mc.T = temp
         mc.runMC(steps=500000)
         thermo = mc.get_thermodynamic()
+        thermo["size"] = size
         uid = syst.insert(thermo)
         rows = []
         for E in energy_evol.energies:
@@ -105,7 +107,7 @@ def pure_phase_entropy(small_bc):
         thermo["site_order_std"] = stddev
         syst.insert(thermo)
 
-def main(option="relax"):
+def main(option="relax", size=8):
     from copy import deepcopy
     ceBulk = BulkCrystal( **kwargs )
     bc_copy = deepcopy(ceBulk)
@@ -127,8 +129,9 @@ def main(option="relax"):
     #exit()
 
     if option == "heat":
+        print("Running with cluser size {}".format(size))
         mc = FixedNucleusMC( ceBulk.atoms, 293, network_name=["c2_4p050_3"], network_element=["Mg"] )
-        cluster_entropy(mc)
+        cluster_entropy(mc, size=size)
         return
     elif option == "pure_phase":
         pure_phase_entropy(bc_copy)
@@ -145,7 +148,11 @@ def main(option="relax"):
         indx = np.argmin(lengths)
         symbs = [atom.symbol for atom in ceBulk.atoms]
         symbs[indx] = "Mg"
+        print("Orig energy: {}".format(calc.get_energy()))
         calc.set_symbols(symbs)
+        print("One atom: {}".format(calc.get_energy()))
+        exit()
+
         for size in sizes:
             elements = {"Mg": size}
             T = np.linspace(50,1000,40)[::-1]
@@ -172,4 +179,9 @@ def main(option="relax"):
         np.savetxt( "{}energies_run2.txt".format(folder), data, delimiter=",")
 
 if __name__ == "__main__":
-    main(option="relax")
+    import sys
+    size = 8
+    for arg in sys.argv:
+        if "--size=" in arg:
+            size = int(arg.split("--size=")[1])
+    main(option="heat", size=size)

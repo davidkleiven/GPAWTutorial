@@ -111,12 +111,15 @@ def evaluate(bc):
     scond = [("converged", "=", True)]
     # db = connect(bc.db_name)
     # for row in db.select(scond):
-    #     print(row.id)
-    #     print(row.c1_2)
+    #     final = row.get("final_struct_id", -1)
+    #     energy = row.get("energy", 0)
+    #     if final == -1 and energy == 0:
+    #         print(row.id, row.name)
+    #         db.update(row.id, converged=0)
     # exit()
     evaluator = Evaluate(bc, select_cond=scond, scoring_scheme="loocv_fast")
-    ga_fit = GAFit(evaluator=evaluator, alpha=1E-3, change_prob=0.2)
-    # ga_fit.run(min_change=0.001)
+    ga_fit = GAFit(evaluator=evaluator, alpha=1E-8, change_prob=0.2)
+    ga_fit.run(min_change=0.001)
     eci = evaluator.get_cluster_name_eci()
     evaluator.plot_fit()
 
