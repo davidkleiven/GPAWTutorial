@@ -27,22 +27,22 @@ def main(argv):
     }
     a = 2.025
     conc = Concentration(basis_elements=[["Al", "X", "Mg", "Si"]],)
-    bc = BulkCrystal(crystalstructure="sc", size=[8, 8, 2],
+    bc = BulkCrystal(crystalstructure="sc", size=[4, 4, 2],
                      max_cluster_size=4,
                      max_cluster_dia=[0, 0, 5.0, 3.0, 3.0],
                      a=a,
                      concentration=conc,
                      db_name=db_name)
     # reconfig(bc)
-    # bc.reconfigure_settings()
-    # exit()
+    #bc.reconfigure_settings()
+    #exit()
     struct_gen = GenerateStructures(bc, struct_per_gen=10)
     if option == "new_prebeta_random":
         gen_random_struct(bc, struct_gen, lattice="prebeta", n_structs=30)
     elif option == "new_fcc_random":
         gen_random_struct(bc, struct_gen, lattice="fcc", n_structs=20)
     elif option == "new_pre_beta_gs":
-        gen_gs_prebeta(bc, struct_gen, n_structs=9)
+        gen_gs_prebeta(bc, struct_gen, n_structs=20)
     elif option == "new_fcc_gs":
         gen_gs_prebeta(bc, struct_gen, n_structs=10, lattice="fcc")
     elif option == "eval":
@@ -130,10 +130,11 @@ def gen_gs_prebeta(bc, struct_gen, n_structs=10, lattice="prebeta"):
     from ase.clease.tools import wrap_and_sort_by_position
     from random import choice
     from ase.build import cut
-    constraint = FixedElement(element="X")
+    from cemc import CE
+    #constraint = FixedElement(element="X")
     symbs = ["Al", "Mg", "Si"]
     gs_searcher = GSFinder()
-    gs_searcher.add_constraint(constraint)
+    #gs_searcher.add_constraint(constraint)
 
     with open(eci_fname, 'r') as infile:
         ecis = json.load(infile)
@@ -150,30 +151,35 @@ def gen_gs_prebeta(bc, struct_gen, n_structs=10, lattice="prebeta"):
         atoms = get_fcc_template() * scale_factor
         atoms = wrap_and_sort_by_position(atoms)
 
-    for i, atom in enumerate(atoms):
-        bc.atoms_with_given_dim[i].symbol = atom.symbol
+    # for i, atom in enumerate(atoms):
+    #     bc.atoms[i].symbol = atom.symbol
 
-    inv_scale_factor = [1.0/factor for factor in bc.supercell_scale_factor]
+    #inv_scale_factor = [1.0/factor for factor in bc.supercell_scale_factor]
     for i in range(n_structs):
         print("Generating {} of {} structures".format(i, n_structs))
-        for atom in bc.atoms_with_given_dim:
-            if atom.symbol == "X":
+        calc = CE(bc, ecis)
+        bc.atoms.set_calculator(calc)
+        symbols = [atom.symbol for atom in atoms]
+        for i in range(len(symbols)):
+            if symbols[i] == "X":
                 continue
-            atom.symbol = choice(symbs)
+            symbols[i] = choice(symbs)
+        calc.set_symbols(symbols)
 
         # Add new tags
-        atoms = bc.atoms_with_given_dim.copy()
-        cell = atoms.get_cell()
-        atoms = atoms * bc.supercell_scale_factor
-        atoms = wrap_and_sort_by_position(atoms)
-        for i, atom in enumerate(atoms):
-            bc.atoms[i].symbol = atom.symbol
-        cell_large = bc.atoms.get_cell()
+        #atoms = bc.atoms.copy()
+        # cell = atoms.get_cell()
+        # #atoms = atoms * bc.supercell_scale_factor
+        # atoms = wrap_and_sort_by_position(atoms)
+        # for i, atom in enumerate(atoms):
+        #     bc.atoms[i].symbol = atom.symbol
+        #cell_large = bc.atoms.get_cell()
         temps = np.linspace(10.0, 1500.0, 30)[::-1]
-        gs = gs_searcher.get_gs(bc, ecis, temps=temps, n_steps_per_temp=10 * len(bc.atoms))
-        atoms = cut(gs["atoms"], a=(inv_scale_factor[0], 0, 0), b=(0, inv_scale_factor[1], 0), c=(0, 0, inv_scale_factor[2]))
+        print(bc.atoms.get_chemical_formula())
+        gs = gs_searcher.get_gs(bc, None, temps=temps, n_steps_per_temp=10 * len(bc.atoms))
+        #atoms = cut(gs["atoms"], a=(inv_scale_factor[0], 0, 0), b=(0, inv_scale_factor[1], 0), c=(0, 0, inv_scale_factor[2]))
         try:
-            struct_gen.insert_structure(init_struct=atoms)
+            struct_gen.insert_structure(init_struct=gs["atoms"])
         except Exception as exc:
             print(str(exc))
 
