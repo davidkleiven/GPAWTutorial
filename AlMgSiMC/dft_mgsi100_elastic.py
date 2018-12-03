@@ -17,6 +17,7 @@ def relax():
     write("mgsi100_fully_relaxed.xyz", atoms)
 
 def single_point_energy(uid):
+    uid = int(uid)
     db = connect(db_name)
     atoms = db.get(id=uid).toatoms()
 
