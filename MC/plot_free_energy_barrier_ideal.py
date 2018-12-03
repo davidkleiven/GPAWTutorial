@@ -64,32 +64,47 @@ def critical_size( dH, size ):
             barrier.append(0)
     return T,nmax,barrier
 
-def barrier_vs_temp(dH):
+def barrier_vs_temp(dH=None, dF=None):
     concs = [0.01,0.05,0.1,0.15]
     T = np.linspace(100,400,40)
+    size = np.array( range(len(dH)) )
+    if dF is not None:
+        T = [int(k) for k in dF.keys()]
+        T = np.array(T)
+        size = np.array([k for k in dF[T[0]].keys()])
+
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
     #ax_cs = ax.twinx()
     figbeta = plt.figure()
     axbeta = figbeta.add_subplot(1,1,1)
-    size = np.array( range(len(dH)) )
+    
     colors = ["#5D5C61", "#878796", "#7395AE", "#557A95", "#B1A296"]
     for num, conc in enumerate(concs):
         dS = kB*(size-1)*np.log(conc)
+        print(dS)
         dS[0] = 0.0
         barrier = []
         crit_size = []
         for i in range(len(T)):
-            F = dH - T[i]*dS
+            if dF is not None:
+                F = np.array([v for k, v in dF[T[i]].items()])
+                F -= T[i]*dS
+            else:
+                F = dH - T[i]*dS
+            #F = dH[2:] - T[i]*dS
             barrier.append( np.max(F) )
             crit_size.append(np.argmax(F))
+        #plt.plot(size, F)
+        #plt.show()
         crit_size = np.array(crit_size)
+        #print(crit_size)
         #print(conc, crit_size, T)
         barrier = np.array(barrier)
-        ax.plot( T[crit_size<49], barrier[crit_size<49], label="{}%".format(int(100*conc)), marker="o", mfc="none", color=colors[num] )
+        ax.plot(T[crit_size<45], barrier[crit_size<45], label="{}%".format(int(100*conc)), marker="o", mfc="none", color=colors[num])
         #ax_cs.plot(T[crit_size<49], crit_size[crit_size<49], marker="v", mfc="none")
-        beta = 1.0/(kB*T[crit_size<49])
-        axbeta.plot( T[crit_size<49], beta*barrier[crit_size<49], label="\${}\%$".format(int(100*conc)), marker="o", mfc="none", color=colors[num])
+        beta = 1.0/(kB*T[crit_size<45])
+        axbeta.plot( T[crit_size<45], beta*barrier[crit_size<45], label="\${}\%$".format(int(100*conc)), marker="o", mfc="none", color=colors[num])
 
     ax.legend(frameon=False)
     ax.spines["right"].set_visible(False)
@@ -131,7 +146,7 @@ def main():
     dH += 4*strain_per_atom*size
 
     T = [353,293]
-    T = [293, 120]
+    T = [300, 100]
     concs = [0.01, 0.05,0.1]
     gw_kw = {"hspace":0.1}
     fig_F,axF = plt.subplots(nrows=2,sharex=True,gridspec_kw=gw_kw)
@@ -139,6 +154,7 @@ def main():
     axF[0].axhline( 0, ls="--", color="grey")
     #axF = fig_F.add_subplot(1,1,1)
     colors = ["#5D5C61", "#878796", "#7395AE", "#557A95", "#B1A296"]
+    dF_size_temp = {}
     for i in range(2):
         for num, conc in enumerate(concs):
             dS = kB*(size-1)*np.log(conc)
@@ -149,14 +165,21 @@ def main():
         axF[i].spines["right"].set_visible(False)
         axF[i].spines["right"].set_visible(False)
 
+    data = None
     try:
         with open(FREE_ENG_FILE, 'r') as infile:
             data = json.load(infile)
         sizes_free_eng = np.array(data["sizes"])
 
+        # Construct datastructure for free energy as a function of temperature and size
+        for temperature, val in data["free_energy"].items():
+            dF_size_temp[int(temperature)] = {size: val[i] - (size*ref_en_mg + (n_atoms-size)*ref_en_al) 
+                                    + 4*strain_per_atom*size 
+                                    - size*(energy[1]-energy[0]) 
+                                    for  i, size in enumerate(data["sizes"])}
         for i, temp in enumerate(T):
             print(temp)
-            F = np.array(data[str(temp)])
+            F = np.array(data["free_energy"][str(temp)])
             dF = F - (sizes_free_eng*ref_en_mg + (n_atoms-sizes_free_eng)*ref_en_al)
             #dF = energy[-len(F):]
             dF -= sizes_free_eng*(energy[1]-energy[0])
@@ -168,7 +191,7 @@ def main():
                 #dF -= T[i]*dS
                 axF[i].plot(sizes_free_eng, dF-T[i]*dS, color=colors[num], ls="--" )
     except Exception as exc:
-        print(str(exc))
+        print(str(exc)+type(exc).__name__)
     axF[0].spines["top"].set_visible(False)
     axF[1].spines["top"].set_visible(False)
     axF[0].legend( loc="best", frameon=False, ncol=3, columnspacing=0.05 )
@@ -195,7 +218,10 @@ def main():
     ax_shape.spines["right"].set_visible(False)
     ax_shape.spines["top"].set_visible(False)
     print ("Slope: {}. interscept: {}".format(slope,interscept))
-    barrier_vs_temp(dH)
+    if dF_size_temp != {}:
+        barrier_vs_temp(dH=dH, dF=dF_size_temp)
+    else:
+        barrier_vs_temp(dH=dH)
     plt.show()
 
 if __name__ == "__main__":

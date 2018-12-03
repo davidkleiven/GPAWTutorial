@@ -1,10 +1,11 @@
+import sys
 from gpaw import GPAW
 from gpaw import PW
 from ase.io import read, write
 from ase.optimize.precon import PreconFIRE
 from ase.db import connect
 
-db_name = "/home/davidkl/GPAWTutorial/AlMgSiMC/mgsi100_elastic.db"
+db_name = "/home/davidkl/GPAWTutorial/AlMgSiMC/elastic_mgsi100.db"
 def relax():
     fname = "/global/work/davidkl/MgSi100/mgsi_100.xyz"
     atoms = read(fname)
@@ -20,8 +21,9 @@ def single_point_energy(uid):
     atoms = db.get(id=uid).toatoms()
 
     calc = GPAW(mode=PW(800), xc="PBE", nbands=-60, kpts={"density": 5.4, "even": True})
+    atoms.set_calculator(calc)
     stress = atoms.get_stress()
     db.write(atoms, init_struct=uid)
 
 if __name__ == "__main__":
-    relax()
+    single_point_energy(sys.argv[1])

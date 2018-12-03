@@ -14,19 +14,14 @@ ECI_FILE = "data/eci_almgsix.json"
 
 def main(argv):
     option = argv[0]
-    conc_args = {
-        "conc_ratio_min_1":[[64,0,0]],
-        "conc_ratio_max_1":[[24,40,0]],
-        "conc_ratio_min_2":[[64,0,0]],
-        "conc_ratio_max_2":[[22,21,21]]
-    }
     N = 4
     conc = Concentration(basis_elements=[["Al", "Mg", "Si", "X"]])
-    ceBulk = BulkCrystal(crystalstructure="fcc", a=4.05, size=[N,N,N],
+    kwargs = dict(crystalstructure="fcc", a=4.05, size=[N,N,N],
         db_name=db_name, max_cluster_size=4, max_cluster_dia=[0.0, 0.0, 5.0, 4.1, 4.1],
         concentration=conc)
+    #ceBulk = BulkCrystal(**kwargs)
 
-    struc_generator = GenerateStructures( ceBulk, struct_per_gen=10 )
+    #struc_generator = GenerateStructures( ceBulk, struct_per_gen=10 )
     if option == "reconfig_settings":
         ceBulk.reconfigure_settings()
     elif option == "insert":
@@ -37,6 +32,9 @@ def main(argv):
         struc_generator.insert_structure(init_struct=atoms)
     elif option == "evaluate":
         evaluate(ceBulk)
+    elif option == "newdb":
+        new_db_name = argv[1]
+        new_db(kwargs, new_db_name)
     elif option == "reconfig_db":
         corr_func = CorrFunction(ceBulk, parallel=True)
         scond = [("calculator", "!=", "gpaw"),
@@ -45,6 +43,44 @@ def main(argv):
         corr_func.reconfig_db_entries(select_cond=scond)
     elif option == "gs":
         get_gs_allgs(ceBulk, struc_generator)
+
+def new_db(kwargs, new_db_name):
+    from ase.db import connect
+    from ase.calculators.singlepoint import SinglePointCalculator
+    old_db_name = kwargs["db_name"]
+    kwargs["db_name"] = new_db_name
+    ceBulk = BulkCrystal(**kwargs)
+    struc_generator = GenerateStructures( ceBulk, struct_per_gen=10 )
+    names = []
+    db = connect(old_db_name)
+    for row in db.select(converged=1):
+        names.append(row.name)
+    
+    for name in names:
+        row = db.get(name=name, struct_type='initial')
+        calc = row.get("calculator", "")
+        energy = None
+        init_struct = row.toatoms()
+        if calc == "unknown":
+            energy = row.energy
+
+        if calc == "":
+            final_struct = db.get(id=row.final_struct_id).toatoms()
+        else:
+            try:
+                final_struct = db.get(name=name, struct_type='final').toatoms()
+            except KeyError:
+                final_struct = db.get(name=name, calculator='gpaw').toatoms()
+        
+        if energy is not None:
+            sp = SinglePointCalculator(final_struct, energy=energy)
+            final_struct.set_calculator(sp)
+        
+        assert final_struct.get_calculator() is not None
+        try:
+            struc_generator.insert_structure(init_struct=init_struct, final_struct=final_struct)
+        except Exception as exc:
+            print(str(exc))
 
 
 def get_random_structure():

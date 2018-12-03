@@ -135,7 +135,7 @@ def run(N, use_bias):
     reac_path = AdaptiveBiasReactionPathSampler(
         mc_obj=mc, react_crd=[0.0, 0.9], react_crd_init=inert_init, 
         n_bins=100, data_file="{}/adaptive_bias.h5".format(workdir),
-        mod_factor=1E-4, delete_db_if_exists=True, mpicomm=None,
+        mod_factor=1E-5, delete_db_if_exists=True, mpicomm=None,
         db_struct="{}/adaptive_bias_struct.db".format(workdir))
     reac_path.run()
     reac_path.save()

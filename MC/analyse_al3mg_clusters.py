@@ -27,6 +27,8 @@ def free_energy_vs_size(temps=[293, 353]):
     db = dataset.connect(db_name)
     tbl = db["thermodynamic"]
     free_energies = {int(T): [] for T in temps}
+    entropy = {int(T): [] for T in temps}
+    internal_energy = {int(T): [] for T in temps}
     for size in sizes:
         energy = []
         temperature = []
@@ -41,16 +43,23 @@ def free_energy_vs_size(temps=[293, 353]):
         comp = {"Al": 0.75, "Mg": 0.25}
         free_eng = CanonicalFreeEnergy(comp, limit="lte")
         T, U, F = free_eng.get(temperature, energy)
+        S = (U-F)/T
         for target_temp in temps:
             indx = np.argmin(np.abs(target_temp-T))
             free_energies[target_temp].append(F[indx])
+            internal_energy[target_temp].append(U[indx])
+            entropy[target_temp].append(S[indx])
 
-    free_energies["sizes"] = list(sizes)
-    for target_temp in temps:
-        free_energies[target_temp] = list(free_energies[target_temp])
+    data = {}
+    data["sizes"] = list(sizes)
+    data["free_energy"] = free_energies
+    data["entropy"] = entropy
+    data["internal_energy"] = internal_energy
+    # for target_temp in temps:
+    #     free_energies[target_temp] = list(free_energies[target_temp])
 
     with open(outfname, 'w') as outfile:
-        json.dump(free_energies, outfile)
+        json.dump(data, outfile)
     print("Free energies written to {}".format(outfname))
 
 def pure_phase():
@@ -129,4 +138,8 @@ if __name__ == "__main__":
     #cluster()
     #plt.show()
 
-    free_energy_vs_size(temps=[100, 120, 150, 200, 293, 353])
+    temps = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90,
+         100, 150, 200, 220, 240, 260, 280, 300, 320, 340,  360, 380,
+         400, 420, 440, 460, 480, 500]
+
+    free_energy_vs_size(temps=temps)

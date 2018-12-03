@@ -31,6 +31,7 @@ from ase.clease import Concentration
 
 eci_fname = "data/almgsi_fcc_eci_newconfig.json"
 db_name = "almgsi_newconfig.db"
+db_name = "almgsi_multiple_templates.db"
 #db_name = "almgsi_sluiter.db"
 #eci_fname = "data/almgsi_fcc_eci_sluiter.json"
 # db_name_cubic = "almgsi_cubic.db"
@@ -40,15 +41,16 @@ def main(argv):
     N = 4
     atoms = atoms*(N,N,N)
     conc = Concentration(basis_elements=[["Al","Mg","Si"]])
-    ceBulk = BulkCrystal(crystalstructure="fcc", a=4.05, size=[N,N,N], \
+    kwargs = dict(crystalstructure="fcc", a=4.05, size=[N,N,N], \
         db_name=db_name, max_cluster_size=4, concentration=conc,
         basis_function="sanchez")
+    ceBulk = BulkCrystal(**kwargs)
     # ceBulk.reconfigure_settings()
     # print (ceBulk.basis_functions)
     # cf = CorrFunction( ceBulk, parallel=True)
     # cf.reconfig_db_entries(select_cond=[("converged","=","1"),("calculator","=","unknown")])
     # exit()
-    print(ceBulk.basis_functions)
+    #print(ceBulk.basis_functions)
     struc_generator = GenerateStructures( ceBulk, struct_per_gen=10 )
     if ( option == "generateNew" ):
         struc_generator.generate_probe_structure()
@@ -81,6 +83,40 @@ def main(argv):
         estimate_chemical_potentials(ceBulk)
     elif (option == "convert2cubic"):
         convert_to_cubic(ceBulk)
+    elif option == "new_db":
+        new_db_name = argv[1]
+        new_db(kwargs, new_db_name)
+
+def new_db(kwargs, new_db_name):
+    db_name = "almgsi_newconfig.db"
+    kwargs["db_name"] = new_db_name
+    bc = BulkCrystal(**kwargs)
+    names = []
+    db = connect(db_name)
+    for row in db.select(converged=1):
+        names.append(row.name)
+
+    ns = GenerateStructures(bc, struct_per_gen=10)
+    for name in names:
+        print(name)
+        init_struct = None
+        final_struct = None
+        energy = 0.0
+        for row in db.select(name=name):
+            if row["calculator"] == "unknown":
+                energy = row.energy
+                init_struct = row.toatoms()
+            else:
+                final_struct = row.toatoms()
+        calc = SinglePointCalculator(final_struct, energy=energy)
+        final_struct.set_calculator(calc)
+        try:
+            ns.insert_structure(init_struct=init_struct, final_struct=final_struct, generate_template=True)
+        except Exception as exc:
+            print(str(exc))
+
+        
+            
 
 def convert_to_cubic(setting_prim):
     conc_args = {
@@ -125,11 +161,16 @@ def update_in_conc_range():
 
 def evaluate(BC):
     from ase.clease import GAFit
-    evaluator = Evaluate(BC, fitting_scheme="l2", parallel=False,
-                         max_cluster_size=4, scoring_scheme="loocv_fast", select_cond=[("converged", "=", True)])
-    ga = GAFit(evaluator=evaluator, alpha=1E-8, mutation_prob=0.01, num_individuals="auto",
-               change_prob=0.2, fname="data/ga_fit_almgsi.csv")
-    #ga.run(min_change=0.001)
+    # ga = GAFit(setting=BC, alpha=1E-8, mutation_prob=0.01, num_individuals="auto",
+    #            change_prob=0.2, fname="data/ga_fit_almgsi_newconfig2.csv")
+    # names = ga.run(min_change=0.001)
+    name_file = "data/ga_fit_almgsi_newconfig2_cluster_names.txt"
+    with open(name_file, 'r') as infile:
+        lines = infile.readlines()
+    names = [x.strip() for x in lines]
+    evaluator = Evaluate(BC, fitting_scheme="l2", parallel=False, alpha=1E-8,
+                         max_cluster_size=4, scoring_scheme="loocv_fast", select_cond=[("converged", "=", True)],
+                         cluster_names=names)
     #exit()
 
     #best_alpha = evaluator.plot_CV(alpha_min=1E-3, alpha_max=1E-1, num_alpha=16)

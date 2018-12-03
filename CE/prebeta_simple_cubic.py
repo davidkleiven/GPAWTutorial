@@ -12,6 +12,8 @@ from matplotlib import pyplot as plt
 import json
 
 db_name = "pre_beta_simple_cubic.db"
+#db_name = "prebeta_sc.db"
+db_name = "prebeta_sc_large_cluster.db"
 
 a = 2.025
 
@@ -27,13 +29,14 @@ def main(argv):
     }
     a = 2.025
     conc = Concentration(basis_elements=[["Al", "X", "Mg", "Si"]],)
-    bc = BulkCrystal(crystalstructure="sc", size=[4, 4, 2],
+    kwargs = dict(crystalstructure="sc", size=[4, 4, 2],
                      max_cluster_size=4,
-                     max_cluster_dia=[0, 0, 5.0, 3.0, 3.0],
+                     max_cluster_dia=[0, 0, 7.0, 5.0, 5.0],
                      a=a,
                      concentration=conc,
                      db_name=db_name)
-    # reconfig(bc)
+    bc = BulkCrystal(**kwargs)
+    #reconfig(bc)
     #bc.reconfigure_settings()
     #exit()
     struct_gen = GenerateStructures(bc, struct_per_gen=10)
@@ -51,6 +54,40 @@ def main(argv):
         calculate_score()
     elif option == "filter":
         filter_atoms()
+    elif option == "new_db":
+        new_db_name = argv[1]
+        create_brand_new_db(kwargs, new_db_name)
+
+def create_brand_new_db(kwargs, db_name):
+    from ase.calculators.singlepoint import SinglePointCalculator
+    from ase.db import connect
+    old_db_name = kwargs["db_name"]
+    db = connect(old_db_name)
+    kwargs["db_name"] = db_name
+    bc = BulkCrystal(**kwargs)
+    ns = GenerateStructures(bc)
+    names = []
+    for row in db.select(converged=1):
+        names.append(row.name)
+    
+    for name in names:
+        print(name)
+        init_atoms = None
+        final_atoms = None
+        for row in db.select(name=name):
+            energy = 0.0
+            if row["calculator"] == "unknown":
+                init_atoms = row.toatoms()
+                energy = row.energy
+            else:
+                final_atoms = row.toatoms()
+        calc = SinglePointCalculator(final_atoms, energy=row.energy)
+        final_atoms.set_calculator(calc)
+                
+        
+        ns.insert_structure(init_struct=init_atoms, final_struct=final_atoms, generate_template=True)
+
+
 
 
 def calculate_score():
@@ -118,6 +155,7 @@ def filter_atoms():
     print("Number of valid structures: {}".format(num_valid))
 
 def reconfig(bc):
+    #scond = [("converged", "=", True)]
     bc.reconfigure_settings()
     cf = CorrFunction(bc, parallel=True)
     cf.reconfig_db_entries()
@@ -237,25 +275,43 @@ def gen_random_struct(bc, struct_gen, n_structs=20, lattice="fcc"):
             print(str(exc))
 
 def evaluate(bc):
+    from ase.db import connect
+    #from ase.clease import BranchAndBound
+    
     scond = [("converged", "=", True)]
+    reject_angles = True
+    if reject_angles:
+        with open("data/rejected_names_based_on_angles.json", 'r') as infile:
+            res = json.load(infile)
+        for name in res["names"]:
+            scond.append(("name", "!=", name))
+    #db = connect("pre_beta_simple_cubic.db")
+    # for row in db.select(scond):
+    #     value = row.get("c3_2p2864_8_100")
+    #     if value is None:
+    #         print(row.id)
+    #         print(row.key_value_pairs)
+    # exit()
     scheme = "l2"
     evaluator = Evaluate(bc, fitting_scheme=scheme, parallel=False,
                          max_cluster_size=4, scoring_scheme="loocv_fast",
                          select_cond=scond)
-    
+    # bnb = BranchAndBound(evaluator, max_num_eci=100, bnb_cost="aic")
+    # bnb.select_model()
+
     ga = GAFit(evaluator=evaluator, alpha=1E-8, mutation_prob=0.01, num_individuals="auto",
-               change_prob=0.2)
-    # ga.run(min_change=0.001)
-    # ga.plot_evolution()
+               change_prob=0.2, fname="data/ga_fit_small.csv", parallel=False, max_num_in_init_pool=150)
+    #ga.run(min_change=0.001)
+    #ga.plot_evolution()
     # exit()
 
     #best_alpha = evaluator.plot_CV(alpha_min=1E-5, alpha_max=1E-1, num_alpha=16)
     #np.savetxt("data/cfm_prebeta_sc.csv", evaluator.cf_matrix, delimiter=",")
     #np.savetxt("data/e_dft_prebeta_sc.csv", evaluator.e_dft)
     #evaluator.set_fitting_scheme(scheme, best_alpha)
-    evaluator.plot_fit(interactive=True)
+    evaluator.plot_fit(interactive=False, savefig=True, fname="data/prebeta_ga.png")
     eci_name = evaluator.get_cluster_name_eci(return_type="dict")
-    plt.show()
+    #plt.show()
 
     with open(eci_fname,'w') as outfile:
         json.dump( eci_name, outfile, indent=2, separators=(",",":"))

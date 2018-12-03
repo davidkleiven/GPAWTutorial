@@ -5,7 +5,7 @@ from atomtools.ase import ElasticConstants
 from ase.units import GPa
 from ase.io import read
 from cemc.tools import StrainEnergy
-from cemc.tools import to_voigt, to_full_tensor, rotate_tensor, rot_matrix
+from cemc.tools import to_mandel, to_full_tensor, rotate_tensor, rot_matrix
 from matplotlib import pyplot as plt
 plt.switch_backend("tkAgg")
 
@@ -25,7 +25,7 @@ elif run:
     for uid in range(1, 25):
         el.run(uid, calc)
 elif postproc:
-    C = el.get()
+    C = el.get(spg=225)
     mode = "V"
     B = el.bulk_modulus(mode=mode)/GPa
     G = el.shear_modulus(mode=mode)/GPa
@@ -43,7 +43,7 @@ elif postproc:
                    0.05368072, 0.05368072]
     strain_eng = StrainEnergy(poisson=mu, eigenstrain=eigenstrain)
     ellipsoid = {
-        "aspect": [1000.0, 1000.0, 1.0],
+        "aspect": [1000.0, 1.0, 1.0],
         "scale_factor": 0.83
     }
     # strain_eng.explore_aspect_ratios(0.83, C)
