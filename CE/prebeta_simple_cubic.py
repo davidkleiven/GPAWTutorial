@@ -13,7 +13,7 @@ import json
 
 db_name = "pre_beta_simple_cubic.db"
 #db_name = "prebeta_sc.db"
-db_name = "prebeta_sc_large_cluster.db"
+#db_name = "prebeta_sc_large_cluster.db"
 
 a = 2.025
 
@@ -28,18 +28,18 @@ def main(argv):
         "conc_ratio_max_2": [[1, 0, 1, 3]]
     }
     a = 2.025
-    conc = Concentration(basis_elements=[["Al", "X", "Mg", "Si"]],)
+    conc = Concentration(basis_elements=[["Al", "Mg", "Si", "X"]],)
     kwargs = dict(crystalstructure="sc", size=[4, 4, 2],
                      max_cluster_size=4,
                      max_cluster_dia=[0, 0, 7.0, 5.0, 5.0],
                      a=a,
                      concentration=conc,
                      db_name=db_name)
-    bc = BulkCrystal(**kwargs)
+    #bc = BulkCrystal(**kwargs)
     #reconfig(bc)
     #bc.reconfigure_settings()
     #exit()
-    struct_gen = GenerateStructures(bc, struct_per_gen=10)
+    #struct_gen = GenerateStructures(bc, struct_per_gen=10)
     if option == "new_prebeta_random":
         gen_random_struct(bc, struct_gen, lattice="prebeta", n_structs=30)
     elif option == "new_fcc_random":
@@ -80,15 +80,13 @@ def create_brand_new_db(kwargs, db_name):
                 init_atoms = row.toatoms()
                 energy = row.energy
             else:
-                final_atoms = row.toatoms()
-        calc = SinglePointCalculator(final_atoms, energy=row.energy)
-        final_atoms.set_calculator(calc)
+                final_atoms = row.toatoms(attach_calculator=True)
+                final_atoms.get_calculator().results["energy"] = row.energy
+        #calc = SinglePointCalculator(final_atoms, energy=row.energy)
+        #final_atoms.set_calculator(calc)
                 
         
         ns.insert_structure(init_struct=init_atoms, final_struct=final_atoms, generate_template=True)
-
-
-
 
 def calculate_score():
     from atomtools.ce import DistanceDistribution
@@ -156,9 +154,9 @@ def filter_atoms():
 
 def reconfig(bc):
     #scond = [("converged", "=", True)]
-    bc.reconfigure_settings()
+    #bc.reconfigure_settings()
     cf = CorrFunction(bc, parallel=True)
-    cf.reconfig_db_entries()
+    cf.reconfigure_db_entries()
     exit()
 
 
@@ -300,8 +298,8 @@ def evaluate(bc):
     # bnb.select_model()
 
     ga = GAFit(evaluator=evaluator, alpha=1E-8, mutation_prob=0.01, num_individuals="auto",
-               change_prob=0.2, fname="data/ga_fit_small.csv", parallel=False, max_num_in_init_pool=150)
-    #ga.run(min_change=0.001)
+               change_prob=0.2, fname="data/ga_fit_dec14.csv", parallel=False, max_num_in_init_pool=150)
+    ga.run(min_change=0.001)
     #ga.plot_evolution()
     # exit()
 

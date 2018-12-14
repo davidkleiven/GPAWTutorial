@@ -31,7 +31,7 @@ def get_nanoparticle():
     from ase.cluster.cubic import FaceCenteredCubic
     from ase.geometry import get_layers
     surfaces = [(1, 0, 0), (1, 1, 0), (1, 1, 1)]
-    layers = [7, 10, 6]
+    layers = [10, 13, 9]
     lc = 4.05
     atoms = FaceCenteredCubic('Si', surfaces, layers, latticeconstant=lc)
     tags, array = get_layers(atoms, (1, 0, 0))
@@ -39,6 +39,7 @@ def get_nanoparticle():
         if t % 2 == 0:
             atom.symbol = "Mg"
     print(atoms.get_chemical_formula())
+    atoms.rotate(90, 'z', rotate_cell=True)
     return atoms
 
 

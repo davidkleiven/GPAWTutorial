@@ -6,6 +6,7 @@ from ase.units import GPa
 from ase.io import read
 from cemc.tools import StrainEnergy
 from cemc.tools import to_mandel, to_full_tensor, rotate_tensor, rot_matrix
+import numpy as np
 from matplotlib import pyplot as plt
 plt.switch_backend("tkAgg")
 
@@ -26,6 +27,7 @@ elif run:
         el.run(uid, calc)
 elif postproc:
     C = el.get(spg=225)
+    np.savetxt("data/C_al.csv", C, delimiter=",")
     mode = "V"
     B = el.bulk_modulus(mode=mode)/GPa
     G = el.shear_modulus(mode=mode)/GPa

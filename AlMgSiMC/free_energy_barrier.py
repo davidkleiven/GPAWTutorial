@@ -2,7 +2,7 @@ from cemc.mcmc import PseudoBinaryReactPath, PseudoBinarySGC
 from cemc.mcmc import PseudoBinaryFreeEnergyBias
 from ase.clease import CEBulk as BulkCrystal
 from ase.clease import Concentration
-from cemc import get_ce_calc
+from cemc import get_atoms_with_ce_calc
 import json
 from cemc.mcmc import Snapshot
 from ase.units import kB

@@ -32,6 +32,7 @@ from ase.clease import Concentration
 eci_fname = "data/almgsi_fcc_eci_newconfig.json"
 db_name = "almgsi_newconfig.db"
 db_name = "almgsi_multiple_templates.db"
+db_name = "almgsi_multiple_templates_dec10.db"
 #db_name = "almgsi_sluiter.db"
 #eci_fname = "data/almgsi_fcc_eci_sluiter.json"
 # db_name_cubic = "almgsi_cubic.db"
@@ -161,15 +162,15 @@ def update_in_conc_range():
 
 def evaluate(BC):
     from ase.clease import GAFit
-    # ga = GAFit(setting=BC, alpha=1E-8, mutation_prob=0.01, num_individuals="auto",
-    #            change_prob=0.2, fname="data/ga_fit_almgsi_newconfig2.csv")
-    # names = ga.run(min_change=0.001)
-    name_file = "data/ga_fit_almgsi_newconfig2_cluster_names.txt"
+    ga = GAFit(setting=BC, alpha=1E-8, mutation_prob=0.01, num_individuals="auto",
+               change_prob=0.2, fname="data/ga_fit_almgsi_newconfig_dec10.csv")
+   # names = ga.run(min_change=0.001)
+    name_file = "data/ga_fit_almgsi_newconfig_dec10_cluster_names.txt"
     with open(name_file, 'r') as infile:
         lines = infile.readlines()
     names = [x.strip() for x in lines]
     evaluator = Evaluate(BC, fitting_scheme="l2", parallel=False, alpha=1E-8,
-                         max_cluster_size=4, scoring_scheme="loocv_fast", select_cond=[("converged", "=", True)],
+                         scoring_scheme="loocv_fast", select_cond=[("converged", "=", True)],
                          cluster_names=names)
     #exit()
 
