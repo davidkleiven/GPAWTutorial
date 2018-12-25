@@ -67,7 +67,7 @@ def main(argv):
             atoms = traj[-1]
             atoms.set_calculator(calc)
         else:
-            db.update(uid, restart_file=restart_file))
+            db.update(uid, restart_file=restart_file)
         trajObj = Trajectory("trajectory{}.traj".format(name), 'a', atoms)
         ucf = UnitCellFilter(atoms, hydrostatic_strain=True)
         logfile = "log_{}.txt".format(name)
