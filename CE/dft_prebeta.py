@@ -2,7 +2,7 @@ import sys
 import os
 import gpaw as gp
 from ase.db import connect
-from atomtools.ase import delete_vacancies, SaveRestartFiles
+from atomtools.ase import delete_vacancies
 from ase.io.trajectory import Trajectory
 from ase.optimize import BFGS
 from ase.optimize.precon import PreconLBFGS, PreconFIRE
@@ -48,6 +48,9 @@ def main(argv):
     atoms.set_calculator(calc)
     restart_file = db.get(id=uid).get("restart_file", "")
 
+    if restart_file == "":
+        restart_file = name+".gpw"
+
     if relax_atoms == 0 and final_structure == 0:
         atoms.get_potential_energy()
 
@@ -64,8 +67,7 @@ def main(argv):
             atoms = traj[-1]
             atoms.set_calculator(calc)
         else:
-            db.update(uid, restart_file=SaveRestartFiles.restart_name(name))
-        restart_saver = SaveRestartFiles(calc, name)
+            db.update(uid, restart_file=restart_file))
         trajObj = Trajectory("trajectory{}.traj".format(name), 'a', atoms)
         ucf = UnitCellFilter(atoms, hydrostatic_strain=True)
         logfile = "log_{}.txt".format(name)
@@ -77,7 +79,7 @@ def main(argv):
             relaxer = PreconLBFGS(ucf, logfile=logfile)
 
         relaxer.attach(trajObj)
-        relaxer.attach(restart_saver, interval=1)
+        relaxer.attach(calc.write, 1, restart_file)
         relaxer.run(fmax=0.025)
         db.write(atoms, name=name, run_type="geometry_opt", restart_file=SaveRestartFiles.restart_name(name))
     elif final_structure:
