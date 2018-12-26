@@ -81,7 +81,7 @@ def main(argv):
         relaxer.attach(trajObj)
         relaxer.attach(calc.write, 1, restart_file)
         relaxer.run(fmax=0.025)
-        db.write(atoms, name=name, run_type="geometry_opt", restart_file=SaveRestartFiles.restart_name(name))
+        db.write(atoms, name=name, run_type="geometry_opt", restart_file=restart_file)
     elif final_structure:
         atoms.get_potential_energy()
         uid = db.write(atoms, name=name, struct_type="final", kpts_density=kpts_density)
