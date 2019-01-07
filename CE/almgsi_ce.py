@@ -130,9 +130,9 @@ def update_in_conc_range():
 
 def evaluate(BC):
     evaluator = Evaluate(BC, fitting_scheme="l2", parallel=False,
-                         max_cluster_size=4, scoring_scheme="loocv_fast")
-
-    best_alpha = evaluator.plot_CV(alpha_min=1E-3, alpha_max=1E-1, num_alpha=16)
+                         max_cluster_size=3, scoring_scheme="loocv_fast")
+    # evaluator.subtract_bias_and_singlets()
+    best_alpha = evaluator.plot_CV(alpha_min=1E-6, alpha_max=1E-2, num_alpha=16)
     evaluator.set_fitting_scheme("l2", best_alpha)
     evaluator.plot_fit(interactive=True)
     eci_name = evaluator.get_cluster_name_eci(return_type="dict")
