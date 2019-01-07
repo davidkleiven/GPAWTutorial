@@ -5,7 +5,7 @@ from ase.io import write
 
 def create_matsudada():
     atoms = bulk("Al", cubic=True, a=4.05)
-    atoms = atoms*(7, 1, 7)
+    atoms = atoms*(4, 1, 4)
 
     # Construct Matsudada structure
     layer_100, _ = get_layers(atoms, (1, 0, 0))
@@ -23,12 +23,12 @@ def create_matsudada():
 
 def create_linear_elastic():
     atoms = bulk("Al", cubic=True, a=4.05)
-    atoms = atoms*(7, 1, 7)
+    atoms = atoms*(4, 1, 4)
 
     # Construct structure predicted by linear elasticity
     layer_101, _ = get_layers(atoms, (1, 0, 1))
-    mg_indices = [atom.index for atom in atoms if layer_101[atom.index] == 12]
-    si_indices = [atom.index for atom in atoms if layer_101[atom.index] == 13]
+    mg_indices = [atom.index for atom in atoms if layer_101[atom.index] == 6]
+    si_indices = [atom.index for atom in atoms if layer_101[atom.index] == 7]
     for indx in mg_indices:
         atoms[indx].symbol = "Mg"
     for indx in si_indices:

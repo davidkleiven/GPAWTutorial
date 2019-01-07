@@ -1,4 +1,4 @@
-from atomtools.ase import ElasticConstants
+#from atomtools.ase import ElasticConstants
 from ase.io import read
 import numpy as np
 from ase.build import bulk
@@ -86,8 +86,32 @@ def explore_orientations():
     strain_eng.plot_explore_result(res)
     plt.show()
 
+def get_voxels(N, prec_type="plate"):
+    voxels = np.zeros((N, N, N), dtype=np.uint8)
+    if prec_type == "plate":
+        voxels[:, :, :2] = 1
+    elif prec_type == "needle":
+        voxels[:, :2, :2] = 1
+    return voxels
+
+def explore_khachaturyan(prec_type="plate"):
+    from cemc.tools import Khachaturyan
+    C_al = np.loadtxt("data/C_al.csv", delimiter=",")
+    #C_mgsi = np.loadtxt("data/C_MgSi100_225.csv", delimiter=",")
+    misfit = np.array([[ 0.0440222,   0.00029263,  0.0008603 ],
+              [ 0.00029263, -0.0281846,   0.00029263],
+              [ 0.0008603,   0.00029263,  0.0440222 ]])
+    
+    strain = Khachaturyan(misfit_strain=misfit, elastic_tensor=C_al)
+    voxels = get_voxels(256, prec_type=prec_type)
+    fname = "data/strain_energy_{}.csv".format(prec_type)
+    strain.explore_orientations(voxels, fname=fname, step=22)
+    
+
+
 if __name__ == "__main__":
     # prepare_mgsi()
     #fit_elastic()
     #misfit_strain()
-    explore_orientations()
+    #explore_orientations()
+    explore_khachaturyan(prec_type="needle")

@@ -1,8 +1,8 @@
 from cemc.mcmc import FixedNucleusMC
 from cemc.mcmc import Snapshot
 from free_energy_barrier import init_bc
-from cemc.mcmc import InertiaCrdInitializer, InertiaRangeConstraint
-from cemc.mcmc import InertiaBiasPotential
+from cemc.mcmc import CovarianceCrdInitializer, CovarianceRangeConstraint
+from cemc.mcmc import CovarianceBiasPotential
 from cemc.mcmc import ReactionPathSampler, AdaptiveBiasReactionPathSampler
 from cemc.mcmc import FixEdgeLayers
 import numpy as np

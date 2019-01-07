@@ -1,4 +1,4 @@
-from cemc.mcmc import SoluteChainMC, FixedNucleusMC
+from cemc.mcmc import FixedNucleusMC
 from cemc.mcmc import Snapshot, FixEdgeLayers
 from ase.clease import CEBulk, Concentration
 from cemc import get_atoms_with_ce_calc
@@ -94,7 +94,7 @@ def main():
         fix_layer = FixEdgeLayers(thickness=5.0, atoms=mc.atoms)
         mc.add_constraint(fix_layer)
         mc.attach(snapshot, interval=20000)
-        mc.runMC(steps=2000000, init_cluster=False)
+        mc.runMC(steps=19000, init_cluster=False)
 
 if __name__ == "__main__":
     main()
