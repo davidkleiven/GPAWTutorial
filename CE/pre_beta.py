@@ -219,6 +219,34 @@ def angles_filter(min_angle):
             scond.append(("id", "!=", row.id))
     return scond
 
+def new_db(kwargs, new_db_name):
+    db_name = "prebeta_db_new_config.db"
+    kwargs["db_name"] = new_db_name
+    bc = BulkCrystal(**kwargs)
+    names = []
+    db = connect(db_name)
+    for row in db.select(converged=1):
+        names.append(row.name)
+
+    ns = GenerateStructures(bc, struct_per_gen=10)
+    for name in names:
+        print(name)
+        init_struct = None
+        final_struct = None
+        energy = 0.0
+        for row in db.select(name=name):
+            if row["calculator"] == "unknown":
+                energy = row.energy
+                init_struct = row.toatoms()
+            else:
+                final_struct = row.toatoms()
+        calc = SinglePointCalculator(final_struct, energy=energy)
+        final_struct.set_calculator(calc)
+        try:
+            ns.insert_structure(init_struct=init_struct, final_struct=final_struct, generate_template=True)
+        except Exception as exc:
+            print(str(exc))
+
 
 def evaluate(bs):
     from atomtools.ce import FilterCollapsed
