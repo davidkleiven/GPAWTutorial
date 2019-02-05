@@ -29,7 +29,7 @@ def id2final():
 
 def id2relax():
     db = connect(DB_NAME)
-    scond = [("struct_type", "=", "initial"), ("id", ">=", 3000)]
+    scond = [("struct_type", "=", "initial"), ("id", ">=", 3057)]
     names = []
     for row in db.select(scond):
         names.append(row.name)

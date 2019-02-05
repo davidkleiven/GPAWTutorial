@@ -19,9 +19,9 @@ def main(argv):
     kwargs = dict(crystalstructure="fcc", a=4.05, size=[N,N,N],
         db_name=db_name, max_cluster_size=4, max_cluster_dia=[0.0, 0.0, 5.0, 4.1, 4.1],
         concentration=conc)
-    #ceBulk = BulkCrystal(**kwargs)
+    ceBulk = BulkCrystal(**kwargs)
 
-    #struc_generator = GenerateStructures( ceBulk, struct_per_gen=10 )
+    struc_generator = GenerateStructures( ceBulk, struct_per_gen=10 )
     if option == "reconfig_settings":
         ceBulk.reconfigure_settings()
     elif option == "insert":
@@ -39,8 +39,9 @@ def main(argv):
         corr_func = CorrFunction(ceBulk, parallel=True)
         scond = [("calculator", "!=", "gpaw"),
                  ("name", "!=", "information"),
-                 ("name", "!=", "template")]
-        corr_func.reconfig_db_entries(select_cond=scond)
+                 ("name", "!=", "template"),
+                 ("converged", "=", 1)]
+        corr_func.reconfigure_db_entries(select_cond=scond)
     elif option == "gs":
         get_gs_allgs(ceBulk, struc_generator)
 
@@ -113,8 +114,8 @@ def get_gs_allgs(ceBulk, struct_gen):
     from random import shuffle
     with open(ECI_FILE, 'r') as infile:
         eci = json.load(infile)
-    calc = CE(ceBulk, eci=eci)
-    atoms = ceBulk.atoms
+    atoms = ceBulk.atoms.copy()
+    calc = CE(atoms, ceBulk, eci=eci)
     atoms.set_calculator(calc)
     symbs = ["Al"]*len(atoms)
     for conc in gs_compositions():
@@ -130,12 +131,14 @@ def get_gs_allgs(ceBulk, struct_gen):
         shuffle(symbs)
         symbs[0] = "X"
         symbs[1] = "X"
+        symbs[2] = "X"
+        symbs[3] = "X"
         calc.set_symbols(symbs)
 
         temps = np.linspace(1.0, 2000.0, 30)[::-1]
         nsteps = 10*len(atoms)
         gs = GSFinder()
-        res = gs.get_gs(ceBulk, temps=temps, n_steps_per_temp=nsteps)
+        res = gs.get_gs(ceBulk, temps=temps, n_steps_per_temp=nsteps, atoms=atoms)
         try:
             struct_gen.insert_structure(init_struct=res["atoms"])
         except Exception as exc:
@@ -144,7 +147,7 @@ def get_gs_allgs(ceBulk, struct_gen):
 
 def evaluate(bc):
     from ase.db import connect
-    scond = [("converged", "=", True)]
+    #scond = [("converged", "=", True)]
     # db = connect(bc.db_name)
     # for row in db.select(scond):
     #     final = row.get("final_struct_id", -1)
@@ -153,11 +156,15 @@ def evaluate(bc):
     #         print(row.id, row.name)
     #         db.update(row.id, converged=0)
     # exit()
+    scond = [("calculator", "!=", "gpaw"),
+             ("name", "!=", "information"),
+             ("name", "!=", "template"),
+             ("converged", "=", 1)]
     evaluator = Evaluate(bc, select_cond=scond, scoring_scheme="loocv_fast")
-    ga_fit = GAFit(evaluator=evaluator, alpha=1E-8, change_prob=0.2)
+    ga_fit = GAFit(setting=bc, alpha=1E-8, change_prob=0.2, select_cond=scond, fname="data/ga_almgsiX.csv")
     ga_fit.run(min_change=0.001)
     eci = evaluator.get_cluster_name_eci()
-    evaluator.plot_fit()
+    #evaluator.plot_fit()
 
     with open(ECI_FILE, 'w') as outfile:
         json.dump(eci, outfile, indent=2, separators=(",", ": "))

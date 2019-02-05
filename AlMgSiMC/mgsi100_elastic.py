@@ -77,21 +77,22 @@ def explore_orientations():
 
     strain_eng = StrainEnergy(poisson=mu, misfit=misfit)
     ellipsoid = {
-        "aspect": [10.0, 10.0, 1.0],
+        "aspect": [10.0, 1.0, 1.0],
         "C_prec": C_mgsi
         #"scale_factor": 0.8
     }
     res = strain_eng.explore_orientations(
-        ellipsoid, C_al, step=5, phi_ax="x")
+        ellipsoid, C_al, step=5, phi_ax="z", fname="data/mgsi100_orientation_needle_iso.csv")
     strain_eng.plot_explore_result(res)
     plt.show()
 
 def get_voxels(N, prec_type="plate"):
     voxels = np.zeros((N, N, N), dtype=np.uint8)
+    width = int(N/4)
     if prec_type == "plate":
-        voxels[:, :, :2] = 1
+        voxels[:width, :width, :2] = 1
     elif prec_type == "needle":
-        voxels[:, :2, :2] = 1
+        voxels[:width, :2, :2] = 1
     return voxels
 
 def explore_khachaturyan(prec_type="plate"):
@@ -103,9 +104,13 @@ def explore_khachaturyan(prec_type="plate"):
               [ 0.0008603,   0.00029263,  0.0440222 ]])
     
     strain = Khachaturyan(misfit_strain=misfit, elastic_tensor=C_al)
-    voxels = get_voxels(256, prec_type=prec_type)
+    if prec_type == "plate":
+        phi_ax = "x"
+    else:
+        phi_ax = "z"
+    voxels = get_voxels(128, prec_type=prec_type)
     fname = "data/strain_energy_{}.csv".format(prec_type)
-    strain.explore_orientations(voxels, fname=fname, step=22)
+    strain.explore_orientations(voxels, fname=fname, step=5, phi_ax=phi_ax)
     
 
 
@@ -113,5 +118,5 @@ if __name__ == "__main__":
     # prepare_mgsi()
     #fit_elastic()
     #misfit_strain()
-    #explore_orientations()
-    explore_khachaturyan(prec_type="needle")
+    explore_orientations()
+    #explore_khachaturyan(prec_type="plate")

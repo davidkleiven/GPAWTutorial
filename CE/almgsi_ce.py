@@ -30,37 +30,48 @@ from ase.visualize import view
 from ase.clease import Concentration
 
 eci_fname = "data/almgsi_fcc_eci_newconfig.json"
-db_name = "almgsi_newconfig.db"
-db_name = "almgsi_multiple_templates.db"
-db_name = "almgsi_multiple_templates_dec10.db"
+#db_name = "almgsi_newconfig.db"
+#db_name = "almgsi_multiple_templates.db"
+#db_name = "almgsi_multiple_templates_dec10.db"
 #db_name = "almgsi_sluiter.db"
 #eci_fname = "data/almgsi_fcc_eci_sluiter.json"
 # db_name_cubic = "almgsi_cubic.db"
+db_name = "almgsi.db"
+
+conc_fit = Concentration(basis_elements=[["Al", "Mg", "Si"]])
+conc_fit.set_conc_ranges([[(0, 1), (0, 1), (0, 0.55)]])
+
+
 def main(argv):
     option = argv[0]
-    atoms = bulk( "Al" )
+    atoms = bulk("Al")
     N = 4
-    atoms = atoms*(N,N,N)
+    atoms = atoms*(N, N, N)
     conc = Concentration(basis_elements=[["Al","Mg","Si"]])
     kwargs = dict(crystalstructure="fcc", a=4.05, size=[N,N,N], \
         db_name=db_name, max_cluster_size=4, concentration=conc,
-        basis_function="sanchez")
+        basis_function="sanchez", max_cluster_dia=[7.8, 5.0, 5.0])
     ceBulk = BulkCrystal(**kwargs)
-    # ceBulk.reconfigure_settings()
-    # print (ceBulk.basis_functions)
-    # cf = CorrFunction( ceBulk, parallel=True)
-    # cf.reconfig_db_entries(select_cond=[("converged","=","1"),("calculator","=","unknown")])
-    # exit()
+    #ceBulk.reconfigure_settings()
+    #print (ceBulk.basis_functions)
+    #cf = CorrFunction( ceBulk, parallel=True)
+    #cf.reconfigure_db_entries(select_cond=[("converged","=","1")])
+    #exit()
     #print(ceBulk.basis_functions)
     struc_generator = GenerateStructures( ceBulk, struct_per_gen=10 )
     if ( option == "generateNew" ):
         struc_generator.generate_probe_structure()
     elif ( option == "eval" ):
-        evaluate(ceBulk)
+        #evaluate(ceBulk)
+        evaluate_l1(ceBulk)
+        #evaluate_test(ceBulk)
+        #evaluate_car(ceBulk)
+    elif option == "skew":
+        insert_skewed_full(struc_generator, size1=int(argv[1]), size2=int(argv[2]))
     elif ( option == "insert" ):
         fname = argv[1]
         atoms = read(fname)
-        struc_generator.insert_structure( init_struct=fname )
+        struc_generator.insert_structure( init_struct=atoms )
         #insert_specific_structure( ceBulk, struc_generator, atoms )
     elif ( option == "formation" ):
         enthalpy_of_formation(ceBulk)
@@ -116,8 +127,30 @@ def new_db(kwargs, new_db_name):
         except Exception as exc:
             print(str(exc))
 
-        
-            
+def insert_skewed_full(struct_gen, size1=3, size2=1, max_number=200):
+    from itertools import product
+    symbs = ["Al", "Mg", "Si"]
+    count = 0
+    for s in product(symbs, repeat=size1*size2*2):
+        if count > max_number:
+            return
+        atoms = bulk("Al", a=4.05)*(2, size1, size2)
+        num_si = sum(1 for x in s if x == "Si")
+        num_mg = sum(1 for x in s if x == "Mg")
+        num_al = sum(1 for x in s if x == "Al")
+        if num_al % size1 != 0:
+            continue
+        if num_si > 0.5*len(atoms):
+            continue
+        elif (abs(num_si - num_mg) != 0) and (num_si != 0) and(num_mg != 0):
+            continue
+        for i, atom in enumerate(atoms):
+            atom.symbol = s[i]
+        try:
+            struct_gen.insert_structure(init_struct=atoms, generate_template=True)
+            count += 1
+        except:
+            pass
 
 def convert_to_cubic(setting_prim):
     conc_args = {
@@ -160,31 +193,96 @@ def update_in_conc_range():
         if ( conc_si > 0.32 ):
             db.update( row.id, in_conc_range=0 )
 
+def evaluate_test(BC):
+    from ase.clease import BayesianCompressiveSensing
+    scheme = BayesianCompressiveSensing(output_rate_sec=2, shape_var=0.5, noise=0.006, lamb_opt_start=2000000)
+    evaluator = Evaluate(BC, fitting_scheme=scheme, parallel=False, alpha=1E-8,
+                         scoring_scheme="loocv_fast", select_cond=[("converged", "=", True), ("calculator", "!=", "gpaw")])
+    evaluator.plot_fit(interactive=True)
+    eci_name = evaluator.get_cluster_name_eci(return_type="dict")
+    eci_bayes = "data/eci_bcs.json"
+    with open(eci_bayes,'w') as outfile:
+        json.dump( eci_name, outfile, indent=2, separators=(",",":"))
+    print ( "ECIs written to {}".format(eci_bayes))
+
+def evaluate_car(BC):
+    from ase.clease import CarRank
+    scheme = CarRank(car_percentile=75)
+    evaluator = Evaluate(BC, fitting_scheme=scheme, parallel=False, alpha=1E-8,
+                         scoring_scheme="loocv_fast", select_cond=[("converged", "=", True), ("calculator", "!=", "gpaw")])
+    evaluator.plot_fit(interactive=True)
+    eci_name = evaluator.get_cluster_name_eci(return_type="dict")
+    eci_bayes = "data/eci_car.json"
+    with open(eci_bayes,'w') as outfile:
+        json.dump( eci_name, outfile, indent=2, separators=(",",":"))
+    print ( "ECIs written to {}".format(eci_bayes))
+
+def evaluate_l1(BC):
+    evaluator = Evaluate(BC, fitting_scheme='l1', parallel=False, alpha=1E-6,
+                         select_cond=[("converged", "=", True)], scoring_scheme="k-fold",
+                         conc_constraint=conc_fit)
+    evaluator.plot_CV()
+    evaluator.set_fitting_scheme(fitting_scheme="l1", alpha=0.00013)
+    evaluator.plot_fit(interactive=True)
+    eci_name = evaluator.get_cluster_name_eci(return_type="dict")
+    eci_bayes = "data/eci_l1.json"
+    #evaluator.plot_CV()
+    with open(eci_bayes,'w') as outfile:
+        json.dump( eci_name, outfile, indent=2, separators=(",",":"))
+    print ( "ECIs written to {}".format(eci_bayes))
+
+
 def evaluate(BC):
     from ase.clease import GAFit
-    ga = GAFit(setting=BC, alpha=1E-8, mutation_prob=0.01, num_individuals="auto",
-               change_prob=0.2, fname="data/ga_fit_almgsi_newconfig_dec10.csv")
-   # names = ga.run(min_change=0.001)
-    name_file = "data/ga_fit_almgsi_newconfig_dec10_cluster_names.txt"
+    cfunc = "loocv"
+
+    ga_params = {"alpha": 1E-10,
+                 "mutation_prob": 0.01,
+                 "num_individuals": 100,
+                 "fname": "data/ga_fit_almgsi_{}.csv".format(cfunc),
+                 "select_cond": [("converged", "=", True)],
+                 "cost_func": cfunc,
+                 "sparsity_slope": 1.0,
+                 "min_weight": 1.0,
+                 "include_subclusters": True,
+                 "conc_constraint": conc_fit}
+    # ga = GAFit(setting=BC, alpha=1E-8, mutation_prob=0.1, num_individuals="auto",
+    #            change_prob=0.2, fname="data/ga_fit_almgsi_{}.csv".format(cfunc), 
+    #            select_cond=[("converged", "=", True)],
+    #            cost_func=cfunc, sparsity_slope=1.5, min_weight=1E-1)
+
+    ga = GAFit(setting=BC, **ga_params)
+    #names = ga.run(min_change=0.001, gen_without_change=10000, save_interval=1000)
+    #exit()
+    name_file = "data/ga_fit_almgsi_{}_cluster_names.txt".format(cfunc)
     with open(name_file, 'r') as infile:
         lines = infile.readlines()
     names = [x.strip() for x in lines]
-    evaluator = Evaluate(BC, fitting_scheme="l2", parallel=False, alpha=1E-8,
-                         scoring_scheme="loocv_fast", select_cond=[("converged", "=", True)],
-                         cluster_names=names)
+
+    eval_params = dict(parallel=False, alpha=ga_params["alpha"],
+                         scoring_scheme="k-fold", 
+                         select_cond=[("converged", "=", True)], 
+                         min_weight=ga_params["min_weight"], fitting_scheme="l2", cluster_names=names,
+                         num_repetitions=100, nsplits=10, conc_constraint=conc_fit)
+    evaluator = Evaluate(BC, **eval_params)
+    #evaluator.plot_CV()
     #exit()
 
-    #best_alpha = evaluator.plot_CV(alpha_min=1E-3, alpha_max=1E-1, num_alpha=16)
-    #evaluator.set_fitting_scheme("l2", best_alpha)
     evaluator.plot_fit(interactive=True)
     eci_name = evaluator.get_cluster_name_eci(return_type="dict")
-    # plotter = ECIPlotter(eci_name)
-    # plotter.plot()
-    # plt.show()
+    eci_fname_ga = "eci_almgsi_{}.json".format(cfunc)
 
-    with open(eci_fname,'w') as outfile:
-        json.dump( eci_name, outfile, indent=2, separators=(",",":"))
-    print ( "ECIs written to {}".format(eci_fname))
+    output = {}
+    ga_params.pop("conc_constraint")
+    eval_params.pop("conc_constraint")
+    output["eci"] = eci_name
+    output["ga_params"] = ga_params
+    output["eval_params"] = eval_params
+    output["rmse"] = evaluator.rmse()
+    output["loocv"] = evaluator.loocv_fast()
+    with open(eci_fname_ga,'w') as outfile:
+        json.dump( output, outfile, indent=2, separators=(",",":"))
+    print ( "ECIs written to {}".format(eci_fname_ga))
 
 def estimate_chemical_potentials(ceBulk):
     c1_0 = []

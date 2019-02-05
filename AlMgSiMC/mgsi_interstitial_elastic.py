@@ -1,4 +1,4 @@
-from atomtools.ase import ElasticConstants
+#from atomtools.ase import ElasticConstants
 from ase.io import read
 import numpy as np
 from ase.build import bulk
@@ -111,10 +111,37 @@ def explore_orientations():
     strain_eng.plot_explore_result(res)
     plt.show()
 
+def get_voxels(N, prec_type="plate"):
+    voxels = np.zeros((N, N, N), dtype=np.uint8)
+    width = int(N/4)
+    if prec_type == "plate":
+        voxels[:width, :width, :2] = 1
+    elif prec_type == "needle":
+        voxels[:width, :2, :2] = 1
+    return voxels
+
+def explore_khachaturyan(prec_type="plate"):
+    from cemc.tools import Khachaturyan
+    C_al = np.loadtxt("data/C_al.csv", delimiter=",")
+    #C_mgsi = np.loadtxt("data/C_MgSi100_225.csv", delimiter=",")
+    
+    misfit = np.array([[ 6.31232839e-02,  2.96796703e-07,  0.00000000e+00],
+                       [ 2.96796703e-07,  6.31232839e-02,  0.00000000e+00],
+                       [ 0.00000000e+00,  0.00000000e+00, -6.80589135e-05]])
+    strain = Khachaturyan(misfit_strain=misfit, elastic_tensor=C_al)
+    if prec_type == "plate":
+        phi_ax = "x"
+    else:
+        phi_ax = "z"
+    voxels = get_voxels(128, prec_type=prec_type)
+    fname = "data/strain_energy_interstitial{}.csv".format(prec_type)
+    strain.explore_orientations(voxels, fname=fname, step=5, phi_ax=phi_ax)
+
 if __name__ == "__main__":
     #prepare_mgsi_interstitial()
     # misfit_strain()
     #fit_elastic()
     #prepare_db_bulk_mod_fit()
     #explore_orientations()
-    birsch_murnag()
+    #birsch_murnag()
+    explore_khachaturyan(prec_type="needle")

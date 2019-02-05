@@ -10,10 +10,12 @@ from ase.clease import GAFit
 import numpy as np
 from matplotlib import pyplot as plt
 import json
+from itertools import product
 
 db_name = "pre_beta_simple_cubic.db"
 #db_name = "prebeta_sc.db"
 #db_name = "prebeta_sc_large_cluster.db"
+#db_name = "prebeta_sc_large_cluster_dec17.db"
 
 a = 2.025
 
@@ -35,11 +37,11 @@ def main(argv):
                      a=a,
                      concentration=conc,
                      db_name=db_name)
-    #bc = BulkCrystal(**kwargs)
+    bc = BulkCrystal(**kwargs)
     #reconfig(bc)
     #bc.reconfigure_settings()
     #exit()
-    #struct_gen = GenerateStructures(bc, struct_per_gen=10)
+    struct_gen = GenerateStructures(bc, struct_per_gen=10)
     if option == "new_prebeta_random":
         gen_random_struct(bc, struct_gen, lattice="prebeta", n_structs=30)
     elif option == "new_fcc_random":
@@ -82,8 +84,8 @@ def create_brand_new_db(kwargs, db_name):
             else:
                 final_atoms = row.toatoms(attach_calculator=True)
                 final_atoms.get_calculator().results["energy"] = row.energy
-        #calc = SinglePointCalculator(final_atoms, energy=row.energy)
-        #final_atoms.set_calculator(calc)
+        calc = SinglePointCalculator(final_atoms, energy=energy)
+        final_atoms.set_calculator(calc)
                 
         
         ns.insert_structure(init_struct=init_atoms, final_struct=final_atoms, generate_template=True)
@@ -153,10 +155,10 @@ def filter_atoms():
     print("Number of valid structures: {}".format(num_valid))
 
 def reconfig(bc):
-    #scond = [("converged", "=", True)]
+    scond = [("converged", "=", True)]
     #bc.reconfigure_settings()
-    cf = CorrFunction(bc, parallel=True)
-    cf.reconfigure_db_entries()
+    cf = CorrFunction(bc, parallel=False)
+    cf.reconfigure_db_entries(select_cond=scond)
     exit()
 
 
@@ -191,28 +193,43 @@ def gen_gs_prebeta(bc, struct_gen, n_structs=10, lattice="prebeta"):
     #     bc.atoms[i].symbol = atom.symbol
 
     #inv_scale_factor = [1.0/factor for factor in bc.supercell_scale_factor]
-    for i in range(n_structs):
-        print("Generating {} of {} structures".format(i, n_structs))
-        calc = CE(bc, ecis)
-        bc.atoms.set_calculator(calc)
+    c = [0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0]
+    calc = CE(atoms, bc, ecis)
+    atoms.set_calculator(calc)
+    for conc in product(c, c):
+        if (sum(conc) > 1.0):
+            continue
+        print("Generating GS for {}".format(conc))
         symbols = [atom.symbol for atom in atoms]
+        # Insert only Si
         for i in range(len(symbols)):
-            if symbols[i] == "X":
-                continue
-            symbols[i] = choice(symbs)
+            if symbols[i] != "X":
+                symbols[i] = "Si"
+        
+        n_al = int(conc[0]*len(atoms))
+        n_mg = int(conc[1]*len(atoms))
+        # Insert given number of Al atoms
+        n_ins = 0
+        for i in range(len(symbols)):
+            if symbols[i] == "Si":
+                symbols[i] = "Al"
+                n_ins += 1
+            if n_ins >= n_al:
+                break
+        # Insert given number of Mg atoms
+        n_ins = 0
+        for i in range(len(symbols)):
+            if symbols[i] == "Si":
+                symbols[i] = "Mg"
+                n_ins += 1
+            if n_ins >= n_al:
+                break
+         
         calc.set_symbols(symbols)
 
-        # Add new tags
-        #atoms = bc.atoms.copy()
-        # cell = atoms.get_cell()
-        # #atoms = atoms * bc.supercell_scale_factor
-        # atoms = wrap_and_sort_by_position(atoms)
-        # for i, atom in enumerate(atoms):
-        #     bc.atoms[i].symbol = atom.symbol
-        #cell_large = bc.atoms.get_cell()
         temps = np.linspace(10.0, 1500.0, 30)[::-1]
-        print(bc.atoms.get_chemical_formula())
-        gs = gs_searcher.get_gs(bc, None, temps=temps, n_steps_per_temp=10 * len(bc.atoms))
+        print(atoms.get_chemical_formula())
+        gs = gs_searcher.get_gs(bc, None, temps=temps, n_steps_per_temp=10 * len(atoms), atoms=atoms)
         #atoms = cut(gs["atoms"], a=(inv_scale_factor[0], 0, 0), b=(0, inv_scale_factor[1], 0), c=(0, 0, inv_scale_factor[2]))
         try:
             struct_gen.insert_structure(init_struct=gs["atoms"])
@@ -277,7 +294,7 @@ def evaluate(bc):
     #from ase.clease import BranchAndBound
     
     scond = [("converged", "=", True)]
-    reject_angles = True
+    reject_angles = False
     if reject_angles:
         with open("data/rejected_names_based_on_angles.json", 'r') as infile:
             res = json.load(infile)
@@ -291,17 +308,24 @@ def evaluate(bc):
     #         print(row.key_value_pairs)
     # exit()
     scheme = "l2"
-    evaluator = Evaluate(bc, fitting_scheme=scheme, parallel=False,
-                         max_cluster_size=4, scoring_scheme="loocv_fast",
-                         select_cond=scond)
     # bnb = BranchAndBound(evaluator, max_num_eci=100, bnb_cost="aic")
     # bnb.select_model()
 
-    ga = GAFit(evaluator=evaluator, alpha=1E-8, mutation_prob=0.01, num_individuals="auto",
-               change_prob=0.2, fname="data/ga_fit_dec14.csv", parallel=False, max_num_in_init_pool=150)
-    ga.run(min_change=0.001)
+    ga = GAFit(setting=bc, alpha=1E-8, mutation_prob=0.01, num_individuals="auto",
+               change_prob=0.2, fname="data/ga_fit_dec24.csv", parallel=False, max_num_in_init_pool=150,
+               select_cond=scond)
+    #ga.run(min_change=0.001)
     #ga.plot_evolution()
-    # exit()
+    #exit()
+
+    # Read selected cluster names from file
+    fname = "data/ga_fit_dec24_cluster_names.txt"
+    with open(fname, 'r') as infile:
+        names = infile.readlines()
+    names = [n.strip() for n in names]
+    evaluator = Evaluate(bc, fitting_scheme=scheme, parallel=False,
+                         max_cluster_size=4, scoring_scheme="loocv_fast",
+                         select_cond=scond, cluster_names=names)
 
     #best_alpha = evaluator.plot_CV(alpha_min=1E-5, alpha_max=1E-1, num_alpha=16)
     #np.savetxt("data/cfm_prebeta_sc.csv", evaluator.cf_matrix, delimiter=",")
