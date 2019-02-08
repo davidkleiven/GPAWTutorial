@@ -38,6 +38,27 @@ def get_atoms(cubic=False):
                                   db_name=db_name)
     return atoms
 
+
+def free_energy_vs_comp():
+    from cemc.mcmc import AdaptiveBiasReactionPathSampler
+    from cemc.mcmc import PseudoBinaryConcInitializer
+    atoms = get_atoms(cubic=True)
+    T = 300
+    workdir = "data/pseudo_binary_free"
+    mc = PseudoBinarySGC(atoms, temp, chem_pot=-0.61,
+                         groups=[{"Al": 2}, {"Mg": 1, "Si": 1}],
+                         symbols=["Al", "Mg", "Si"])
+
+    conc_init = PseudoBinaryConcInitializer(mc)
+    reac_path = AdaptiveBiasReactionPathSampler(
+        mc_obj=mc, react_crd=[0.0, 1.0], react_crd_init=conc_init,
+        n_bins=100, data_file="{}/adaptive_bias.h5".format(workdir),
+        mod_factor=1E-5, delete_db_if_exists=True, mpicomm=None,
+        db_struct="{}/adaptive_bias_struct.db".format(workdir))
+    reac_path.run()
+    reac_path.save()
+
+
 def gs_mgsi():
     atoms = get_atoms(cubic=True)
 
@@ -110,6 +131,7 @@ def phase_diag():
     from scipy.interpolate import interp1d
     db_name = "sqlite:////work/sophus/almgsi_mc_free_energy_sgc_l1.db"
     db_name = "sqlite:////work/sophus/almgsi_mc_free_energy_sgc_l1_fixed_steps.db"
+    db_name = "sqlite:///data/almgsi_mc_free_energy_sgc_l1_fixed_steps.db"
 
     conc = []
     energy = []
@@ -136,12 +158,13 @@ def phase_diag():
                  db_name=db_name, 
                  fig_prefix="data/phasediag_fig/", table="simulations",
                  phase_id="phase", chem_pot="pseudo_mu", energy="sgc_energy",
-                 concentration="Al_conc", temp_col="temperature",
+                 concentration="Mg_conc", temp_col="temperature",
                  tol=1E-6, postproc_table="postproc",
                  recalculate_postproc=True, 
                  ht_phases=["random"], num_elem=3,
-                 natoms=4000, isochem_ref=isochem_ref)
-    mu, T = diag.phase_boundary(phases=["Al", "MgSi"], variable="chem_pot")
+                 natoms=4000, isochem_ref=isochem_ref,
+                 num_per_fu=2)
+    mu, T = diag.phase_boundary(phases=["Al", "MgSi"], variable="chem_pot", polyorder=1)
     mu_Al_rnd, T_Al_rnd = diag.phase_boundary(phases=["MgSi", "random_mgsi"], variable="temperature", polyorder=1,
         bounds={"random_mgsi": [1500, 4000]})
     #exit()
@@ -161,8 +184,8 @@ def phase_diag():
     ax_mu.set_ylabel("Temperature (K)")
 
     print(T)
-    conc_al = [np.polyval(diag.composition("Al", temperature=T[i], bounds=[-0.71, 0.0]), mu[i]) for i in range(len(mu))]
-    conc_mgsi = [np.polyval(diag.composition("MgSi", temperature=T[i]), mu[i]) for i in range(len(mu))]
+    conc_al = [np.polyval(diag.composition("Al", temperature=T[i], polyorder=2), mu[i]) for i in range(len(mu))]
+    conc_mgsi = [np.polyval(diag.composition("MgSi", temperature=T[i], polyorder=4), mu[i]) for i in range(len(mu))]
 
     conc_rnd = [np.polyval(diag.composition("MgSi", mu=mu_Al_rnd[i]), T_Al_rnd[i]) for i in range(len(T_Al_rnd))]
     conc_mgsi_rnd = [np.polyval(diag.composition("random_mgsi", mu=mu_Al_rnd[i], bounds=[1400, 5000]), T_Al_rnd[i]) for i in range(len(T_Al_rnd))]
@@ -174,11 +197,42 @@ def phase_diag():
     ax.spines["right"].set_visible(False)
     #ax2.set_yticks([])
     ax2.spines["left"].set_visible(False)
-    ax2.set_xlim([0.85, 1.0])
+    ax2.set_xlim([0.99, 1.0])
+    ax.set_ylim([200, 500])
+    ax.set_xlim([0, 0.1])
     plt.show()
 
-   
+def free_energy_phase():
+    from matplotlib import pyplot as plt
+    db_name = "sqlite:///data/almgsi_mc_free_energy_sgc_l1_fixed_steps.db"
+    db = dataset.connect(db_name)
+    tbl_pp = db["postproc"]
+    tbl = db["simulations"]
+
+    ids = []
+    T = 310.526315789474
+    #T = 478.947368421053
+
+    query = {
+        "temperature": {"between": [T-0.1, T+0.1]},
+        "phase": "MgSi"
+    }
+    conc = []
+    for row in tbl.find(**query):
+        ids.append(row["id"])
+        conc.append(row["Al_conc"])
     
+    free_eng = []
+    for id in ids:
+        row = tbl_pp.find_one(systemID=id)
+        free_eng.append(row["free_energy"])
+
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+    ax.plot(conc, free_eng, "o")
+    plt.show()
+
+ 
 def random_fixed_temp(mu):
     T = 2000
     chem_pots = [mu]
@@ -206,6 +260,7 @@ def random_fixed_temp(mu):
         tbl = db["simulations"]
         tbl.insert(thermo)
         mc.reset_ecis()
+
 
 def main(argv):
     chem_pot = float(argv[0])
@@ -244,8 +299,8 @@ def main(argv):
     for temp in T:
         print("Current temp: {}K".format(temp))
         mc = PseudoBinarySGC(atoms, temp, chem_pot=chem_pot,
-                            groups=[{"Al": 2}, {"Mg": 1, "Si": 1}],
-                            symbols=["Al", "Mg", "Si"])
+                             groups=[{"Al": 2}, {"Mg": 1, "Si": 1}],
+                             symbols=["Al", "Mg", "Si"])
 
         nsteps = int(2E6)
         #nsteps = 10000
@@ -274,4 +329,6 @@ if __name__ == "__main__":
     #random_fixed_temp(float(sys.argv[1]))
     #free_energy("sqlite:////work/sophus/almgsi_mc_free_energy_sgc_bcs.db")
     #gs_mgsi()
-    phase_diag()
+    #phase_diag()
+    #free_energy_phase()
+    free_energy_vs_comp()
