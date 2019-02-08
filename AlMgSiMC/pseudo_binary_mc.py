@@ -50,6 +50,8 @@ def free_energy_vs_comp():
                          symbols=["Al", "Mg", "Si"])
 
     conc_init = PseudoBinaryConcInitializer(mc)
+    conc_cnst = PseudoBinaryConcRange(mc)
+    mc.add_constraint(conc_cnst)
     reac_path = AdaptiveBiasReactionPathSampler(
         mc_obj=mc, react_crd=[0.0, 1.0], react_crd_init=conc_init,
         n_bins=100, data_file="{}/adaptive_bias.h5".format(workdir),
