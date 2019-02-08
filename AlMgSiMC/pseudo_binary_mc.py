@@ -45,7 +45,7 @@ def free_energy_vs_comp():
     atoms = get_atoms(cubic=True)
     T = 300
     workdir = "data/pseudo_binary_free"
-    mc = PseudoBinarySGC(atoms, temp, chem_pot=-0.61,
+    mc = PseudoBinarySGC(atoms, T, chem_pot=-0.61,
                          groups=[{"Al": 2}, {"Mg": 1, "Si": 1}],
                          symbols=["Al", "Mg", "Si"])
 
@@ -53,7 +53,7 @@ def free_energy_vs_comp():
     reac_path = AdaptiveBiasReactionPathSampler(
         mc_obj=mc, react_crd=[0.0, 1.0], react_crd_init=conc_init,
         n_bins=100, data_file="{}/adaptive_bias.h5".format(workdir),
-        mod_factor=1E-5, delete_db_if_exists=True, mpicomm=None,
+        mod_factor=0.01, delete_db_if_exists=True, mpicomm=None,
         db_struct="{}/adaptive_bias_struct.db".format(workdir))
     reac_path.run()
     reac_path.save()
