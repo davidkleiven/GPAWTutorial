@@ -63,4 +63,4 @@ def run_dft(uid, density, relax):
         db.write(atoms, init_id=init_id)
 
 if __name__ == "__main__":
-    construct_db_clean()
+    run_dft(int(sys.argv[1]), float(sys.argv[2]), int(sys.argv[3]))
