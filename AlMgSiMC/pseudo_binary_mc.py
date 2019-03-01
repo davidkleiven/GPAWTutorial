@@ -39,24 +39,70 @@ def get_atoms(cubic=False):
     return atoms
 
 
-def free_energy_vs_comp():
+def free_energy_vs_comp(T, mu, mod):
     from cemc.mcmc import AdaptiveBiasReactionPathSampler
-    from cemc.mcmc import PseudoBinaryConcInitializer
+    from cemc.mcmc import ReactionCrdRangeConstraint
+    from cemc.mcmc import PseudoBinaryConcObserver
     atoms = get_atoms(cubic=True)
-    T = 300
     workdir = "data/pseudo_binary_free"
-    mc = PseudoBinarySGC(atoms, T, chem_pot=-0.61,
+    mu = float(mu)
+    # Have to perform only insert moves
+    mc = PseudoBinarySGC(atoms, T, chem_pot=mu,
                          groups=[{"Al": 2}, {"Mg": 1, "Si": 1}],
-                         symbols=["Al", "Mg", "Si"])
+                         symbols=["Al", "Mg", "Si"], insert_prob=0.1)
 
-    conc_init = PseudoBinaryConcInitializer(mc)
-    conc_cnst = PseudoBinaryConcRange(mc)
+    observer = PseudoBinaryConcObserver(mc)
+    conc_cnst = ReactionCrdRangeConstraint(observer, value_name="conc")
+    conc_cnst.update_range([0, 2000])
     mc.add_constraint(conc_cnst)
+
     reac_path = AdaptiveBiasReactionPathSampler(
-        mc_obj=mc, react_crd=[0.0, 1.0], react_crd_init=conc_init,
-        n_bins=100, data_file="{}/adaptive_bias.h5".format(workdir),
-        mod_factor=0.01, delete_db_if_exists=True, mpicomm=None,
-        db_struct="{}/adaptive_bias_struct.db".format(workdir))
+        mc_obj=mc, react_crd=[0.0, 2000], observer=observer,
+        n_bins=500, data_file="{}/adaptive_bias{}K_{}mev.h5".format(workdir, T, int(1000*mu)),
+        mod_factor=mod, delete_db_if_exists=True, mpicomm=None,
+        db_struct="{}/adaptive_bias_struct{}K_{}mev.db".format(workdir, T, int(1000*mu)),
+        react_crd_name="conc")
+
+    reac_path.run()
+    reac_path.save()
+
+
+def free_energy_vs_layered(T, mod):
+    from cemc.mcmc import AdaptiveBiasReactionPathSampler
+    from cemc.mcmc import ReactionCrdRangeConstraint
+    from cemc.mcmc import DiffractionObserver
+    from ase.geometry import get_layers
+    atoms = get_atoms(cubic=True)
+
+    atoms_cpy = atoms.copy()
+    layers, dist = get_layers(atoms, (0, 1, 0))
+    for atom in atoms_cpy:
+        if layers[atom.index] % 2 == 0:
+            atom.symbol = "Mg"
+        else:
+            atom.symbol = "Si"
+    symbols = [atom.symbol for atom in atoms_cpy]
+    atoms.get_calculator().set_symbols(symbols)
+
+    lamb = 4.05
+    k = 2.0*np.pi/lamb
+    workdir = "data/diffraction"
+
+    # Have to perform only insert moves
+    mc = Montecarlo(atoms, T)
+    k_vec = [k, 0, 0]
+    observer = DiffractionObserver(atoms=atoms, active_symbols=["Si"], all_symbols=["Mg", "Si"], k_vector=k_vec,
+                                   name="reflection")
+    conc_cnst = ReactionCrdRangeConstraint(observer, value_name="reflection")
+    conc_cnst.update_range([0, 0.5])
+    mc.add_constraint(conc_cnst)
+
+    reac_path = AdaptiveBiasReactionPathSampler(
+        mc_obj=mc, react_crd=[0.0, 0.5], observer=observer,
+        n_bins=50, data_file="{}/layered_bias{}K.h5".format(workdir, T),
+        mod_factor=mod, delete_db_if_exists=True, mpicomm=None,
+        db_struct="{}/layered_bias_struct{}K.db".format(workdir, T),
+        react_crd_name="reflection", ignore_equil_steps=False)
     reac_path.run()
     reac_path.save()
 
@@ -333,4 +379,13 @@ if __name__ == "__main__":
     #gs_mgsi()
     #phase_diag()
     #free_energy_phase()
-    free_energy_vs_comp()
+
+    run_layered = False
+    for arg in sys.argv:
+        if arg == "--layered":
+            run_layered = True
+
+    if run_layered:
+        free_energy_vs_layered(int(sys.argv[1]), float(sys.argv[2]))
+    else:
+        free_energy_vs_comp(int(sys.argv[1]), float(sys.argv[2]), float(sys.argv[3]))

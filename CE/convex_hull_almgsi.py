@@ -5,7 +5,7 @@ def main():
     from matplotlib import pyplot as plt
     db_name = "almgsi.db"
 
-    qhull = ConvexHull(db_name)
+    qhull = ConvexHull(db_name, atoms_per_fu=4)
     qhull.plot()
 
     #qhull.show_structures_on_convex_hull()

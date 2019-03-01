@@ -40,6 +40,18 @@ def construct_db_clean():
         db.write(merged, surface=1)
 
 
+def construct_db_mgsi():
+    db = connect(DB_NAME)
+    for rep in range(1, 12):
+        mgsi = get_mgsi()*(1, 1, rep)
+        mgsi2 = get_mgsi()
+        mgsi2.rotate(90, "x")
+        mgsi2.wrap()
+        mgsi2 *= (1, 1, rep)
+        merged = stack(mgsi, mgsi2, axis=2)
+        db.write(merged, surface=2)
+
+
 def run_dft(uid, density, relax):
     db_name = "/home/davidkl/GPAWTutorial/AlMgSiMC/surface_tension_mgsi.db"
     db = connect(db_name)
@@ -64,3 +76,4 @@ def run_dft(uid, density, relax):
 
 if __name__ == "__main__":
     run_dft(int(sys.argv[1]), float(sys.argv[2]), int(sys.argv[3]))
+    
