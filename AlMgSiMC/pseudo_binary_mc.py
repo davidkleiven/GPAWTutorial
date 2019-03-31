@@ -35,7 +35,7 @@ def get_atoms(cubic=False):
         ecis = json.load(infile)
     db_name = "large_cell_db{}x{}x{}.db".format(N, N, N)
     atoms = get_atoms_with_ce_calc(ceBulk, kwargs, ecis, size=[N, N, N], 
-                                  db_name=db_name)
+                                   db_name=db_name)
     return atoms
 
 
@@ -160,9 +160,9 @@ def phase_diag():
                  db_name=db_name, 
                  fig_prefix="data/phasediag_fig/", table="simulations",
                  phase_id="phase", chem_pot="pseudo_mu", energy="sgc_energy",
-                 concentration="Mg_conc", temp_col="temperature",
+                 concentration="Al_conc", temp_col="temperature",
                  tol=1E-6, postproc_table="postproc",
-                 recalculate_postproc=True, 
+                 recalculate_postproc=False, 
                  ht_phases=["random"], num_elem=3,
                  natoms=4000, isochem_ref=isochem_ref,
                  num_per_fu=2)
@@ -186,8 +186,8 @@ def phase_diag():
     ax_mu.set_ylabel("Temperature (K)")
 
     print(T)
-    conc_al = [np.polyval(diag.composition("Al", temperature=T[i], polyorder=2), mu[i]) for i in range(len(mu))]
-    conc_mgsi = [np.polyval(diag.composition("MgSi", temperature=T[i], polyorder=4), mu[i]) for i in range(len(mu))]
+    conc_al = [np.polyval(diag.composition("Al", temperature=T[i], polyorder=6), mu[i]) for i in range(len(mu))]
+    conc_mgsi = [np.polyval(diag.composition("MgSi", temperature=T[i], polyorder=6), mu[i]) for i in range(len(mu))]
 
     conc_rnd = [np.polyval(diag.composition("MgSi", mu=mu_Al_rnd[i]), T_Al_rnd[i]) for i in range(len(T_Al_rnd))]
     conc_mgsi_rnd = [np.polyval(diag.composition("random_mgsi", mu=mu_Al_rnd[i], bounds=[1400, 5000]), T_Al_rnd[i]) for i in range(len(T_Al_rnd))]
@@ -331,6 +331,6 @@ if __name__ == "__main__":
     #random_fixed_temp(float(sys.argv[1]))
     #free_energy("sqlite:////work/sophus/almgsi_mc_free_energy_sgc_bcs.db")
     #gs_mgsi()
-    #phase_diag()
+    phase_diag()
     #free_energy_phase()
-    free_energy_vs_comp()
+    #free_energy_vs_comp()

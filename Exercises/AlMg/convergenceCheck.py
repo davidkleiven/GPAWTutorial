@@ -1,4 +1,8 @@
 import sqlite3 as sq
+import matplotlib as mpl
+mpl.rcParams["svg.fonttype"] = "none"
+mpl.rcParams["font.size"] = 18
+mpl.rcParams["axes.unicode_minus"] = False
 from matplotlib import pyplot as plt
 import numpy as np
 
@@ -42,13 +46,26 @@ def main():
     # Create plots
     fig = plt.figure()
     ax = fig.add_subplot(1,3,1)
+    ax.set_title("h-spacing")
     ax.plot( hspacing, energies )
+    ax.set_xlabel( "FD discretization step" )
+    ax.set_ylabel( "Energy (eV/atom)" )
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
     ax2 = fig.add_subplot(1,3,2)
+    ax2.set_title("K-pts")
     ax2.plot( kpts, kptsEnergies )
+    ax2.spines["top"].set_visible(False)
+    ax2.spines["right"].set_visible(False)
+    ax2.set_xlabel( "Number of k-points" )
 
     ax3 = fig.add_subplot(1,3,3)
+    ax3.set_title("N-bands")
     nbands = np.array( nbands )
     ax3.plot( np.abs(nbands), bandeng )
+    ax3.set_xlabel ("Number of additional bands" )
+    ax3.spines["top"].set_visible(False)
+    ax3.spines["right"].set_visible(False)
     plt.show()
 
 if __name__ == "__main__":
