@@ -63,9 +63,10 @@ def main(argv):
         struc_generator.generate_probe_structure()
     elif ( option == "eval" ):
         #evaluate(ceBulk)
-        evaluate_l1(ceBulk)
-        #evaluate_test(ceBulk)
+        #evaluate_l1(ceBulk)
+        evaluate_test(ceBulk)
         #evaluate_car(ceBulk)
+        #evaluate_sklearn(ceBulk)
     elif option == "skew":
         insert_skewed_full(struc_generator, size1=int(argv[1]), size2=int(argv[2]))
     elif ( option == "insert" ):
@@ -195,12 +196,38 @@ def update_in_conc_range():
 
 def evaluate_test(BC):
     from ase.clease import BayesianCompressiveSensing
-    scheme = BayesianCompressiveSensing(output_rate_sec=2, shape_var=0.5, noise=0.006, lamb_opt_start=2000000)
+
+    scheme = BayesianCompressiveSensing(output_rate_sec=0.1, shape_var=0.5, noise=0.006, lamb_opt_start=20, variance_opt_start=15)
     evaluator = Evaluate(BC, fitting_scheme=scheme, parallel=False, alpha=1E-8,
-                         scoring_scheme="loocv_fast", select_cond=[("converged", "=", True), ("calculator", "!=", "gpaw")])
+                         scoring_scheme="loocv_fast", select_cond=[("converged", "=", True), ("calculator", "!=", "gpaw"), ("c1_1", "<", 0.5)])
+    #evaluator.plot_fit(interactive=False, savefig=True, fname="data/bcs.png")
     evaluator.plot_fit(interactive=True)
     eci_name = evaluator.get_cluster_name_eci(return_type="dict")
     eci_bayes = "data/eci_bcs.json"
+    with open(eci_bayes,'w') as outfile:
+        json.dump( eci_name, outfile, indent=2, separators=(",",":"))
+    print ( "ECIs written to {}".format(eci_bayes))
+
+def evaluate_sklearn(BC):
+    from ase.clease import ScikitLearnRegressor
+    from sklearn.linear_model import LassoLars
+    from sklearn.linear_model import OrthogonalMatchingPursuit
+    from sklearn.linear_model import ARDRegression
+    from sklearn.linear_model import BayesianRidge
+    from sklearn.linear_model import HuberRegressor
+    sk = LassoLars(alpha=1E-5, fit_intercept=False)
+    sk = OrthogonalMatchingPursuit(n_nonzero_coefs=50, fit_intercept=False)
+    sk = ARDRegression(fit_intercept=False)
+    #sk = BayesianRidge(fit_intercept=False, alpha_1=1E-3, alpha_2=1E-3, lambda_1=1E-3, lambda_2=1E-3)
+    #sk = HuberRegressor(fit_intercept=False, alpha=1E-8)
+    scheme = ScikitLearnRegressor(sk)
+
+    evaluator = Evaluate(BC, fitting_scheme=scheme, parallel=False, alpha=1E-8,
+                         scoring_scheme="loocv", select_cond=[("converged", "=", True), ("calculator", "!=", "gpaw"), ("c1_1", "<", 0.5)])
+    #evaluator.plot_fit(interactive=False, savefig=True, fname="data/bcs.png")
+    evaluator.plot_fit(interactive=True)
+    eci_name = evaluator.get_cluster_name_eci(return_type="dict")
+    eci_bayes = "data/eci_scikit.json"
     with open(eci_bayes,'w') as outfile:
         json.dump( eci_name, outfile, indent=2, separators=(",",":"))
     print ( "ECIs written to {}".format(eci_bayes))
@@ -218,11 +245,14 @@ def evaluate_car(BC):
     print ( "ECIs written to {}".format(eci_bayes))
 
 def evaluate_l1(BC):
+    from ase.clease import BayesianCompressiveSensing
+    #from ase.clease import RandomValidator, EvenlyDistributedValidator
+    #validator = EvenlyDistributedValidator(num_pca=3, num_hold_out=30, num_buckets=4)
+    #validator = RandomValidator(num_hold_out=30)
     evaluator = Evaluate(BC, fitting_scheme='l1', parallel=False, alpha=1E-6,
-                         select_cond=[("converged", "=", True)], scoring_scheme="k-fold",
-                         conc_constraint=conc_fit)
-    evaluator.plot_CV()
-    evaluator.set_fitting_scheme(fitting_scheme="l1", alpha=0.00013)
+                         select_cond=[("converged", "=", True), ("calculator", "!=", "gpaw")], scoring_scheme="k-fold")
+    alpha = evaluator.plot_CV()
+    evaluator.set_fitting_scheme(fitting_scheme="l1", alpha=alpha)
     evaluator.plot_fit(interactive=True)
     eci_name = evaluator.get_cluster_name_eci(return_type="dict")
     eci_bayes = "data/eci_l1.json"
@@ -236,16 +266,15 @@ def evaluate(BC):
     from ase.clease import GAFit
     cfunc = "loocv"
 
-    ga_params = {"alpha": 1E-10,
-                 "mutation_prob": 0.01,
+    ga_params = {"mutation_prob": 0.3,
                  "num_individuals": 100,
                  "fname": "data/ga_fit_almgsi_{}.csv".format(cfunc),
-                 "select_cond": [("converged", "=", True)],
+                 "select_cond": [("converged", "=", True), ("calculator", "!=", "gpaw"), ("c1_1", "<", 0.5)],
                  "cost_func": cfunc,
                  "sparsity_slope": 1.0,
                  "min_weight": 1.0,
-                 "include_subclusters": True,
-                 "conc_constraint": conc_fit}
+                 "include_subclusters": False}
+                 #"conc_constraint": conc_fit}
     # ga = GAFit(setting=BC, alpha=1E-8, mutation_prob=0.1, num_individuals="auto",
     #            change_prob=0.2, fname="data/ga_fit_almgsi_{}.csv".format(cfunc), 
     #            select_cond=[("converged", "=", True)],
@@ -259,11 +288,11 @@ def evaluate(BC):
         lines = infile.readlines()
     names = [x.strip() for x in lines]
 
-    eval_params = dict(parallel=False, alpha=ga_params["alpha"],
+    eval_params = dict(parallel=False, alpha=1E-8,
                          scoring_scheme="k-fold", 
                          select_cond=[("converged", "=", True)], 
                          min_weight=ga_params["min_weight"], fitting_scheme="l2", cluster_names=names,
-                         num_repetitions=100, nsplits=10, conc_constraint=conc_fit)
+                         num_repetitions=100, nsplits=10)
     evaluator = Evaluate(BC, **eval_params)
     #evaluator.plot_CV()
     #exit()
