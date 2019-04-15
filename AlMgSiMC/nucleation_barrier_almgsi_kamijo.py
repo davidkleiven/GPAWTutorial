@@ -55,10 +55,20 @@ def insert_np(size, atoms):
     atoms.get_calculator().set_symbols(symbols)
     return atoms
 
+def two_atoms(atoms):
+    print(atoms.get_calculator().get_energy())
+    symbols = [a.symbol for a in atoms]
+    symbols[0] = "Mg"
+    symbols[800] = "Si"
+    atoms.get_calculator().set_symbols(symbols)
+    print(atoms.get_calculator().get_energy())
+
 def main():
     energies = []
     sizes = list(range(1, 6))
     atoms = get_atoms()
+    two_atoms(atoms)
+    exit()
     insert_np(6, atoms)
 
     mc = Montecarlo(atoms, 0.1)

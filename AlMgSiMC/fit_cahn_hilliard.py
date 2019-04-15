@@ -113,7 +113,7 @@ def fit_landau_polynomial():
     }
     poly = TwoPhaseLandauPolynomial(**params_landau)
     weights = {"eq_phase2": 0.0, "eq_phase1": 1.0}
-    poly.fit(x, G, weights=weights, kernel_width=0.05, num_kernels=300, width=0.2, smear_width=50, shape=30.0, lamb=1E-5)
+    poly.fit(x, G, weights=weights, kernel_width=0.01, num_kernels=200, width=None, smear_width=0, shape="auto", lamb=1E-1)
     print(poly.coeff_shape)
     n_eq = poly.equil_shape_order(x)
     n_eq_max = np.max(n_eq)
@@ -135,7 +135,7 @@ def fit_landau_polynomial():
                                     weights={"peak": 0.0,
                                              "mixed_peaks": 100000000.0},
                                     constraints=[peak_const, saddle, interior])
-    poly.save_poly_terms(fname="data/polyterms_fit.json", num_shape_params=2)
+    poly.save_poly_terms(fname="data/polyterms_fit.json")
     # Fit off axis
     x_fit = np.linspace(0.0, 1.0, 600)
     fitted = poly.evaluate(x_fit)
@@ -175,6 +175,7 @@ def fit_landau_polynomial():
         ax3.set_ylabel("Degree of layering along $y$")
         cbar = fig3.colorbar(im)
         cbar.set_label("Free energy density (meV/angstrom$^3$)")
+        plt.show()
         fig3.savefig("data/free_energy_landscape{}.svg".format(int(100*(c))))
         fig3.savefig("data/free_energy_landscape{}.png".format(int(100*c)))
         plt.close(fig3)
@@ -216,7 +217,7 @@ def fit_landau_polynomial():
     grad_coeff_finder = GradientCoeffNoExplicitProfile(
         evaluator, boundary, interface_energy,
         params_vary, num_density, apply_energy_correction=True,
-        init_grad_coeff=[3, 10, 3])
+        init_grad_coeff=[0.0, 300, 0.0], neg2zero=True)
     grad_coeff = grad_coeff_finder.solve()
 
     poly_dict = poly.to_dict()

@@ -1,0 +1,15 @@
+background white;
+spacefill 1.5;
+select aluminium;
+define hide1 within(-125, hkl, {-1 0 0})
+define hide2 within(140, hkl, {0 0 -1});
+define hide3 within(-50, hkl, {0 1 0});
+define al_hide hide1 and hide2 and hide3 and aluminium;
+hide al_hide;
+
+define hide_mg within(-105, hkl, {-1 0 0});
+define mg_hide hide_mg and magnesium;
+define si_hide hide_mg and silicon
+
+select al_hide OR si_hide OR mg_hide;
+hide selected;
