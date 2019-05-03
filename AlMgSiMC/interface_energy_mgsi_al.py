@@ -6,6 +6,7 @@ import numpy as np
 from ase.units import kJ
 from ase.units import m as meter
 from scipy.optimize import curve_fit
+from scipy import stats
 
 ref_energies = {
     "Al": -3.737,
@@ -15,6 +16,42 @@ ref_energies = {
 
 def func(x, const, pref, damping):
     return const + pref*np.exp(-damping*x)
+
+
+def interface_energy_linear_fit():
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+
+    db = connect("data/surface_tension_mgsi.db")
+    
+    energies = [[], [], []]
+    natoms = [[], [], []]
+    layer_thickness = [[], [], []]
+
+    for row in db.select([('id', '>=', 47), ('id', "<=", 59)]):
+        init_id = row.init_id
+        init_row = db.get(id=init_id)
+        surf = init_row.surface
+        E = row.energy#/row.natoms
+        
+        natoms[surf].append(row.natoms)
+        lengths = row.toatoms().get_cell_lengths_and_angles()[:3]
+        length = np.max(lengths)
+        layer_thickness[surf].append(length/2.0)
+        area = 2*np.prod(lengths)/np.max(lengths)
+        energies[surf].append(E/area)
+        print(area)
+
+    for e, l in zip(energies, layer_thickness):
+        slope, interscept, _, _, _ = stats.linregress(l, e)
+        ax.plot(l, e, 'o')
+        ax.plot(l, slope*np.array(l) + interscept)
+        E_surf_mev_per_ang = interscept*1000.0/2.0
+        E_surf_mj_per_m = E_surf_mev_per_ang*1.6022*10.0
+        print("Surf energy: {} meV/A**2, {} mJ/m**2".format(E_surf_mev_per_ang, E_surf_mj_per_m))
+
+    plt.show()
+
 
 
 def main():
@@ -68,4 +105,5 @@ def main():
     plt.show()
 
 if __name__ == "__main__":
-    main()
+    #main()
+    interface_energy_linear_fit()

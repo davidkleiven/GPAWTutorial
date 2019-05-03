@@ -190,18 +190,20 @@ def fit_landau_polynomial():
     ax_diff.plot(x_diff, fitted_diff)
     plt.show()
 
-    num_density = 0.06
+    #num_density = 0.06
+    num_density = 1.0
     mJ2ev = 0.0642
     gammas = [2.649180389240096*mJ2ev, 5.901458900832251*mJ2ev, 
               7.169435749573065*mJ2ev]
+    gammas = [5.081164748586553, 17.189555738954752, 14.080720554234594]
 
     # Find the gradient coefficients
-    evaluator = SlavedTwoPhaseLandauEvaluator(poly)
+    evaluator = SlavedTwoPhaseLandauEvaluator(poly, involution_order=30)
     nmax = np.sqrt(2.0/3.0)
     boundary = {
         (0, 1): [[0.0, 1.0], [0.0, nmax], [0.0, 0.0]],
         (0, 2): [[0.0, 1.0], [0.0, 0.0], [0.0, nmax]],
-        (1, 2): [[1.0, 1.0], [0.0, nmax], [nmax, 0.0]]
+        (1, 2): [[1.0, 1.0], [1E-6, nmax], [nmax, 1E-6]]
     }
 
     interface_energy = {
@@ -217,8 +219,10 @@ def fit_landau_polynomial():
     grad_coeff_finder = GradientCoeffNoExplicitProfile(
         evaluator, boundary, interface_energy,
         params_vary, num_density, apply_energy_correction=True,
-        init_grad_coeff=[0.0, 300, 0.0], neg2zero=True)
+        init_grad_coeff=[5.0, 5.0, 5.0], neg2zero=True)
     grad_coeff = grad_coeff_finder.solve()
+
+    alpha = 2.0 
 
     poly_dict = poly.to_dict()
     poly_dict["gradient_coeff"] = grad_coeff.tolist()
@@ -226,7 +230,7 @@ def fit_landau_polynomial():
     poly_dict["diffraction_file"] = fname_diff
     poly_dict["landau_params"] = params_landau
 
-    json_fname = "chgl_almgsi.json"
+    json_fname = "chgl_almgsi_linfit.json"
     with open(json_fname, 'w') as outfile:
         json.dump(poly_dict, outfile, indent=2)
     print("JSON file: {}".format(json_fname))
@@ -244,6 +248,7 @@ def cahn_hilliard_phase_field():
     G = np.polyval(coeff, x)
     dG = G - (x*G[-1] + (1.0-x)*G[0])
     num_per_vol = 0.06  # Al atoms per angstrom
+    #num_per_vol = 1.0
 
     # Convert to meV (multiply by 1000.0)
     grad_param = 1000.0*cahn_hilliard_surface_parameter(x, dG, surface_tension, num_per_vol)

@@ -78,9 +78,10 @@ def check_loaded_polynomial(poly, regressor):
 
 
 def main():
-    prefix = "data/almgsi_chgl_random_seed_strain_noise2/chgl"
+    #prefix = "data/almgsi_chgl_random_seed_strain_noise2/chgl"
+    prefix = "data/almgsi_chgl_strain_large_cell/chgl"
     dim = 2
-    L = 256
+    L = 1024
     num_gl_fields = 2
     M = 0.1
     alpha = 5.0
@@ -134,18 +135,19 @@ def main():
     # chgl.random_initialization([0.0, 0.0, 0.0], [1.0, 0.85, 0.85])
     # chgl.from_npy_array(droplet_at_center(L))
     # chgl.from_npy_array(precipitates(L))
-    chgl.from_npy_array(random_consistent(L, mean_conc=0.2))
+    #chgl.from_npy_array(random_consistent(L, mean_conc=0.01))
+    chgl.from_npy_array(precipitates_circles(L, 50))
     chgl.use_adaptive_stepping(1E-10, 4, 0.01)
     # chgl.set_filter(1.0)
     chgl.build2D()
-    #add_strain(chgl)
+    add_strain(chgl)
     #chgl.set_cook_noise(1E-2)
-    #chgl.from_file("data/almgsi_chgl_cook/chgl00000006350.grid")
+    chgl.from_file(prefix + "00000100000.grid")
 
     #chgl.save_noise_realization(prefix + "noise.grid", 0)
     #exit()
 
-    chgl.run(10000, 25, start=0)
+    chgl.run(50000, 1000, start=100000)
     chgl.save_free_energy_map(prefix+"_free_energy_map.grid")
 
 def droplet_at_center(L):
@@ -221,12 +223,52 @@ def random_consistent(L, mean_conc=0.5):
 
 def insert_seed(arrays):
     L = arrays[0].shape[0]
-    size = L/20.0
+    size = L/5.0
 
-    arrays[0][50:70, 50:100] = 1.0
-    arrays[1][50:70, 50:100] = 0.8
+    arrays[0][50:150, 50:150] = 1.0
+    arrays[1][50:150, 50:150] = 0.8
     return arrays
 
+def precipitates_circles(L, R):
+    from matplotlib import pyplot as plt
+    size = R
+    num = 10
+    num_inserted = 0
+    max_attempts = 1000
+    c = np.zeros((L, L))
+    n_eq1 = np.zeros((L, L))
+    n_eq2 = np.zeros((L, L))
+    for i in range(max_attempts):
+        x = np.random.randint(size, L-size)
+        y = np.random.randint(size, L-size)
+
+        eta = n_eq1
+        if (np.random.rand() < 0.5):
+            eta = n_eq2
+        
+        bb = c[x-R:x+R, y-R:y+R]
+        eta_loc = eta[x-R:x+R, y-R:y+R]
+        if np.any(bb) > 1E-6:
+            continue
+        
+        x_loc, y_loc = np.meshgrid(range(bb.shape[0]), range(bb.shape[1]))
+        x0 = bb.shape[0]/2
+        y0 = bb.shape[1]/2
+        r = np.sqrt((x_loc-x0)**2 + (y_loc-y0)**2)
+        bb[r <= R] = 1.0
+        eta_loc[r <= R] = 0.8
+        num_inserted += 1
+
+        if num_inserted >= num:
+            break
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 2, 1)
+    ax.imshow(c)
+    ax2 = fig.add_subplot(1, 2, 2)
+    ax2.imshow(n_eq1)
+    plt.show()
+    #exit()
+    return [c, n_eq1, n_eq2]
 
 if __name__ == "__main__":
     main()
