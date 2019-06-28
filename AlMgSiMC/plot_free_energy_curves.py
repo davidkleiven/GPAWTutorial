@@ -2,6 +2,7 @@ import h5py as h5
 import numpy as np
 from scipy.stats import linregress
 import matplotlib as mpl
+import json
 mpl.rcParams.update({"axes.unicode_minus": False, "font.size": 18, "svg.fonttype": "none"})
 
 
@@ -73,10 +74,10 @@ def reflection():
     from matplotlib import pyplot as plt
     from matplotlib.cm import ScalarMappable
     from matplotlib.colors import Normalize
-    temps = [500, 600, 700, 800]
+    temps = [600, 700, 800]
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
-    cNorm = Normalize(vmin=400, vmax=800)
+    cNorm = Normalize(vmin=600, vmax=800)
     scalarMap = ScalarMappable(norm=cNorm, cmap="copper")
     for T in temps:
         fname = "data/diffraction/layered_bias{}K.h5".format(T)
@@ -87,18 +88,37 @@ def reflection():
         res = linregress(x, betaG)
         slope = res[0]
         interscept = res[1]
-        betaG -= betaG[0]
-        ax.plot(x, betaG, drawstyle="steps", color=color)
+        betaG -= np.min(betaG)
+        ax.plot(x, betaG, drawstyle="steps", color=color, lw=2)
     ax.set_xlim([0.25, 0.5])
     ax.set_xlabel("Normalised diffraction intensity")
     ax.set_ylabel("\$\\beta \Delta G\$")
     scalarMap.set_array([500.0, 800])
-    cbar = fig.colorbar(scalarMap, orientation="horizontal", fraction=0.07, anchor=(1.0, 0.0))
-    cbar.set_label("Temperature (K)")
+    #cbar = fig.colorbar(scalarMap, orientation="horizontal", fraction=0.07, anchor=(1.0, 0.0))
+    #cbar.set_label("Temperature (K)")
     ax.spines["right"].set_visible(False)
     ax.spines["top"].set_visible(False)
+
+    data = load_fit_data()
+    #ax.plot(data["MCpoints"]["x"], data["MCpoints"]["y"])
+    ax.plot(data["Fitted"]["x"], data["Fitted"]["y"], ls="--", color="black")
     plt.show()
 
+def load_fit_data():
+    from ase.units import kB
+    fname = "data/free_energy.json"
+    with open(fname, 'r') as infile:
+        data = json.load(infile)
+    
+    data_fit = {}
+    T = 600
+    for item in data["datasetColl"]:
+        xy = {"x": [], "y": []}
+        for subitem in item["data"]:
+            xy["x"].append(subitem["value"][0]/(2*np.sqrt(2.0/3.0)))
+            xy["y"].append(4.05**3*subitem["value"][1]/(kB*T))
+        data_fit[item["name"]] = xy
+    return data_fit
 
 def solubility():
     from matplotlib import pyplot as plt
@@ -118,5 +138,5 @@ def solubility():
 if __name__ == "__main__":
     #free_energy_vs_comp()
     #solubility()
-    #reflection()
-    free_energy_chem_pot()
+    reflection()
+    #free_energy_chem_pot()

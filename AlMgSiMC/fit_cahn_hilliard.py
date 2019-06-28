@@ -1,17 +1,16 @@
 import h5py as h5
-from cemc.phasefield import CahnHilliard, cahn_hilliard_surface_parameter
-from cemc.phasefield import GradientCoefficientRhsBuilder
-from cemc.phasefield import SlavedTwoPhaseLandauEvaluator
-from cemc.phasefield import GradientCoeffNoExplicitProfile
-from cemc.phasefield import TwoPhaseLandauPolynomial
+from apal import CahnHilliard, cahn_hilliard_surface_parameter
+from apal import TwoPhasePolynomialRegressor as TwoPhaseLandauPolynomial
+from apal import QuadraticExpansionLandau
+from apal.tools import surface_formation
 from itertools import product
 import numpy as np
 from ase.units import kB
 import matplotlib as mpl
 from scipy.signal import decimate
-from cemc.phasefield import PeakPosition
-from cemc.phasefield import StraightLineSaddle
-from cemc.phasefield import InteriorMinima
+from apal import PeakPosition
+from apal import StraightLineSaddle
+from apal import InteriorMinima
 import json
 from scipy.stats import linregress
 mpl.rcParams.update({"font.size": 18, "svg.fonttype": "none", "axes.unicode_minus": False})
@@ -20,29 +19,8 @@ fname = "data/pseudo_binary_free/adaptive_bias300K_-650mev_bck.h5"
 fname = "data/pseudo_binary_free/adaptive_bias300K_-650mev_bck2.h5"
 fname = "data/pseudo_binary_free/adaptive_bias600K_-650mev.h5"
 fname_diff = "data/diffraction/layered_bias600K.h5"
-beta = 1.0/(kB*400)
 
-
-class AlMgSiInterface(GradientCoefficientRhsBuilder):
-    def __init__(self, two_phase_poly, end_pts, slope, boundary_values):
-        GradientCoefficientRhsBuilder.__init__(self, boundary_values)
-        self.poly = two_phase_poly
-        self.end_pts = end_pts
-        self.slope = slope
-
-    def grad(self, x):
-        grad_c = [self.poly.partial_derivative(x[0, i], shape=x[1:, i], var="conc") - self.slope
-                  for i in range(x.shape[1])]
-        grad1 = [self.poly.partial_derivative(x[0, i], shape=x[1:, i], var="shape", direction=0)
-                 for i in range(x.shape[1])]
-        grad2 = [self.poly.partial_derivative(x[0, i], shape=x[1:, i], var="shape", direction=1)
-                 for i in range(x.shape[1])]
-        return np.array([grad_c, grad1, grad2])
-
-    def evaluate(self, x):
-        c = x[0, :]
-        res = [self.poly.evaluate(x[0, i], shape=x[1:, i]) for i in range(x.shape[1])]
-        return np.array(res) - self.slope*(c - self.end_pts[0]) - self.poly.evaluate(self.end_pts[0])
+beta = 1.0/(kB*600)
 
 def main():
     with h5.File(fname, 'r') as infile:
@@ -72,7 +50,6 @@ def main():
 
 def fit_landau_polynomial():
     from matplotlib import pyplot as plt
-    from cemc.phasefield import GradientCoefficient
     with h5.File(fname, 'r') as infile:
         x = np.array(infile["x"])/2000.0
         G = -np.array(infile["bias"])/beta
@@ -111,9 +88,11 @@ def fit_landau_polynomial():
         "conc_order1": 16,
         "conc_order2": 1,
     }
-    poly = TwoPhaseLandauPolynomial(**params_landau)
-    weights = {"eq_phase2": 0.0, "eq_phase1": 1.0}
-    poly.fit(x, G, weights=weights, kernel_width=0.01, num_kernels=200, width=None, smear_width=0, shape="auto", lamb=1E-1)
+    # poly = TwoPhaseLandauPolynomial(**params_landau)
+    # weights = {"eq_phase2": 0.0, "eq_phase1": 1.0}
+    # poly.fit(x, G, weights=weights, kernel_width=0.01, num_kernels=200, width=None, smear_width=0, shape="auto", lamb=1E-1)
+    poly = QuadraticExpansionLandau(c1=0.01, c2=0.96)
+    poly.fit(x, G, end_phase1=0.1, show=True)
     print(poly.coeff_shape)
     n_eq = poly.equil_shape_order(x)
     n_eq_max = np.max(n_eq)
@@ -197,40 +176,21 @@ def fit_landau_polynomial():
               7.169435749573065*mJ2ev]
     gammas = [5.081164748586553, 17.189555738954752, 14.080720554234594]
 
-    # Find the gradient coefficients
-    evaluator = SlavedTwoPhaseLandauEvaluator(poly, involution_order=30)
-    nmax = np.sqrt(2.0/3.0)
-    boundary = {
-        (0, 1): [[0.0, 1.0], [0.0, nmax], [0.0, 0.0]],
-        (0, 2): [[0.0, 1.0], [0.0, 0.0], [0.0, nmax]],
-        (1, 2): [[1.0, 1.0], [1E-6, nmax], [nmax, 1E-6]]
-    }
-
-    interface_energy = {
-        (0, 1): gammas[0],
-        (0, 2): gammas[1],
-        (1, 2): gammas[2]
-    }
-    params_vary = {
-        (0, 1): [0, 1],
-        (0, 2): [0, 2],
-        (1, 2): [1, 2]
-    }
-    grad_coeff_finder = GradientCoeffNoExplicitProfile(
-        evaluator, boundary, interface_energy,
-        params_vary, num_density, apply_energy_correction=True,
-        init_grad_coeff=[5.0, 5.0, 5.0], neg2zero=True)
-    grad_coeff = grad_coeff_finder.solve()
-
-    alpha = 2.0 
+    G_surface = poly.evaluate(x)
+    x, dS = surface_formation(x, G_surface)
+    dS[dS < 0.0] = 0.0
+    alpha = poly.conc_grad_param(gammas[0], x, dS)*1.0
+    alpha1 = poly.gradient_coefficient(alpha, gammas[0], x, dS)[0]
+    alpha2 = poly.gradient_coefficient(alpha, gammas[1], x, dS)[0]
+    print(alpha, alpha1, alpha2)
 
     poly_dict = poly.to_dict()
-    poly_dict["gradient_coeff"] = grad_coeff.tolist()
+    poly_dict["gradient_coeff"] = [alpha, alpha1, alpha2]
     poly_dict["conc_file"] = fname
     poly_dict["diffraction_file"] = fname_diff
     poly_dict["landau_params"] = params_landau
 
-    json_fname = "chgl_almgsi_linfit.json"
+    json_fname = "chgl_almgsi_quadratic_large_alpha.json"
     with open(json_fname, 'w') as outfile:
         json.dump(poly_dict, outfile, indent=2)
     print("JSON file: {}".format(json_fname))

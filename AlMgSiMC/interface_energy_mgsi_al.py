@@ -18,6 +18,51 @@ def func(x, const, pref, damping):
     return const + pref*np.exp(-damping*x)
 
 
+def linear_fit_inv_length():
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+
+    db = connect("data/surface_tension_mgsi.db")
+
+    e_per_atom = [[], []]
+    natoms = [[], []]
+    area = [[], []]
+    ids = list(range(47, 59)) + [64]
+    for uid in ids:
+        row = db.get(id=uid)
+        init_id = row.init_id
+        init_row = db.get(id=init_id)
+        surf = init_row.surface
+
+        if surf == 2:
+            continue
+        E = row.energy/row.natoms
+        e_per_atom[surf].append(E)
+        natoms[surf].append(row.natoms)
+        lengths = row.toatoms().get_cell_lengths_and_angles()[:3]
+        length = np.max(lengths)
+        area[surf].append(2*np.prod(lengths)/np.max(lengths))
+
+    shapes = ['o', 'v']
+    colors = ['#5d5c61', '#557a95']
+    i = 0
+    for e, n, a in zip(e_per_atom, natoms, area):
+        sl, intersc, _, _, _ = stats.linregress(1.0/np.array(n), e)
+        gamma = 1000*0.5*sl/np.mean(a)
+        print("Surface tension: {} meV/A^2, {} mJ/m^2".format(gamma, gamma*1.6022*10.0))
+        ax.plot(1.0/np.array(n), e, shapes[i], mfc='none', color=colors[i])
+        inv_n_fit = np.linspace(0.015, 0.13, 10)
+        ax.plot(inv_n_fit, intersc + sl*inv_n_fit, '--', color=colors[i])
+        i += 1
+
+    ax.set_xlabel('\$1/N\$')
+    ax.set_ylabel('Total energy (eV/atom)')
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+
+    plt.show()
+
+
 def interface_energy_linear_fit():
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
@@ -25,6 +70,7 @@ def interface_energy_linear_fit():
     db = connect("data/surface_tension_mgsi.db")
     
     energies = [[], [], []]
+    tot_energies = [[], [], []]
     natoms = [[], [], []]
     layer_thickness = [[], [], []]
 
@@ -33,6 +79,7 @@ def interface_energy_linear_fit():
         init_row = db.get(id=init_id)
         surf = init_row.surface
         E = row.energy#/row.natoms
+        tot_energies[surf].append(E)
         
         natoms[surf].append(row.natoms)
         lengths = row.toatoms().get_cell_lengths_and_angles()[:3]
@@ -42,9 +89,9 @@ def interface_energy_linear_fit():
         energies[surf].append(E/area)
         print(area)
 
-    for e, l in zip(energies, layer_thickness):
+    i = 0
+    for e, l, n in zip(energies, layer_thickness, natoms):
         slope, interscept, _, _, _ = stats.linregress(l, e)
-        ax.plot(l, e, 'o')
         ax.plot(l, slope*np.array(l) + interscept)
         E_surf_mev_per_ang = interscept*1000.0/2.0
         E_surf_mj_per_m = E_surf_mev_per_ang*1.6022*10.0
@@ -106,4 +153,5 @@ def main():
 
 if __name__ == "__main__":
     #main()
-    interface_energy_linear_fit()
+    #interface_energy_linear_fit()
+    linear_fit_inv_length()

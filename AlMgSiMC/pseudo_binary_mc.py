@@ -333,6 +333,13 @@ def random_fixed_temp(mu):
         tbl.insert(thermo)
         mc.reset_ecis()
 
+def test_mult_performance(mc):
+    from cemc.tools import MultithreadPerformance
+    performance_monitor = MultithreadPerformance(max_threads=8)
+
+    mc.T = 10000000
+    performance_monitor.run(mc=mc, num_mc_steps=100000)
+    exit(0)
 
 def main(argv):
     chem_pot = float(argv[0])
@@ -374,6 +381,7 @@ def main(argv):
                              groups=[{"Al": 2}, {"Mg": 1, "Si": 1}],
                              symbols=["Al", "Mg", "Si"])
 
+        test_mult_performance(mc)
         nsteps = int(2E6)
         #nsteps = 10000
         mc.runMC(mode="fixed", steps=nsteps, equil_params={"mode": "fixed", "window_length": int(0.1*nsteps)})
@@ -397,7 +405,7 @@ def main(argv):
         mc.reset_ecis()
 
 if __name__ == "__main__":
-    #main(sys.argv[1:])
+    main(sys.argv[1:])
     #random_fixed_temp(float(sys.argv[1]))
     #free_energy("sqlite:////work/sophus/almgsi_mc_free_energy_sgc_bcs.db")
     #gs_mgsi()
