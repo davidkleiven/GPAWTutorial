@@ -18,9 +18,11 @@ mpl.rcParams.update({"font.size": 18, "svg.fonttype": "none", "axes.unicode_minu
 fname = "data/pseudo_binary_free/adaptive_bias300K_-650mev_bck.h5"
 fname = "data/pseudo_binary_free/adaptive_bias300K_-650mev_bck2.h5"
 fname = "data/pseudo_binary_free/adaptive_bias600K_-650mev.h5"
+TEMP = 400
+fname = "data/pseudo_binary_free/adaptive_bias{}K_-650mev.h5".format(TEMP)
 fname_diff = "data/diffraction/layered_bias600K.h5"
 
-beta = 1.0/(kB*600)
+beta = 1.0/(kB*400)
 
 def main():
     with h5.File(fname, 'r') as infile:
@@ -190,7 +192,7 @@ def fit_landau_polynomial():
     poly_dict["diffraction_file"] = fname_diff
     poly_dict["landau_params"] = params_landau
 
-    json_fname = "chgl_almgsi_quadratic_large_alpha.json"
+    json_fname = "chgl_almgsi_quadratic_large_alpha{}K.json".format(TEMP)
     with open(json_fname, 'w') as outfile:
         json.dump(poly_dict, outfile, indent=2)
     print("JSON file: {}".format(json_fname))
