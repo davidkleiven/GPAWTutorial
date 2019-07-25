@@ -23,9 +23,8 @@ FNAME = "chgl_almgsi_quadratic_large_alpha.json"
 
 khac1 = None
 khac2 = None
-khac3 = None
 def add_strain(chgl):
-    global khac1, khac2, khac3
+    global khac1, khac2
 
     C_al = np.array([[0.62639459, 0.41086487, 0.41086487, 0, 0, 0],
             [0.41086487, 0.62639459, 0.41086487, 0, 0, 0],
@@ -50,17 +49,12 @@ def add_strain(chgl):
                         [ 0.00029263, 0.0440222,   0.0],
                         [ 0.0,   0.0,  0.0440222 ]])
 
-    misfit3 = np.array([[ 0.0440222,   0.00029263,  0.0 ],
-                        [ 0.00029263, 0.0440222,   0.0],
-                        [ 0.0,   0.0,  -0.0281846 ]])
 
-    khac1 = PyKhachaturyan(3, C_al, misfit1)
-    khac2 = PyKhachaturyan(3, C_al, misfit2)
-    khac3 = PyKhachaturyan(3, C_al, misfit3)
+    khac1 = PyKhachaturyan(2, C_al, misfit1)
+    khac2 = PyKhachaturyan(2, C_al, misfit2)
 
     chgl.add_strain_model(khac1, 1)
     chgl.add_strain_model(khac2, 2)
-    chgl.add_strain_model(khac3, 3)
 
 
 def main(prefix, start, startfile, initfunc, dx=30.0, steps=0, update_freq=0):
@@ -68,9 +62,9 @@ def main(prefix, start, startfile, initfunc, dx=30.0, steps=0, update_freq=0):
     #prefix = "data/almgsi_chgl_3D_surface_3nm_64_strain_meV/chgl"
     #prefix = "data/almgsi_chgl_3D_MLdx1_1nm_64_strain_meV/chgl"
     #prefix = "/work/sophus/almgsi_chgl_3D_MLdx1_3nm_64_strain_meV/chgl"
-    dim = 3
-    L = 64
-    num_gl_fields = 3
+    dim = 2
+    L = 128
+    num_gl_fields = 2
     M = 0.1/dx**2
     alpha = 5.0
     dt = 0.003
@@ -78,7 +72,7 @@ def main(prefix, start, startfile, initfunc, dx=30.0, steps=0, update_freq=0):
 
     coeff, terms = get_polyterms(FNAME)
 
-    poly = PyPolynomial(4)
+    poly = PyPolynomial(3)
     poly1 = PyPolynomial(1)
 
     with open(FNAME, 'r') as infile:
@@ -95,7 +89,9 @@ def main(prefix, start, startfile, initfunc, dx=30.0, steps=0, update_freq=0):
     for item in info["terms"]:
         c = item["coeff"]
         powers = item["powers"]
-        poly.add_term(c, PyPolynomialTerm(powers))
+        if powers[-1] > 0:
+            continue
+        poly.add_term(c, PyPolynomialTerm(powers[:-1]))
         print(c, powers)
 
     N = len(info["conc_phase1"])
@@ -105,9 +101,8 @@ def main(prefix, start, startfile, initfunc, dx=30.0, steps=0, update_freq=0):
     alpha = grad_coeff[0]/dx**2
     b1 = grad_coeff[1]/dx**2
     b2 = grad_coeff[2]/dx**2
-    gradient_coeff = [[b2, b1, b2],
-                      [b1, b2, b2],
-                      [b2, b2, b1]]
+    gradient_coeff = [[b2, b1],
+                      [b1, b2]]
     print(gradient_coeff)
 
     chgl = PyCHGLRealSpace(dim, L, prefix, num_gl_fields, M, alpha, dt,
@@ -125,7 +120,7 @@ def main(prefix, start, startfile, initfunc, dx=30.0, steps=0, update_freq=0):
     chgl.use_adaptive_stepping(1E-10, 1, 0.005)
     chgl.set_field_update_rate(10)
     chgl.set_strain_update_rate(100)
-    chgl.build3D()
+    chgl.build2D()
     add_strain(chgl)
 
     if startfile is not None:
@@ -146,20 +141,19 @@ def main(prefix, start, startfile, initfunc, dx=30.0, steps=0, update_freq=0):
 
 
 def precipitates_square(L):
-    conc = np.zeros((L, L, L))
+    conc = np.zeros((L, L))
     start = 20
-    end = 40
-    conc[start:end, start:end, start:end] = 1.0
+    end = 80
+    conc[start:end, start:end] = 1.0
 
-    eta1 = np.zeros((L, L, L))
+    eta1 = np.zeros((L, L))
     eta1[start:end, start:end, start:end] = 0.8
-    eta2 = np.zeros((L, L, L))
-    eta3 = np.zeros((L, L, L))
+    eta2 = np.zeros((L, L))
 
     from scipy.ndimage import gaussian_filter
     conc = gaussian_filter(conc, 3.0)
     eta1 = gaussian_filter(eta1, 3.0)
-    return [conc, eta1, eta2, eta3]
+    return [conc, eta1, eta2]
 
 
 def create_matsuda(L):
