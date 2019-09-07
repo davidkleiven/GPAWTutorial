@@ -15,6 +15,7 @@ import numpy as np
 #from cemc.phasefield.tools import get_polyterms
 from apal.tools import get_polyterms
 import json
+from scipy.ndimage import gaussian_filter
 
 FNAME = "chgl_almgsi_apal.json"
 FNAME = "chgl_almgsi_apal_non_zero_grad_coeff.json"
@@ -41,7 +42,7 @@ def add_strain(chgl):
                         [ 0.00029263, -0.0281846,   0.00029263],
                         [ 0.0008603,   0.00029263,  0.0440222 ]])
 
-    misfit1 = misfit = np.array([[ 0.0440222,   0.00029263,  0.0 ],
+    misfit1 = np.array([[ 0.0440222,   0.00029263,  0.0 ],
                         [ 0.00029263, -0.0281846,   0.0],
                         [ 0.0,   0.0,  0.0440222 ]])
 
@@ -58,17 +59,16 @@ def add_strain(chgl):
     chgl.add_strain_model(khac2, 2)
 
 
-def main(prefix, start, startfile, initfunc, dx=30.0, steps=0, update_freq=0, prec_x0=20, prec_x1=50):
+def main(prefix, start, startfile, initfunc, dx=30.0, dt=0.3, steps=0, update_freq=0, prec_x0=20, prec_x1=50, a=1, b=1):
     #prefix = "data/almgsi_chgl_random_seed_strain_noise2/chgl"
     #prefix = "data/almgsi_chgl_3D_surface_3nm_64_strain_meV/chgl"
     #prefix = "data/almgsi_chgl_3D_MLdx1_1nm_64_strain_meV/chgl"
     #prefix = "/work/sophus/almgsi_chgl_3D_MLdx1_3nm_64_strain_meV/chgl"
     dim = 2
-    L = 128
+    L = 512
     num_gl_fields = 2
     M = 0.1/dx**2
     alpha = 5.0
-    dt = 0.03
     gl_damping = M/dx**2
 
     coeff, terms = get_polyterms(FNAME)
@@ -120,12 +120,14 @@ def main(prefix, start, startfile, initfunc, dx=30.0, steps=0, update_freq=0, pr
     landau.set_poly_phase2(poly)
 
     chgl.set_free_energy_quadratic(landau)
-    chgl.use_adaptive_stepping(1E-10, 1, 0.5)
+    chgl.use_adaptive_stepping(1E-10, 1, 0.05)
+    #chgl.use_HeLiuTang_stabilizer(500)
     #chgl.set_field_update_rate(100)
     #chgl.set_strain_update_rate(1000)
     chgl.build2D()
     add_strain(chgl)
     chgl.conserve_volume(1)
+    chgl.conserve_volume(2)
 
     if startfile is not None:
         chgl.from_file(prefix + startfile)
@@ -136,6 +138,10 @@ def main(prefix, start, startfile, initfunc, dx=30.0, steps=0, update_freq=0, pr
             chgl.from_npy_array(create_matsuda(L))
         elif initfunc == 'prec_square_bck':
             chgl.from_npy_array(precipitate_square_bck(L))
+        elif initfunc == 'random':
+            chgl.from_npy_array(random_orientation(L))
+        elif initfunc == 'ellipse':
+            chgl.from_npy_array(ellipse(L, a, b))
         else:
             raise ValueError("Unknown init function!")
             
@@ -146,30 +152,28 @@ def main(prefix, start, startfile, initfunc, dx=30.0, steps=0, update_freq=0, pr
 
 def precipitates_square(L, start=20, end=50):
     conc = np.zeros((L, L))
-    start = 20
-    end = 50
     conc[start:end, start:end] = 1.0
 
     eta1 = np.zeros((L, L))
-    eta1[start:end, start:end] = 0.8
     eta2 = np.zeros((L, L))
+    eta2[start:end, start:end] = 0.8
 
     from scipy.ndimage import gaussian_filter
-    conc = gaussian_filter(conc, 3.0)
-    eta1 = gaussian_filter(eta1, 3.0)
+    conc = gaussian_filter(conc, 10.0)
+    eta2 = gaussian_filter(eta2, 10.0)
     return [conc, eta1, eta2]
 
 
 def create_matsuda(L):
-    conc = np.zeros((L, L, L))
-    conc[19:29, 16:48, 16:48] = 1.0
-    conc[35:45, 16:48, 16:48] = 1.0
-    eta1 = np.zeros((L, L, L))
-    eta1[19:29, 16:48, 16:48] = 0.8
-    eta1[35:45, 16:48, 16:48] = 0.8
-    eta2 = np.zeros((L, L, L))
-    eta3 = np.zeros((L, L, L))
-    return [conc, eta1, eta2, eta3]
+    conc = np.zeros((L, L))
+    conc[20:40, 20:100] = 1.0
+    conc[60:80, 20:100] = 1.0
+    eta1 = np.zeros((L, L))
+    eta1[20:40, 20:100] = 0.8
+    eta1[60:80, 20:100] = 0.8
+    eta2 = np.zeros((L, L))
+    eta3 = np.zeros((L, L))
+    return [conc, eta1, eta2]
 
 
 def precipitate_square_bck(L):
@@ -179,6 +183,56 @@ def precipitate_square_bck(L):
     prec[0][mask] = conc[mask]
     return prec
 
+def random_orientation(L):
+    num_prec = 200
+    size = 10
+
+    conc = np.zeros((L, L))
+    eta1 = np.zeros((L, L))
+    eta2 = np.zeros((L, L))
+
+    num_inserted = 0
+    for i in range(10000):
+        x0 = np.random.randint(size, high=L-size)
+        y0 = np.random.randint(size, high=L-size)
+
+        if np.any(conc[x0:x0+size, y0:y0+size] > 0.2):
+            continue
+
+        num_inserted += 1
+
+        conc[x0:x0+size, y0:y0+size] = 1.0
+
+        if np.random.rand() < 0.5:
+            eta1[x0:x0+size, y0:y0+size] = 1.0
+        else:
+            eta2[x0:x0+size, y0:y0+size] = 1.0
+
+        if num_inserted >= num_prec:
+            break
+
+    conc = gaussian_filter(conc, 4)
+    eta1 = gaussian_filter(eta1, 4)
+    eta2 = gaussian_filter(eta2, 4)
+    return [conc, eta1, eta2]
+
+
+def ellipse(L, a, b):
+    conc = np.zeros((L, L))
+    eta1 = np.zeros((L, L))
+    eta2 = np.zeros((L, L))
+
+    c = L/2
+    x = np.linspace(-c, c, L)
+    X, Y = np.meshgrid(x, x)
+    ellipse_eq = (X/a)**2 + (Y/b)**2
+    mask = ellipse_eq <= 1.0
+    conc[mask] = 1.0
+    eta2[mask] = 0.8
+    conc = gaussian_filter(conc, 8)
+    eta1 = gaussian_filter(eta1, 8)
+    eta2 = gaussian_filter(eta2, 8)
+    return [conc, eta1, eta2]
 
 if __name__ == "__main__":
     prefix = None
@@ -190,6 +244,9 @@ if __name__ == "__main__":
     update_freq = 0
     prec_x0 = 20
     prec_x1 = 50
+    a = 1
+    b = 1
+    dt = 0.3
 
     for argv in sys.argv:
         if "--help" in argv:
@@ -220,9 +277,15 @@ if __name__ == "__main__":
         elif '--update_freq=' in argv:
             update_freq = int(argv.split('--update_freq=')[1])
         elif '--prec_x0=' in argv:
-            prec_xo = int(argv.split('--prec_x0=')[1])
+            prec_x0 = int(argv.split('--prec_x0=')[1])
         elif '--prec_x1=' in argv:
             prec_x1 = int(argv.split('--prec_x1=')[1])
+        elif '--a=' in argv:
+            a = int(argv.split('--a=')[1])
+        elif '--b=' in argv:
+            b = int(argv.split('--b=')[1])
+        elif '--dt=' in argv:
+            dt = float(argv.split('--dt=')[1])
         else:
             raise ValueError("Unknown option {}".format(argv))
 
@@ -233,6 +296,6 @@ if __name__ == "__main__":
         assert str(start) in startfile
         assert initfunc is None
     else:
-        assert initfunc in ['matsuda', 'precipitate_square', 'prec_square_bck']
+        assert initfunc in ['matsuda', 'precipitate_square', 'prec_square_bck', 'random', 'ellipse']
 
-    main(prefix, start, startfile, initfunc, dx, num_steps, update_freq, prec_x0, prec_x1)
+    main(prefix, start, startfile, initfunc, dx, dt, num_steps, update_freq, prec_x0, prec_x1, a, b)

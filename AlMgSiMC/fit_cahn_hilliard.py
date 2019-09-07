@@ -18,11 +18,11 @@ mpl.rcParams.update({"font.size": 18, "svg.fonttype": "none", "axes.unicode_minu
 fname = "data/pseudo_binary_free/adaptive_bias300K_-650mev_bck.h5"
 fname = "data/pseudo_binary_free/adaptive_bias300K_-650mev_bck2.h5"
 fname = "data/pseudo_binary_free/adaptive_bias600K_-650mev.h5"
-TEMP = 400
+TEMP = 600
 fname = "data/pseudo_binary_free/adaptive_bias{}K_-650mev.h5".format(TEMP)
 fname_diff = "data/diffraction/layered_bias600K.h5"
 
-beta = 1.0/(kB*400)
+beta = 1.0/(kB*TEMP)
 
 def main():
     with h5.File(fname, 'r') as infile:
@@ -82,6 +82,7 @@ def fit_landau_polynomial():
     # Symmetrize the function
     G_diff_half = G_diff[int(len(G_diff)/2):]
     G_diff = np.concatenate((G_diff_half[::-1], G_diff_half))
+    G_diff /= 8
 
     # Align the left end
     params_landau = {
@@ -94,7 +95,7 @@ def fit_landau_polynomial():
     # weights = {"eq_phase2": 0.0, "eq_phase1": 1.0}
     # poly.fit(x, G, weights=weights, kernel_width=0.01, num_kernels=200, width=None, smear_width=0, shape="auto", lamb=1E-1)
     poly = QuadraticExpansionLandau(c1=0.01, c2=0.96)
-    poly.fit(x, G, end_phase1=0.1, show=True)
+    poly.fit(x, G, end_phase1=0.4, show=True)
     print(poly.coeff_shape)
     n_eq = poly.equil_shape_order(x)
     n_eq_max = np.max(n_eq)
@@ -181,7 +182,7 @@ def fit_landau_polynomial():
     G_surface = poly.evaluate(x)
     x, dS = surface_formation(x, G_surface)
     dS[dS < 0.0] = 0.0
-    alpha = poly.conc_grad_param(gammas[0], x, dS)*1.0
+    alpha = poly.conc_grad_param(gammas[0], x, dS)*0.95
     alpha1 = poly.gradient_coefficient(alpha, gammas[0], x, dS)[0]
     alpha2 = poly.gradient_coefficient(alpha, gammas[1], x, dS)[0]
     print(alpha, alpha1, alpha2)
