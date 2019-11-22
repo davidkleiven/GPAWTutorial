@@ -1,12 +1,14 @@
 import sys
-from ase.clease import CEBulk as BulkCrystal
-from ase.clease import Concentration 
-from ase.clease import CorrFunction
-from ase.clease import NewStructures as GenerateStructures
-from ase.clease import GAFit, Evaluate
-from cemc.tools import GSFinder
-from cemc import CE
+from clease import CEBulk as BulkCrystal
+from clease import Concentration 
+from clease import CorrFunction
+from clease import NewStructures as GenerateStructures
+from clease import GAFit, Evaluate
+#from cemc.tools import GSFinder
+#from cemc import CE
 import json
+import ase
+print(ase.__file__)
 
 
 db_name = "almgsiX_fcc.db"
@@ -21,7 +23,7 @@ def main(argv):
         concentration=conc)
     ceBulk = BulkCrystal(**kwargs)
 
-    struc_generator = GenerateStructures( ceBulk, struct_per_gen=10 )
+    struc_generator = GenerateStructures( ceBulk, struct_per_gen=10, generation_number=100 )
     if option == "reconfig_settings":
         ceBulk.reconfigure_settings()
     elif option == "insert":
@@ -161,6 +163,7 @@ def evaluate(bc):
              ("name", "!=", "template"),
              ("converged", "=", 1)]
     evaluator = Evaluate(bc, select_cond=scond, scoring_scheme="loocv_fast")
+    evaluator.export_dataset("data/almgsiX_data.csv")
     ga_fit = GAFit(setting=bc, alpha=1E-8, change_prob=0.2, select_cond=scond, fname="data/ga_almgsiX.csv")
     ga_fit.run(min_change=0.001)
     eci = evaluator.get_cluster_name_eci()
