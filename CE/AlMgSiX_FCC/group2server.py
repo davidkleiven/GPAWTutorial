@@ -6,10 +6,7 @@ import sys
 SQLITE_DB = 'almgsiX_dft.db'
 MYSQL_DB = os.environ['MYSQL_URL']
 
-def sync(group):
-    db_server = connect(MYSQL_DB)
-    db_sqlite = connect(SQLITE_DB)
-
+def sync(group, db_sqlite, db_server):
     num_inserted = 0
     symm_checker = SymmetryEquivalenceCheck()
     atoms_on_server = [r.toatoms() for r in db_server.select(type='initial')]
@@ -37,4 +34,15 @@ def sync(group):
             pass
     print("Inserted {} calculations".format(num_inserted))
 
-sync(int(sys.argv[1]))
+def sync_groups(groups):
+    db_server = connect(MYSQL_DB)
+    db_sqlite = connect(SQLITE_DB)
+    for g in groups:
+        sync(g, db_sqlite, db_server)
+
+#groups = [int(x) for x in sys.argv[1:]]
+groups = []
+with open(sys.argv[1], 'r') as infile:
+    for line in infile.readlines():
+        groups.append(int(line.strip()))
+sync_groups(groups)

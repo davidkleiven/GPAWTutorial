@@ -8,8 +8,8 @@ relax_type = 'volume_relax'
 project = 'cluster_expansion_almgsiX_fcc'
 
 def to_traj():
-    traj_init = 'structures_initial.traj'
-    traj_final = 'structures_final.traj'
+    traj_init = 'structures_initial2.traj'
+    traj_final = 'structures_final2.traj'
 
     if os.path.exists(traj_init):
         os.remove(traj_init)
