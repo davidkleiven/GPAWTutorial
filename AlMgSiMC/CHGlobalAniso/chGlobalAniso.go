@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"math"
 	"math/rand"
 
@@ -30,16 +31,19 @@ func (d *DerivY) Construct(bricks map[string]pf.Brick) pf.Term {
 func (d *DerivY) OnStepFinished(t float64, bricks map[string]pf.Brick) {}
 
 func main() {
-	folder := "dataAnisotrop/"
-	nx := 128
-	ny := 128
+	folder := flag.String("folder", "./", "folder where output will be stored")
+	aniso := flag.Float64("aniso", 0.0, "global anisotropy")
+	flag.Parse()
+
+	nx := 1024
+	ny := 1024
 	dt := 0.1
 	domainSize := []int{nx, ny}
 	model := pf.NewModel()
 	conc := pf.NewField("conc", nx*ny, nil)
 	gradCoeff := 2.0
 	term := DerivY{
-		Coeff: 2.0 * gradCoeff,
+		Coeff: gradCoeff * *aniso,
 	}
 
 	// Initialize with random concentration
@@ -63,11 +67,11 @@ func main() {
 	solver := pf.NewSolver(&model, domainSize, dt)
 
 	// Initialize uint8 IO
-	out := pf.NewFloat64IO(folder + "cahnHilliard2D")
+	out := pf.NewFloat64IO(*folder + "cahnHilliard2D")
 	solver.AddCallback(out.SaveFields)
 
 	// Solve the equation
 	nepoch := 100
 	solver.Solve(nepoch, 100)
-	pf.WriteXDMF(folder+"cahnHillard.xdmf", []string{"conc"}, "cahnHilliard2D", nepoch, domainSize)
+	pf.WriteXDMF(*folder+"cahnHillard.xdmf", []string{"conc"}, "cahnHilliard2D", nepoch, domainSize)
 }
