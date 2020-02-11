@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"math"
 	"math/rand"
 
@@ -33,6 +34,7 @@ func (d *DerivY) OnStepFinished(t float64, bricks map[string]pf.Brick) {}
 func main() {
 	folder := flag.String("folder", "./", "folder where output will be stored")
 	aniso := flag.Float64("aniso", 0.0, "global anisotropy")
+	initFile := flag.String("init", "", "file with the initial concentration distribution")
 	flag.Parse()
 
 	nx := 1024
@@ -46,10 +48,18 @@ func main() {
 		Coeff: gradCoeff * *aniso,
 	}
 
-	// Initialize with random concentration
-	r := rand.New(rand.NewSource(0))
-	for i := range conc.Data {
-		conc.Data[i] = complex(1.0*r.Float64()-1.0, 0.0)
+	if *initFile == "" {
+		// Initialize with random concentration
+		r := rand.New(rand.NewSource(0))
+		for i := range conc.Data {
+			conc.Data[i] = complex(1.0*r.Float64()-1.0, 0.0)
+		}
+	} else {
+		data := pf.LoadFloat64(*initFile)
+		for i := range data {
+			conc.Data[i] = complex(data[i], 0.0)
+		}
+		fmt.Print("Loaded data from binary file")
 	}
 
 	// Add constants
