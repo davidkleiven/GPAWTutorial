@@ -22,7 +22,7 @@ func (d *DerivY) Construct(bricks map[string]pf.Brick) pf.Term {
 			f := freq(i)
 			prefactor := math.Pow(2.0*math.Pi, 4)
 			prefactor *= f[1] * f[1] * (f[0]*f[0] + f[1]*f[1]) * d.Coeff
-			field[i] = -complex(prefactor, 0.0) * brick.Get(i)
+			field[i] = complex(prefactor, 0.0) * brick.Get(i)
 		}
 		return field
 	}
