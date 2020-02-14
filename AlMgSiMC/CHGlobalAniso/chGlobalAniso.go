@@ -82,6 +82,6 @@ func main() {
 
 	// Solve the equation
 	nepoch := 100
-	solver.Solve(nepoch, 100)
+	solver.Solve(nepoch, 1000)
 	pf.WriteXDMF(*folder+"cahnHillard.xdmf", []string{"conc"}, "cahnHilliard2D", nepoch, domainSize)
 }
