@@ -14,7 +14,7 @@ func dfdc(i int, bricks map[string]pf.Brick) complex128 {
 	eta1 := real(bricks["eta1"].Get(i))
 	eta2 := real(bricks["eta2"].Get(i))
 	res := 2.0*1.57*conc - 0.09 - 4.16*(eta1*eta1+eta2*eta2)
-	return complex(res, 0.0)
+	return complex(res*10.0, 0.0)
 }
 
 func dfdeta(i int, bricks map[string]pf.Brick, value int) float64 {
@@ -33,7 +33,7 @@ func dfdeta(i int, bricks map[string]pf.Brick, value int) float64 {
 	res := -2*4.16*eta1*conc + 2*3.77*eta1
 	res -= 8.29 * (4.0*math.Pow(eta1, 3) - 2.0*eta1*eta2*eta2 - 6.0*math.Pow(eta1, 5))
 	res -= 2.76 * (2.0*eta1*math.Pow(eta2, 4) + 4.0*math.Pow(eta1, 3)*math.Pow(eta2, 2))
-	return res
+	return res*10.0
 }
 
 func dfdn1(i int, bricks map[string]pf.Brick) complex128 {
@@ -65,7 +65,7 @@ func main() {
 	C_al_tensor := elasticity.FromFlatVoigt(C_al)
 
 	dx := 0.5
-	dt := 0.01
+	dt := 0.001
 
 	// Define gradient coefficients
 	alpha_corr := 10.0
@@ -103,7 +103,7 @@ func main() {
 	model.RegisterFunction("dfdc", dfdc)
 	model.RegisterFunction("dfdn1", dfdn1)
 	model.RegisterFunction("dfdn2", dfdn2)
-	model.AddEquation("dconc/dt = LAP dfdc + alpha*LAP^2 conc")
+	model.AddEquation("dconc/dt = LAP dfdc - alpha*LAP^2 conc")
 	model.AddEquation("deta1/dt = dfdn1 + HESS1 + ELAST1")
 	model.AddEquation("deta2/dt = dfdn2 + HESS2 + ELAST2")
 
@@ -114,5 +114,7 @@ func main() {
 		Prefix: "/work/sophus/AdaptiveCHGL/ch",
 	}
 	solver.AddCallback(fileBackup.SaveFields)
-	solver.Solve(10, 100)
+	nepoch := 10
+	solver.Solve(nepoch, 100)
+	pf.WriteXDMF(fileBackup.Prefix+".xdmf", []string{"conc, eta1, eta2"}, "chgl", nepoch, []int{N, N})
 }
