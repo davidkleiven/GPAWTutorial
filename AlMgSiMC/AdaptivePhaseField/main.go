@@ -1,8 +1,10 @@
 package main
 
 import (
+	"flag"
 	"math"
 	"math/rand"
+	"strings"
 
 	"github.com/davidkleiven/gopf/elasticity"
 	"github.com/davidkleiven/gopf/pf"
@@ -63,13 +65,42 @@ func square(value float64, data []complex128, N int) {
 }
 
 func main() {
+	dtArg := flag.Float64("dt", 0.001, "Time step in the simulation")
+	dxArg := flag.Float64("dx", 0.001, "Spatial discretization used in the simulation")
+	initialization := flag.String("init", "uniform", "initialization type. square, uniform or a comma separated list of filenames")
+	startEpoch := flag.Int("start", 0, "Epoch to start from")
+	numEpoch := flag.Int("epoch", 10, "Number of epochs to run")
+	numSteps := flag.Int("steps", 100, "Number of steps per epoch")
+	flag.Parse()
+
 	N := 256
 	eta1 := pf.NewField("eta1", N*N, nil)
 	eta2 := pf.NewField("eta2", N*N, nil)
 	conc := pf.NewField("conc", N*N, nil)
-	//uniform(0.2, conc.Data)
-	square(1.0, conc.Data, N)
-	square(0.82, eta1.Data, N)
+
+	if *initialization == "uniform" {
+		uniform(0.2, conc.Data)
+	} else if *initialization == "square" {
+		square(1.0, conc.Data, N)
+		square(0.82, eta1.Data, N)
+	} else {
+		// Load from file
+		fnames := strings.Split(*initialization, ",")
+		concData := pf.LoadFloat64(fnames[0])
+		for i := range concData {
+			conc.Data[i] = complex(concData[i], 0.0)
+		}
+
+		eta1Data := pf.LoadFloat64(fnames[1])
+		for i := range eta1Data {
+			eta1.Data[i] = complex(eta1Data[i], 0.0)
+		}
+
+		eta2Data := pf.LoadFloat64(fnames[2])
+		for i := range eta2Data {
+			eta2.Data[i] = complex(eta2Data[i], 0.0)
+		}
+	}
 
 	misfit1 := mat.NewDense(3, 3, []float64{0.044, 0.0, 0.0, 0.0, -0.028, 0.0, 0.0, 0.0, 0.044})
 	misfit2 := mat.NewDense(3, 3, []float64{-0.028, 0.0, 0.0, 0.0, 0.044, 0.0, 0.0, 0.0, 0.044})
@@ -79,8 +110,8 @@ func main() {
 		0, 0, 0, 0, 0, 0.42750351}
 	C_al_tensor := elasticity.FromFlatVoigt(C_al)
 
-	dx := 0.5
-	dt := 0.001
+	dx := *dxArg
+	dt := *dtArg
 
 	// Define gradient coefficients
 	alpha_corr := 10.0
@@ -124,12 +155,13 @@ func main() {
 
 	// Initialize the solver
 	solver := pf.NewSolver(&model, []int{N, N}, dt)
+	solver.StartEpoch = *startEpoch
 	model.Summarize()
 	fileBackup := pf.Float64IO{
 		Prefix: "/work/sophus/AdaptiveCHGL/ch",
 	}
 	solver.AddCallback(fileBackup.SaveFields)
-	nepoch := 10
-	solver.Solve(nepoch, 100)
+	nepoch := *numEpoch
+	solver.Solve(nepoch, *numSteps)
 	pf.WriteXDMF(fileBackup.Prefix+".xdmf", []string{"conc, eta1, eta2"}, "chgl", nepoch, []int{N, N})
 }
