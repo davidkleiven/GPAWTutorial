@@ -163,5 +163,5 @@ func main() {
 	solver.AddCallback(fileBackup.SaveFields)
 	nepoch := *numEpoch
 	solver.Solve(nepoch, *numSteps)
-	pf.WriteXDMF(fileBackup.Prefix+".xdmf", []string{"conc, eta1, eta2"}, "chgl", nepoch, []int{N, N})
+	pf.WriteXDMF(fileBackup.Prefix+".xdmf", []string{"conc", "eta1", "eta2"}, "ch", nepoch, []int{N, N})
 }
