@@ -109,8 +109,9 @@ func main() {
 
 	// Initialize the solver
 	solver := pf.NewSolver(&model, []int{N, N}, dt)
+	model.Summarize()
 	fileBackup := pf.Float64IO{
-		Prefix: "/work/sophus/davidkl/AdaptiveCHGL/ch",
+		Prefix: "/work/sophus/AdaptiveCHGL/ch",
 	}
 	solver.AddCallback(fileBackup.SaveFields)
 	solver.Solve(10, 100)
