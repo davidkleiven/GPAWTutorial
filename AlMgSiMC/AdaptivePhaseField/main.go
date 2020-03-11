@@ -71,6 +71,7 @@ func main() {
 	startEpoch := flag.Int("start", 0, "Epoch to start from")
 	numEpoch := flag.Int("epoch", 10, "Number of epochs to run")
 	numSteps := flag.Int("steps", 100, "Number of steps per epoch")
+	vandevenOrder := flag.Int("vandeven", 0, "Order of the vandeven filter. If 0 no filter will be applied.")
 	flag.Parse()
 
 	N := 256
@@ -153,8 +154,16 @@ func main() {
 	model.AddEquation("deta1/dt = dfdn1 + HESS1 + ELAST1")
 	model.AddEquation("deta2/dt = dfdn2 + HESS2 + ELAST2")
 
+	// Initialize the filter
+
 	// Initialize the solver
 	solver := pf.NewSolver(&model, []int{N, N}, dt)
+
+	var vandeven pf.Vandeven
+	if *vandevenOrder > 0 {
+		vandeven = pf.NewVandeven(*vandevenOrder)
+		solver.Stepper.SetFilter(&vandeven)
+	}
 	solver.StartEpoch = *startEpoch
 	model.Summarize()
 	fileBackup := pf.Float64IO{
