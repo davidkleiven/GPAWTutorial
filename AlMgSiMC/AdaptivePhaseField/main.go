@@ -37,11 +37,11 @@ func dfdeta(i int, bricks map[string]pf.Brick, value int) float64 {
 }
 
 func dfdn1(i int, bricks map[string]pf.Brick) complex128 {
-	return complex(dfdeta(i, bricks, 1), 0.0)
+	return complex(-dfdeta(i, bricks, 1), 0.0)
 }
 
 func dfdn2(i int, bricks map[string]pf.Brick) complex128 {
-	return complex(dfdeta(i, bricks, 2), 0.0)
+	return complex(-dfdeta(i, bricks, 2), 0.0)
 }
 
 func uniform(maxval float64, data []complex128) {
@@ -104,8 +104,8 @@ func main() {
 	model.RegisterFunction("dfdn1", dfdn1)
 	model.RegisterFunction("dfdn2", dfdn2)
 	model.AddEquation("dcont/dt = LAP dfdc + alpha*LAP^2 c")
-	model.AddEquation("deta1/dt = -dfdn1 + HESS1 + ELAST1")
-	model.AddEquation("deta2/dt = -dfdn2 + HESS2 + ELAST2")
+	model.AddEquation("deta1/dt = dfdn1 + HESS1 + ELAST1")
+	model.AddEquation("deta2/dt = dfdn2 + HESS2 + ELAST2")
 
 	// Initialize the solver
 	solver := pf.NewSolver(&model, []int{N, N}, dt)
