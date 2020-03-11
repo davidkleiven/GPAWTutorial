@@ -14,7 +14,7 @@ func dfdc(i int, bricks map[string]pf.Brick) complex128 {
 	eta1 := real(bricks["eta1"].Get(i))
 	eta2 := real(bricks["eta2"].Get(i))
 	res := 2.0*1.57*conc - 0.09 - 4.16*(eta1*eta1+eta2*eta2)
-	return complex(res*10.0, 0.0)
+	return complex(res, 0.0)
 }
 
 func dfdeta(i int, bricks map[string]pf.Brick, value int) float64 {
@@ -33,7 +33,7 @@ func dfdeta(i int, bricks map[string]pf.Brick, value int) float64 {
 	res := -2*4.16*eta1*conc + 2*3.77*eta1
 	res -= 8.29 * (4.0*math.Pow(eta1, 3) - 2.0*eta1*eta2*eta2 - 6.0*math.Pow(eta1, 5))
 	res -= 2.76 * (2.0*eta1*math.Pow(eta2, 4) + 4.0*math.Pow(eta1, 3)*math.Pow(eta2, 2))
-	return res*10.0
+	return res
 }
 
 func dfdn1(i int, bricks map[string]pf.Brick) complex128 {
@@ -49,12 +49,27 @@ func uniform(maxval float64, data []complex128) {
 		data[i] = complex(rand.Float64()*maxval, 0.0)
 	}
 }
+
+func square(value float64, data []complex128, N int) {
+	min := 3 * N / 8
+	max := 5 * N / 8
+	for i := range data {
+		ix := i % N
+		iy := i / N
+		if ix > min && ix < max && iy > min && iy < max {
+			data[i] = complex(1.0, 0.0)
+		}
+	}
+}
+
 func main() {
 	N := 256
 	eta1 := pf.NewField("eta1", N*N, nil)
 	eta2 := pf.NewField("eta2", N*N, nil)
 	conc := pf.NewField("conc", N*N, nil)
-	uniform(0.2, conc.Data)
+	//uniform(0.2, conc.Data)
+	square(1.0, conc.Data, N)
+	square(0.82, eta1.Data, N)
 
 	misfit1 := mat.NewDense(3, 3, []float64{0.044, 0.0, 0.0, 0.0, -0.028, 0.0, 0.0, 0.0, 0.044})
 	misfit2 := mat.NewDense(3, 3, []float64{-0.028, 0.0, 0.0, 0.0, 0.044, 0.0, 0.0, 0.0, 0.044})
