@@ -103,7 +103,7 @@ func main() {
 	model.RegisterFunction("dfdc", dfdc)
 	model.RegisterFunction("dfdn1", dfdn1)
 	model.RegisterFunction("dfdn2", dfdn2)
-	model.AddEquation("dcont/dt = LAP dfdc + alpha*LAP^2 c")
+	model.AddEquation("dconc/dt = LAP dfdc + alpha*LAP^2 conc")
 	model.AddEquation("deta1/dt = dfdn1 + HESS1 + ELAST1")
 	model.AddEquation("deta2/dt = dfdn2 + HESS2 + ELAST2")
 
