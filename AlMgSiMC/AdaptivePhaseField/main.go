@@ -72,6 +72,7 @@ func main() {
 	numEpoch := flag.Int("epoch", 10, "Number of epochs to run")
 	numSteps := flag.Int("steps", 100, "Number of steps per epoch")
 	vandevenOrder := flag.Int("vandeven", 0, "Order of the vandeven filter. If 0 no filter will be applied.")
+	outfolder := flag.String("folder", "./", "Folder where the output files will be stored")
 	flag.Parse()
 
 	N := 256
@@ -167,7 +168,7 @@ func main() {
 	solver.StartEpoch = *startEpoch
 	model.Summarize()
 	fileBackup := pf.Float64IO{
-		Prefix: "/work/sophus/AdaptiveCHGL/ch",
+		Prefix: *outfolder + "ch",
 	}
 	solver.AddCallback(fileBackup.SaveFields)
 	nepoch := *numEpoch
