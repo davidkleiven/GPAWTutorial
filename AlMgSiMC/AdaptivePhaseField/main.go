@@ -4,6 +4,8 @@ import (
 	"flag"
 	"math"
 	"math/rand"
+	"os"
+	"runtime/pprof"
 	"strings"
 
 	"github.com/davidkleiven/gopf/elasticity"
@@ -73,7 +75,17 @@ func main() {
 	numSteps := flag.Int("steps", 100, "Number of steps per epoch")
 	vandevenOrder := flag.Int("vandeven", 0, "Order of the vandeven filter. If 0 no filter will be applied.")
 	outfolder := flag.String("folder", "./", "Folder where the output files will be stored")
+	cpuprof := flag.String("cpuprof", "", ".prof file where the CPU profile will be stored")
 	flag.Parse()
+
+	if *cpuprof != "" {
+		f, err := os.Create(*cpuprof)
+		if err != nil {
+			panic(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
 
 	N := 256
 	eta1 := pf.NewField("eta1", N*N, nil)
