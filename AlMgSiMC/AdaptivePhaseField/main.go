@@ -55,8 +55,8 @@ func uniform(maxval float64, data []complex128) {
 }
 
 func square(value float64, data []complex128, N int) {
-	min := 3 * N / 8
-	max := 5 * N / 8
+	min := 7 * N / 16
+	max := 9 * N / 16
 	for i := range data {
 		ix := i % N
 		iy := i / N
