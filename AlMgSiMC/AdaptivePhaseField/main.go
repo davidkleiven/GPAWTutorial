@@ -36,6 +36,7 @@ func (scm *SoluteConcentrationMonitor) Add(bricks map[string]pf.Brick) {
 			avg += real(conc.Get(i))
 		}
 	}
+	avg /= float64(count)
 	scm.Data = append(scm.Data, avg)
 	fmt.Printf("Average solute concentration %f\n", avg)
 }
