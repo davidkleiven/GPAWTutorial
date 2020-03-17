@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"math"
 	"math/rand"
 	"os"
@@ -12,6 +13,32 @@ import (
 	"github.com/davidkleiven/gopf/pf"
 	"gonum.org/v1/gonum/mat"
 )
+
+// SoluteConcentrationMonitor trackts the average concentration in the matrix
+type SoluteConcentrationMonitor struct {
+	Data      []float64
+	Name      string
+	Threshold float64
+	NumPoints int
+}
+
+// Add adds a new item to the Data
+func (scm *SoluteConcentrationMonitor) Add(bricks map[string]pf.Brick) {
+	eta1 := bricks["eta1"]
+	eta2 := bricks["eta2"]
+	conc := bricks["conc"]
+
+	avg := 0.0
+	count := 0
+	for i := 0; i < scm.NumPoints; i++ {
+		if real(eta1.Get(i)) < scm.Threshold && real(eta2.Get(i)) < scm.Threshold {
+			count++
+			avg += real(conc.Get(i))
+		}
+	}
+	scm.Data = append(scm.Data, avg)
+	fmt.Printf("Average solute concentration %f\n", avg)
+}
 
 func dfdc(i int, bricks map[string]pf.Brick) complex128 {
 	conc := real(bricks["conc"].Get(i))
@@ -63,7 +90,7 @@ func square(value float64, data []complex128, N int) {
 		if ix > min && ix < max && iy > min && iy < max {
 			data[i] = complex(1.0, 0.0)
 		} else {
-			data[i] = complex(rand.Float64()*0.5, 0.0)
+			data[i] = complex(rand.Float64()*0.1, 0.0)
 		}
 	}
 }
@@ -130,14 +157,11 @@ func main() {
 	dt := *dtArg
 
 	// Define gradient coefficients
-	alpha_corr := 10.0
-	beta11_corr := 2.0
-	beta22_corr := 2.0
-	beta11 := 8.33/(dx*dx) + beta11_corr
-	beta22 := 16.72/(dx*dx) + beta22_corr
+	beta11 := 8.33 / (dx * dx)
+	beta22 := 16.72 / (dx * dx)
 	alpha := pf.Scalar{
 		Name:  "alpha",
-		Value: complex(133.33/(dx*dx)+alpha_corr, 0.0),
+		Value: complex(133.33/(dx*dx), 0.0),
 	}
 
 	elast1 := pf.NewHomogeneousModolus("eta1", []int{N, N}, C_al_tensor, misfit1)
@@ -169,10 +193,15 @@ func main() {
 	model.AddEquation("deta1/dt = dfdn1 + HESS1 + ELAST1")
 	model.AddEquation("deta2/dt = dfdn2 + HESS2 + ELAST2")
 
-	// Initialize the filter
-
+	avgConc := SoluteConcentrationMonitor{
+		Data:      []float64{},
+		Name:      "SoluteConcMonitor",
+		Threshold: 0.4,
+		NumPoints: len(conc.Data),
+	}
 	// Initialize the solver
 	solver := pf.NewSolver(&model, []int{N, N}, dt)
+	solver.AddMonitor(&avgConc)
 
 	var vandeven pf.Vandeven
 	if *vandevenOrder > 0 {
