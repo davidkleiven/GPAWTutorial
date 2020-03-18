@@ -185,7 +185,7 @@ func main() {
 	kT := 8.6e-2 * 700      // meV
 	strengthEta := 0.5 * kT / etaDoubleDeriv
 	strengthConc := 0.5 * kT / concDoubleDeriv
-	fmt.Sprintf("Strength conc %f, stengthEta %f\n", strengthConc, strengthEta)
+	fmt.Printf("Strength conc %f, stengthEta %f\n", strengthConc, strengthEta)
 	noise := pf.WhiteNoise{
 		Strength: strengthEta / math.Sqrt(dt),
 	}
