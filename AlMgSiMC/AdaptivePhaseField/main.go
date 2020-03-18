@@ -179,8 +179,8 @@ func main() {
 		Strength: 1.0 / math.Sqrt(dt),
 	}
 
-	cnsv_noise := pf.NewConservativeNoise(1.0/math.Sqrt(dt), 2)
-	dfields := cnsv_noise.RequiredDerivedFields(N * N)
+	cnsvNoise := pf.NewConservativeNoise(1.0/math.Sqrt(dt), 2)
+	dfields := cnsvNoise.RequiredDerivedFields(N * N)
 
 	// Initialize the model
 	model := pf.NewModel()
@@ -196,7 +196,7 @@ func main() {
 	model.RegisterFunction("dfdc", dfdc)
 	model.RegisterFunction("dfdn1", dfdn1)
 	model.RegisterFunction("dfdn2", dfdn2)
-	model.RegisterUserDefinedTerm("CONS_NOISE", &cnsv_noise, dfields)
+	model.RegisterUserDefinedTerm("CONS_NOISE", &cnsvNoise, dfields)
 	model.RegisterFunction("WHITE_NOISE", noise.Generate)
 
 	model.AddEquation("dconc/dt = LAP dfdc - alpha*LAP^2 conc + CONS_NOISE")
