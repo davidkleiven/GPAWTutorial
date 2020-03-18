@@ -180,12 +180,17 @@ func main() {
 		K:     []float64{beta22, 0.0, beta11, 0.0},
 	}
 
-	strength := 1.0
+	etaDoubleDeriv := 7.54  // meV/A^3
+	concDoubleDeriv := 3.14 // meV/A^3
+	kT := 8.6e-2 * 700      // meV
+	strengthEta := 0.5 * kT / etaDoubleDeriv
+	strengthConc := 0.5 * kT / concDoubleDeriv
+	fmt.Sprintf("Strength conc %f, stengthEta %f\n", strengthConc, strengthEta)
 	noise := pf.WhiteNoise{
-		Strength: strength / math.Sqrt(dt),
+		Strength: strengthEta / math.Sqrt(dt),
 	}
 
-	cnsvNoise := pf.NewConservativeNoise(strength/math.Sqrt(dt), 2)
+	cnsvNoise := pf.NewConservativeNoise(strengthConc/math.Sqrt(dt), 2)
 	dfields := cnsvNoise.RequiredDerivedFields(N * N)
 
 	// Initialize the model
