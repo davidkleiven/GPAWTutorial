@@ -90,8 +90,6 @@ func square(value float64, data []complex128, N int) {
 		iy := i / N
 		if ix > min && ix < max && iy > min && iy < max {
 			data[i] = complex(1.0, 0.0)
-		} else {
-			data[i] = complex(rand.Float64()*0.1, 0.0)
 		}
 	}
 }
@@ -177,12 +175,20 @@ func main() {
 		K:     []float64{beta22, 0.0, beta11, 0.0},
 	}
 
+	noise := pf.WhiteNoise{
+		Strength: 1.0 / math.Sqrt(dt),
+	}
+
+	cnsv_noise := pf.NewConservativeNoise(1.0/math.Sqrt(dt), 2)
+	dfields := cnsv_noise.RequiredDerivedFields(N * N)
+
 	// Initialize the model
 	model := pf.NewModel()
 	model.AddScalar(alpha)
 	model.AddField(conc)
 	model.AddField(eta1)
 	model.AddField(eta2)
+
 	model.RegisterUserDefinedTerm("ELAST1", elast1, nil)
 	model.RegisterUserDefinedTerm("ELAST2", elast2, nil)
 	model.RegisterUserDefinedTerm("HESS1", &hess1, nil)
@@ -190,9 +196,12 @@ func main() {
 	model.RegisterFunction("dfdc", dfdc)
 	model.RegisterFunction("dfdn1", dfdn1)
 	model.RegisterFunction("dfdn2", dfdn2)
-	model.AddEquation("dconc/dt = LAP dfdc - alpha*LAP^2 conc")
-	model.AddEquation("deta1/dt = dfdn1 + HESS1 + ELAST1")
-	model.AddEquation("deta2/dt = dfdn2 + HESS2 + ELAST2")
+	model.RegisterUserDefinedTerm("CONS_NOISE", &cnsv_noise, dfields)
+	model.RegisterFunction("WHITE_NOISE", noise.Generate)
+
+	model.AddEquation("dconc/dt = LAP dfdc - alpha*LAP^2 conc + CONS_NOISE")
+	model.AddEquation("deta1/dt = dfdn1 + HESS1 + ELAST1 + WHITE_NOISE")
+	model.AddEquation("deta2/dt = dfdn2 + HESS2 + ELAST2 + WHITE_NOISE")
 
 	avgConc := SoluteConcentrationMonitor{
 		Data:      []float64{},
