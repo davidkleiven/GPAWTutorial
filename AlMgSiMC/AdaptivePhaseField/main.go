@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime/pprof"
 	"strings"
+	"time"
 
 	"github.com/davidkleiven/gopf/elasticity"
 	"github.com/davidkleiven/gopf/pf"
@@ -108,6 +109,8 @@ func main() {
 	cpuprof := flag.String("cpuprof", "", ".prof file where the CPU profile will be stored")
 	flag.Parse()
 
+	seed := time.Now().UnixNano()
+	rand.Seed(seed)
 	if *cpuprof != "" {
 		f, err := os.Create(*cpuprof)
 		if err != nil {
