@@ -91,7 +91,7 @@ func square(value float64, data []complex128, N int) {
 		if ix > min && ix < max && iy > min && iy < max {
 			data[i] = complex(1.0, 0.0)
 		} else {
-			data[i] = complex(rand.Float64()*0.1, 0.0)
+			data[i] = complex(rand.Float64()*0.5, 0.0)
 		}
 	}
 }
@@ -123,7 +123,7 @@ func main() {
 	conc := pf.NewField("conc", N*N, nil)
 
 	if *initialization == "uniform" {
-		uniform(0.2, conc.Data)
+		uniform(0.1, conc.Data)
 	} else if *initialization == "square" {
 		square(1.0, conc.Data, N)
 		square(0.82, eta1.Data, N)
@@ -177,7 +177,7 @@ func main() {
 		K:     []float64{beta22, 0.0, beta11, 0.0},
 	}
 
-	strength := 0.1
+	strength := 0.01
 	noise := pf.WhiteNoise{
 		Strength: strength / math.Sqrt(dt),
 	}
@@ -209,7 +209,7 @@ func main() {
 	avgConc := SoluteConcentrationMonitor{
 		Data:      []float64{},
 		Name:      "SoluteConcMonitor",
-		Threshold: 0.4,
+		Threshold: 0.1,
 		NumPoints: len(conc.Data),
 	}
 	// Initialize the solver
