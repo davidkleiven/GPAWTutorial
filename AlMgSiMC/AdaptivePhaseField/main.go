@@ -90,6 +90,8 @@ func square(value float64, data []complex128, N int) {
 		iy := i / N
 		if ix > min && ix < max && iy > min && iy < max {
 			data[i] = complex(1.0, 0.0)
+		} else {
+			data[i] = complex(rand.Float64()*0.1, 0.0)
 		}
 	}
 }
@@ -175,11 +177,12 @@ func main() {
 		K:     []float64{beta22, 0.0, beta11, 0.0},
 	}
 
+	strength := 0.1
 	noise := pf.WhiteNoise{
-		Strength: 1.0 / math.Sqrt(dt),
+		Strength: strength / math.Sqrt(dt),
 	}
 
-	cnsvNoise := pf.NewConservativeNoise(1.0/math.Sqrt(dt), 2)
+	cnsvNoise := pf.NewConservativeNoise(strength/math.Sqrt(dt), 2)
 	dfields := cnsvNoise.RequiredDerivedFields(N * N)
 
 	// Initialize the model
