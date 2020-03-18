@@ -180,7 +180,7 @@ func main() {
 		K:     []float64{beta22, 0.0, beta11, 0.0},
 	}
 
-	strength := 0.01
+	strength := 1.0
 	noise := pf.WhiteNoise{
 		Strength: strength / math.Sqrt(dt),
 	}
