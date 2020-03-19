@@ -91,10 +91,16 @@ func square(value float64, data []complex128, N int) {
 		iy := i / N
 		if ix > min && ix < max && iy > min && iy < max {
 			data[i] = complex(1.0, 0.0)
-		} else {
-			data[i] = complex(rand.Float64()*0.5, 0.0)
 		}
 	}
+}
+
+func smearingDeriv(i int, bricks map[string]pf.Brick) complex128 {
+	x := real(bricks["eta1"].Get(i))
+	if x < 0.0 || x > 1.0 {
+		return 0.0
+	}
+	return complex(6.0*x-6.0*x*x, 0.0)
 }
 
 func main() {
@@ -180,19 +186,6 @@ func main() {
 		K:     []float64{beta22, 0.0, beta11, 0.0},
 	}
 
-	etaDoubleDeriv := 7.54  // meV/A^3
-	concDoubleDeriv := 3.14 // meV/A^3
-	kT := 8.6e-2 * 700      // meV
-	strengthEta := 0.5 * kT / etaDoubleDeriv
-	strengthConc := 0.5 * kT / concDoubleDeriv
-	fmt.Printf("Strength conc %f, stengthEta %f\n", strengthConc, strengthEta)
-	// noise := pf.WhiteNoise{
-	// 	Strength: strengthEta / math.Sqrt(dt),
-	// }
-
-	//cnsvNoise := pf.NewConservativeNoise(strengthConc/math.Sqrt(dt), 2)
-	//dfields := cnsvNoise.RequiredDerivedFields(N * N)
-
 	// Initialize the model
 	model := pf.NewModel()
 	model.AddScalar(alpha)
@@ -207,11 +200,14 @@ func main() {
 	model.RegisterFunction("dfdc", dfdc)
 	model.RegisterFunction("dfdn1", dfdn1)
 	model.RegisterFunction("dfdn2", dfdn2)
+	model.RegisterFunction("ETA1_INDICATOR", smearingDeriv)
+	eta1Cons := pf.NewVolumeConservingLP("eta1", "ETA1_INDICATPR", dt, N*N)
+	model.RegisterUserDefinedTerm("ETA1_CONS", &eta1Cons, nil)
 	//model.RegisterUserDefinedTerm("CONS_NOISE", &cnsvNoise, dfields)
 	//model.RegisterFunction("WHITE_NOISE", noise.Generate)
 
 	model.AddEquation("dconc/dt = LAP dfdc - alpha*LAP^2 conc")
-	model.AddEquation("deta1/dt = dfdn1 + HESS1 + ELAST1")
+	model.AddEquation("deta1/dt = dfdn1 + HESS1 + ELAST1 + ETA1_CONS")
 	model.AddEquation("deta2/dt = dfdn2 + HESS2 + ELAST2")
 
 	avgConc := SoluteConcentrationMonitor{
