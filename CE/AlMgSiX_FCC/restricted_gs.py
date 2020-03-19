@@ -11,7 +11,7 @@ FNAME = "random_settings.json"
 ECI_FILE = "data/almgsiX_eci.json"
 
 def get_gs():
-    atoms = bulk('Al', cubic=True)*(3, 2, 1)
+    atoms = bulk('Al', cubic=True)*(5, 1, 1)
     setting = settingFromJSON(FNAME)
 
     with open(ECI_FILE, 'r') as infile:
@@ -46,8 +46,8 @@ def get_gs():
     return atoms
 
 def generate_restricted_gs():
-    traj = TrajectoryWriter("data/restricted_gs_3x2x1.traj", mode='a')
-    N = 200
+    traj = TrajectoryWriter("data/restricted_gs_5x1x1.traj", mode='a')
+    N = 400
     for i in range(N):
         print("{} of {}".format(i, N))
         atoms = get_gs()

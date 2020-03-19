@@ -7,7 +7,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 from random import shuffle
 
-FNAME = 'data/almgsiX_1621.csv'
+#FNAME = 'data/almgsiX_1621.csv'
+FNAME = 'data/almgsi_binary_linear.csv'
 
 BF = [{'Al': 1.2649110640673518, 'Mg': -1.2649110640673518, 'Si': 0.6324555320336759, 'X': -0.6324555320336759},
       {'Al': 0.9999999999999998, 'Mg': 0.9999999999999998, 'Si': -1.0, 'X': -1.0},
@@ -136,8 +137,8 @@ def physical_ridge():
     X_train, y_train = get_training_set()
     names = get_names()[:-1]
 
-    X_train = X_train[:, :1000]
-    names = names[:1000]
+    #X_train = X_train[:, :1000]
+    #names = names[:1000]
     regressor = PhysicalRidge(lamb_size=1e-6, lamb_dia=1e-6,
                               dia_decay='exponential',
                               size_decay='exponential')

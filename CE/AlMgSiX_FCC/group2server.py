@@ -30,8 +30,8 @@ def sync(group, db_sqlite, db_server):
             row._keys.append('project')
             db_server.write(row)
             num_inserted += 1
-        except Exception:
-            pass
+        except Exception as exc:
+            print(exc)
     print("Inserted {} calculations".format(num_inserted))
 
 def sync_groups(groups):

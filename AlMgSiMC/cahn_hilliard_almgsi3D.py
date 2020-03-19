@@ -7,7 +7,7 @@ import json
 FNAME = "data/pseudo_binary_free/adaptive_bias500K_-650mev_cahn_hilliard.json"
 
 def main(conc):
-    prefix = "data/almgsi_ch500K_3D/chgl_{}_".format(int(100*conc))
+    prefix = "/work/sophus/cahn_hilliard_phase_separation3D/ch_{}_".format(int(100*conc))
     dim = 3
     dx = 10.0  # Step size in angstrom
     L = 128
@@ -28,9 +28,9 @@ def main(conc):
     #sim.from_npy_array(random_init(L, conc))
     sim.set_adaptive(1E-10, 0.05)
     #sim.build3D()
-    sim.from_file(prefix + "00000076000.grid")
+    sim.from_file(prefix + "00000160000.grid")
 
-    sim.run(500000, 5000, start=76000)
+    sim.run(100000, 10000, start=160000)
     #sim.save_free_energy_map(prefix+"_free_energy_map.grid")
 
 

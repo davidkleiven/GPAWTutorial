@@ -2,10 +2,10 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.stats import linregress
 
-N = 128
-folder = "dataAnisotrop/"
+N = 1024
+folder = "/work/sophus/ChGlobalAniso/TwoAniso/"
 def show():
-    fname = folder + "cahnHilliard2D_conc_50.bin"
+    fname = folder + "cahnHilliard2D_conc_20.bin"
     data = np.fromfile(fname, dtype='>f8')
     data = data.reshape((N, N))
     data -= np.mean(data)
@@ -46,5 +46,5 @@ def length_scale_evolution():
     plt.show()
 
 
-length_scale_evolution()
-#show()
+#length_scale_evolution()
+show()

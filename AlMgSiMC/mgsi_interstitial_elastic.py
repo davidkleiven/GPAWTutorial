@@ -139,9 +139,9 @@ def explore_khachaturyan(prec_type="plate"):
 
 if __name__ == "__main__":
     #prepare_mgsi_interstitial()
-    # misfit_strain()
+    misfit_strain()
     #fit_elastic()
     #prepare_db_bulk_mod_fit()
     #explore_orientations()
     #birsch_murnag()
-    explore_khachaturyan(prec_type="needle")
+    #explore_khachaturyan(prec_type="needle")

@@ -13,7 +13,7 @@ def energy_form():
     x = []
     form = []
     for row in db.select(struct_type="final"):
-        e = row.energy
+        e = row.energy/row.natoms
         num_atoms = row.count_atoms()
         if "Cu" not in num_atoms.keys():
             num_atoms["Cu"] = 0
@@ -26,7 +26,7 @@ def energy_form():
 
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
-    ax.plot(x, form, marker="o")
+    ax.plot(x, form, "o")
     plt.show()
 
 def energy_vs_temp():
@@ -43,5 +43,5 @@ def energy_vs_temp():
     ax.plot(t, e, "o", mfc="none")
     plt.show()
 if __name__ == "__main__":
-    #energy_form()
-    energy_vs_temp()
+    energy_form()
+    #energy_vs_temp()

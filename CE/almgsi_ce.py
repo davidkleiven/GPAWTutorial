@@ -5,21 +5,21 @@ import sys
 # sys.path.append("/home/davidkl/Documents/GPAWTutorial/CE_extensions")
 # sys.path.append("/home/dkleiven/Documents/GPAWTutorials/CE_extensions")
 from ase.build import bulk
-from ase.clease import CEBulk as BulkCrystal
-from ase.clease.corrFunc import CorrFunction
-from ase.clease import NewStructures as GenerateStructures
+from clease import CEBulk as BulkCrystal
+from clease import CorrFunction
+from clease import NewStructures as GenerateStructures
 # from atomtools.ce.corrmatrix import CovariancePlot
 #from convex_hull_plotter import QHull
-from ase.clease.evaluate import Evaluate
+from clease.evaluate import Evaluate
 # from atomtools.ce import ECIPlotter
 import numpy as np
 from matplotlib import pyplot as plt
-from cemc import CE
-from cemc.mcmc import mc_observers as mcobs
+#from cemc import CE
+#from cemc.mcmc import mc_observers as mcobs
 import json
-from cemc.mcmc import montecarlo as mc
+#from cemc.mcmc import montecarlo as mc
 from ase.io import write, read
-from ase.calculators.clease import Clease as ClusterExpansion
+from clease.calculator import Clease as ClusterExpansion
 from ase.db import connect
 from ase.units import mol, kJ
 # from atomtools.ce import CVScoreHistory
@@ -27,7 +27,7 @@ from scipy.spatial import ConvexHull
 # from atomtools.ce import ChemicalPotentialEstimator
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.visualize import view
-from ase.clease import Concentration
+from clease import Concentration
 
 eci_fname = "data/almgsi_fcc_eci_newconfig.json"
 #db_name = "almgsi_newconfig.db"
@@ -48,7 +48,7 @@ def main(argv):
     N = 4
     atoms = atoms*(N, N, N)
     conc = Concentration(basis_elements=[["Al","Mg","Si"]])
-    kwargs = dict(crystalstructure="fcc", a=4.05, size=[N,N,N], \
+    kwargs = dict(crystalstructure="fcc", a=4.05, size=[N, N, N], \
         db_name=db_name, max_cluster_size=4, concentration=conc,
         basis_function="sanchez", max_cluster_dia=[7.8, 5.0, 5.0])
     ceBulk = BulkCrystal(**kwargs)
@@ -195,12 +195,17 @@ def update_in_conc_range():
             db.update( row.id, in_conc_range=0 )
 
 def evaluate_test(BC):
-    from ase.clease import BayesianCompressiveSensing
+    from clease import BayesianCompressiveSensing
 
     scheme = BayesianCompressiveSensing(output_rate_sec=0.1, shape_var=0.5, noise=0.006, lamb_opt_start=20, variance_opt_start=15)
     evaluator = Evaluate(BC, fitting_scheme=scheme, parallel=False, alpha=1E-8,
                          scoring_scheme="loocv_fast", select_cond=[("converged", "=", True), ("calculator", "!=", "gpaw"), ("c1_1", "<", 0.5)])
     #evaluator.plot_fit(interactive=False, savefig=True, fname="data/bcs.png")
+    X = evaluator.cf_matrix
+    e_dft = evaluator.e_dft
+    data = np.hstack((X, e_dft))
+    np.savetxt("data/almgsi_X_e_dft.csv", delimiter=",", header=','.join(evaluator.cf_names) + ',e_dft')
+    exit()
     evaluator.plot_fit(interactive=True)
     eci_name = evaluator.get_cluster_name_eci(return_type="dict")
     eci_bayes = "data/eci_bcs.json"

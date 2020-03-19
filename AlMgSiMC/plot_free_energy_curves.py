@@ -12,6 +12,7 @@ def free_energy_vs_comp():
     from matplotlib.colors import Normalize
 
     temps = [400, 500, 600, 650, 700, 750, 800]
+    temps = [500, 600, 700, 800]
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
     cNorm = Normalize(vmin=400, vmax=800)
@@ -136,7 +137,7 @@ def solubility():
     plt.show()
 
 if __name__ == "__main__":
-    #free_energy_vs_comp()
+    free_energy_vs_comp()
     #solubility()
-    reflection()
+    #reflection()
     #free_energy_chem_pot()

@@ -44,7 +44,7 @@ func main() {
 
 	// Initialize solver
 	solver := pf.NewSolver(&model, domainSize, dt)
-	filter := pf.NewVandeven(5)
+	filter := pf.NewVandeven(3)
 	solver.Stepper.SetFilter(&filter)
 
 	// Initialize uint8 IO
@@ -52,7 +52,7 @@ func main() {
 	solver.AddCallback(out.SaveFields)
 
 	// Solve the equation
-	nepoch := 10
-	solver.Solve(nepoch, 1000)
+	nepoch := 50
+	solver.Solve(nepoch, 10000)
 	pf.WriteXDMF(*folder+"cahnHillard.xdmf", []string{"conc"}, "cahnHilliard2D", nepoch, domainSize)
 }

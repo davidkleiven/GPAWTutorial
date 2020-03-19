@@ -18,9 +18,9 @@ mpl.rcParams.update({"font.size": 18, "svg.fonttype": "none", "axes.unicode_minu
 fname = "data/pseudo_binary_free/adaptive_bias300K_-650mev_bck.h5"
 fname = "data/pseudo_binary_free/adaptive_bias300K_-650mev_bck2.h5"
 fname = "data/pseudo_binary_free/adaptive_bias600K_-650mev.h5"
-TEMP = 600
+TEMP = 700
 fname = "data/pseudo_binary_free/adaptive_bias{}K_-650mev.h5".format(TEMP)
-fname_diff = "data/diffraction/layered_bias600K.h5"
+fname_diff = "data/diffraction/layered_bias700K.h5"
 
 beta = 1.0/(kB*TEMP)
 
@@ -82,7 +82,7 @@ def fit_landau_polynomial():
     # Symmetrize the function
     G_diff_half = G_diff[int(len(G_diff)/2):]
     G_diff = np.concatenate((G_diff_half[::-1], G_diff_half))
-    G_diff /= 8
+    #G_diff /= 8
 
     # Align the left end
     params_landau = {
@@ -94,7 +94,7 @@ def fit_landau_polynomial():
     # poly = TwoPhaseLandauPolynomial(**params_landau)
     # weights = {"eq_phase2": 0.0, "eq_phase1": 1.0}
     # poly.fit(x, G, weights=weights, kernel_width=0.01, num_kernels=200, width=None, smear_width=0, shape="auto", lamb=1E-1)
-    poly = QuadraticExpansionLandau(c1=0.01, c2=0.96)
+    poly = QuadraticExpansionLandau(c1=0.03, c2=0.91)
     poly.fit(x, G, end_phase1=0.4, show=True)
     print(poly.coeff_shape)
     n_eq = poly.equil_shape_order(x)

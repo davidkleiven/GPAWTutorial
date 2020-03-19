@@ -75,6 +75,7 @@ def radial_profile(data):
 
 def calculate_average_lengthscales(prefix):
     folder = "data/almgsi_ch500K_run_truncnorm"
+    folder = "/work/sophus/almgsi_ch500K_run2"
     time_data = np.loadtxt(folder + "/" + prefix + "__adaptive_time.csv", delimiter=",")
 
     mean_freq = []
@@ -111,6 +112,7 @@ def calculate_average_lengthscales(prefix):
 
 def plot_frequency_statistics():
     folder = "data/almgsi_ch500K_run_truncnorm/postproc"
+    folder = "/work/sophus/almgsi_ch500K_run2/postproc"
     fnames = ["chgl_50_frequency_statistics.csv", "chgl_40_frequency_statistics.csv",
               "chgl_30_frequency_statistics.csv", "chgl_20_frequency_statistics.csv",
               "chgl_10_frequency_statistics.csv"]
@@ -193,7 +195,7 @@ def plot_profiles():
 def main():
     #fft('data/almgsi_ch500K_run2/chgl_50_00000001000.tsv')
     #plot_profiles()
-    calculate_average_lengthscales("chgl_10")
-    #plot_frequency_statistics()
+    #calculate_average_lengthscales("chgl_50")
+    plot_frequency_statistics()
 
 main()
