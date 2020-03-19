@@ -210,7 +210,7 @@ func main() {
 
 	specVisc := pf.SpectralViscosity{
 		Power:                2,
-		DissipationThreshold: 0.25,
+		DissipationThreshold: 0.0,
 		Eps:                  10.0,
 	}
 	model.RegisterUserDefinedTerm("SPECTRAL_VISC", &specVisc, nil)
