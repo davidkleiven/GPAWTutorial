@@ -201,13 +201,13 @@ func main() {
 	model.RegisterFunction("dfdn1", dfdn1)
 	model.RegisterFunction("dfdn2", dfdn2)
 	model.RegisterFunction("ETA1_INDICATOR", smearingDeriv)
-	eta1Cons := pf.NewVolumeConservingLP("eta1", "ETA1_INDICATPR", dt, N*N)
-	model.RegisterUserDefinedTerm("ETA1_CONS", &eta1Cons, nil)
+	eta1Cons := pf.NewVolumeConservingLP("eta1", "ETA1_INDICATOR", dt, N*N)
+	model.RegisterUserDefinedTerm("ETA1_CONSERVE", &eta1Cons, nil)
 	//model.RegisterUserDefinedTerm("CONS_NOISE", &cnsvNoise, dfields)
 	//model.RegisterFunction("WHITE_NOISE", noise.Generate)
 
 	model.AddEquation("dconc/dt = LAP dfdc - alpha*LAP^2 conc")
-	model.AddEquation("deta1/dt = dfdn1 + HESS1 + ELAST1 + ETA1_CONS")
+	model.AddEquation("deta1/dt = dfdn1 + HESS1 + ELAST1 + ETA1_CONSERVE")
 	model.AddEquation("deta2/dt = dfdn2 + HESS2 + ELAST2")
 
 	avgConc := SoluteConcentrationMonitor{
