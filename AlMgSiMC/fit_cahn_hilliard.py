@@ -188,10 +188,12 @@ def fit_landau_polynomial():
     # alpha2 = poly.gradient_coefficient(alpha, gammas[1], x, dS)[0]
     
     alpha = 0.0
-    eta_sq = 2.0*poly.coeff_phase1[0] - poly.coeff_phase1[1]
+    eta_sq = -2.0*poly.coeff_phase1[0]*x - poly.coeff_phase1[1]
     eta_sq /= poly.conc_coeff2[0]
-    alpha1 = poly.conc_grad_param(gammas[0], dS*eta_sq)[0]
-    alpha2 = poly.conc_grad_param(gammas[1], dS*eta_sq)[0]
+    eta = np.sqrt(eta_sq)
+    print(eta)
+    alpha1 = poly.conc_grad_param(gammas[0], eta, dS*eta_sq)
+    alpha2 = poly.conc_grad_param(gammas[1], eta, dS*eta_sq)
     print(alpha, alpha1, alpha2)
 
     poly_dict = poly.to_dict()
