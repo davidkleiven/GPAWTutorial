@@ -218,7 +218,7 @@ func main() {
 	eta1Cons := pf.NewVolumeConservingLP("eta1", "ETA1_INDICATOR", dt, N*N)
 	model.RegisterUserDefinedTerm("ETA1_CONSERVE", &eta1Cons, nil)
 	//model.RegisterUserDefinedTerm("CONS_NOISE", &cnsvNoise, dfields)
-	kT := 0.086 * 400
+	kT := 0.086 * 200
 	fDeriv := 2.0 * 3.77
 	noise := pf.WhiteNoise{
 		Strength: 0.5 * kT / (math.Sqrt(dt) * fDeriv),
