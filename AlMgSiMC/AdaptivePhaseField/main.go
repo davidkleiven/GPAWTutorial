@@ -171,8 +171,8 @@ func main() {
 	// Define gradient coefficients
 	// beta11 := 9.15 / (dx * dx)
 	// beta22 := 16.83 / (dx * dx)
-	beta11 := 978.1315076203305 / (dx * dx)
-	beta22 := 11194.378858025622 / (dx * dx)
+	beta11 := 140.0 / (dx * dx)
+	beta22 := 878.0 / (dx * dx)
 
 	M := 1.0 / (dx * dx)
 	alpha := pf.Scalar{
