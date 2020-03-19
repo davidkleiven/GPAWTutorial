@@ -169,8 +169,11 @@ func main() {
 	dt := args.Dt
 
 	// Define gradient coefficients
-	beta11 := 9.15 / (dx * dx)
-	beta22 := 16.83 / (dx * dx)
+	// beta11 := 9.15 / (dx * dx)
+	// beta22 := 16.83 / (dx * dx)
+	beta11 := 978.1315076203305 / (dx * dx)
+	beta22 := 11194.378858025622 / (dx * dx)
+
 	M := 1.0 / (dx * dx)
 	alpha := pf.Scalar{
 		Name:  "alpha",
@@ -226,7 +229,7 @@ func main() {
 	// 	Eps:                  5.0,
 	// }
 	// model.RegisterUserDefinedTerm("SPECTRAL_VISC", &specVisc, nil)
-	model.AddEquation("dconc/dt = mobility*LAP dfdc - alpha*LAP^2 conc")
+	model.AddEquation("dconc/dt = mobility*LAP dfdc")
 	model.AddEquation("deta1/dt = dfdn1 + HESS1 + ELAST1")
 	model.AddEquation("deta2/dt = dfdn2 + HESS2 + ELAST2")
 
