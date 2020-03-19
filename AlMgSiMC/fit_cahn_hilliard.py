@@ -182,9 +182,16 @@ def fit_landau_polynomial():
     G_surface = poly.evaluate(x)
     x, dS = surface_formation(x, G_surface)
     dS[dS < 0.0] = 0.0
-    alpha = poly.conc_grad_param(gammas[0], x, dS)*0.001
-    alpha1 = poly.gradient_coefficient(alpha, gammas[0], x, dS)[0]
-    alpha2 = poly.gradient_coefficient(alpha, gammas[1], x, dS)[0]
+
+    # alpha = poly.conc_grad_param(gammas[0], x, dS)*0.001
+    # alpha1 = poly.gradient_coefficient(alpha, gammas[0], x, dS)[0]
+    # alpha2 = poly.gradient_coefficient(alpha, gammas[1], x, dS)[0]
+    
+    alpha = 0.0
+    eta_sq = 2.0*poly.coeff_phase1[0] - poly.coeff_phase1[1]
+    eta_sq /= poly.conc_coeff2[0]
+    alpha1 = poly.conc_grad_param(gammas[0], dS*eta_sq)[0]
+    alpha2 = poly.conc_grad_param(gammas[1], dS*eta_sq)[0]
     print(alpha, alpha1, alpha2)
 
     poly_dict = poly.to_dict()
