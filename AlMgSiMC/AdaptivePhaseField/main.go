@@ -171,14 +171,15 @@ func main() {
 	// Define gradient coefficients
 	beta11 := 8.33 / (dx * dx)
 	beta22 := 16.72 / (dx * dx)
+	M := 0.01 / (dx * dx)
 	alpha := pf.Scalar{
 		Name:  "alpha",
-		Value: complex(133.33/(dx*dx*dx*dx), 0.0),
+		Value: complex(133.33*M/(dx*dx), 0.0),
 	}
 
 	mobility := pf.Scalar{
 		Name:  "mobility",
-		Value: complex(1.0/(dx*dx), 0.0),
+		Value: complex(M, 0.0),
 	}
 
 	elast1 := pf.NewHomogeneousModolus("eta1", []int{N, N}, C_al_tensor, misfit1)
