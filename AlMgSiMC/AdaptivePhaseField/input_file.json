@@ -1,6 +1,6 @@
 {
     "dx": 0.5,
-    "vandeven": 3,
+    "vandeven": 0,
     "dt": 0.005,
     "epoch": 10,
     "steps": 100,
