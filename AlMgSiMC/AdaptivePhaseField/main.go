@@ -169,12 +169,12 @@ func main() {
 	dt := args.Dt
 
 	// Define gradient coefficients
-	beta11 := 8.33 / (dx * dx)
-	beta22 := 16.72 / (dx * dx)
-	M := 0.01 / (dx * dx)
+	beta11 := 9.15 / (dx * dx)
+	beta22 := 16.83 / (dx * dx)
+	M := 1.0 / (dx * dx)
 	alpha := pf.Scalar{
 		Name:  "alpha",
-		Value: complex(133.33*M/(dx*dx), 0.0),
+		Value: complex(0.14*M/(dx*dx), 0.0),
 	}
 
 	mobility := pf.Scalar{
