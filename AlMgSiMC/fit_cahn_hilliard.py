@@ -182,7 +182,7 @@ def fit_landau_polynomial():
     G_surface = poly.evaluate(x)
     x, dS = surface_formation(x, G_surface)
     dS[dS < 0.0] = 0.0
-    alpha = poly.conc_grad_param(gammas[0], x, dS)*0.95
+    alpha = poly.conc_grad_param(gammas[0], x, dS)*0.001
     alpha1 = poly.gradient_coefficient(alpha, gammas[0], x, dS)[0]
     alpha2 = poly.gradient_coefficient(alpha, gammas[1], x, dS)[0]
     print(alpha, alpha1, alpha2)
@@ -193,7 +193,7 @@ def fit_landau_polynomial():
     poly_dict["diffraction_file"] = fname_diff
     poly_dict["landau_params"] = params_landau
 
-    json_fname = "chgl_almgsi_quadratic_large_alpha{}K.json".format(TEMP)
+    json_fname = "chgl_almgsi_quadratic_small_alpha{}K.json".format(TEMP)
     with open(json_fname, 'w') as outfile:
         json.dump(poly_dict, outfile, indent=2)
     print("JSON file: {}".format(json_fname))
