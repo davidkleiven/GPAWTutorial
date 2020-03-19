@@ -186,12 +186,12 @@ func main() {
 	strengthEta := 0.5 * kT / etaDoubleDeriv
 	strengthConc := 0.5 * kT / concDoubleDeriv
 	fmt.Printf("Strength conc %f, stengthEta %f\n", strengthConc, strengthEta)
-	noise := pf.WhiteNoise{
-		Strength: strengthEta / math.Sqrt(dt),
-	}
+	// noise := pf.WhiteNoise{
+	// 	Strength: strengthEta / math.Sqrt(dt),
+	// }
 
-	cnsvNoise := pf.NewConservativeNoise(strengthConc/math.Sqrt(dt), 2)
-	dfields := cnsvNoise.RequiredDerivedFields(N * N)
+	//cnsvNoise := pf.NewConservativeNoise(strengthConc/math.Sqrt(dt), 2)
+	//dfields := cnsvNoise.RequiredDerivedFields(N * N)
 
 	// Initialize the model
 	model := pf.NewModel()
@@ -207,12 +207,12 @@ func main() {
 	model.RegisterFunction("dfdc", dfdc)
 	model.RegisterFunction("dfdn1", dfdn1)
 	model.RegisterFunction("dfdn2", dfdn2)
-	model.RegisterUserDefinedTerm("CONS_NOISE", &cnsvNoise, dfields)
-	model.RegisterFunction("WHITE_NOISE", noise.Generate)
+	//model.RegisterUserDefinedTerm("CONS_NOISE", &cnsvNoise, dfields)
+	//model.RegisterFunction("WHITE_NOISE", noise.Generate)
 
-	model.AddEquation("dconc/dt = LAP dfdc - alpha*LAP^2 conc + CONS_NOISE")
-	model.AddEquation("deta1/dt = dfdn1 + HESS1 + ELAST1 + WHITE_NOISE")
-	model.AddEquation("deta2/dt = dfdn2 + HESS2 + ELAST2 + WHITE_NOISE")
+	model.AddEquation("dconc/dt = LAP dfdc - alpha*LAP^2 conc")
+	model.AddEquation("deta1/dt = dfdn1 + HESS1 + ELAST1")
+	model.AddEquation("deta2/dt = dfdn2 + HESS2 + ELAST2")
 
 	avgConc := SoluteConcentrationMonitor{
 		Data:      []float64{},
