@@ -1,12 +1,12 @@
 package main
 
 import (
-	"flag"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math"
 	"math/rand"
 	"os"
-	"runtime/pprof"
 	"strings"
 	"time"
 
@@ -103,42 +103,44 @@ func smearingDeriv(i int, bricks map[string]pf.Brick) complex128 {
 	return complex(6.0*x-6.0*x*x, 0.0)
 }
 
+// Arguments is a structure that holds all the input arguments
+type Arguments struct {
+	Dx       float64 `json:"dx"`
+	Vandeven int     `json:"vandeven"`
+	Dt       float64 `json:"dt"`
+	Epoch    int     `json:"epoch"`
+	Steps    int     `json:"steps"`
+	Folder   string  `json:"folder"`
+	Start    int     `json:"start"`
+	Init     string  `json:"init"`
+}
+
 func main() {
-	dtArg := flag.Float64("dt", 0.001, "Time step in the simulation")
-	dxArg := flag.Float64("dx", 0.001, "Spatial discretization used in the simulation")
-	initialization := flag.String("init", "uniform", "initialization type. square, uniform or a comma separated list of filenames")
-	startEpoch := flag.Int("start", 0, "Epoch to start from")
-	numEpoch := flag.Int("epoch", 10, "Number of epochs to run")
-	numSteps := flag.Int("steps", 100, "Number of steps per epoch")
-	vandevenOrder := flag.Int("vandeven", 0, "Order of the vandeven filter. If 0 no filter will be applied.")
-	outfolder := flag.String("folder", "./", "Folder where the output files will be stored")
-	cpuprof := flag.String("cpuprof", "", ".prof file where the CPU profile will be stored")
-	flag.Parse()
+	inputfile := os.Args[1]
+	jsonFile, err := os.Open(inputfile)
+	if err != nil {
+		panic(err)
+	}
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+	var args Arguments
+	json.Unmarshal(byteValue, &args)
 
 	seed := time.Now().UnixNano()
 	rand.Seed(seed)
-	if *cpuprof != "" {
-		f, err := os.Create(*cpuprof)
-		if err != nil {
-			panic(err)
-		}
-		pprof.StartCPUProfile(f)
-		defer pprof.StopCPUProfile()
-	}
 
 	N := 256
 	eta1 := pf.NewField("eta1", N*N, nil)
 	eta2 := pf.NewField("eta2", N*N, nil)
 	conc := pf.NewField("conc", N*N, nil)
 
-	if *initialization == "uniform" {
+	if args.Init == "uniform" {
 		uniform(0.1, conc.Data)
-	} else if *initialization == "square" {
+	} else if args.Init == "square" {
 		square(1.0, conc.Data, N)
 		square(0.82, eta1.Data, N)
 	} else {
 		// Load from file
-		fnames := strings.Split(*initialization, ",")
+		fnames := strings.Split(args.Init, ",")
 		concData := pf.LoadFloat64(fnames[0])
 		for i := range concData {
 			conc.Data[i] = complex(concData[i], 0.0)
@@ -163,8 +165,8 @@ func main() {
 		0, 0, 0, 0, 0, 0.42750351}
 	C_al_tensor := elasticity.FromFlatVoigt(C_al)
 
-	dx := *dxArg
-	dt := *dtArg
+	dx := args.Dx
+	dt := args.Dt
 
 	// Define gradient coefficients
 	beta11 := 8.33 / (dx * dx)
@@ -221,17 +223,17 @@ func main() {
 	solver.AddMonitor(&avgConc)
 
 	var vandeven pf.Vandeven
-	if *vandevenOrder > 0 {
-		vandeven = pf.NewVandeven(*vandevenOrder)
+	if args.Vandeven > 0 {
+		vandeven = pf.NewVandeven(args.Vandeven)
 		solver.Stepper.SetFilter(&vandeven)
 	}
-	solver.StartEpoch = *startEpoch
+	solver.StartEpoch = args.Start
 	model.Summarize()
 	fileBackup := pf.Float64IO{
-		Prefix: *outfolder + "ch",
+		Prefix: args.Folder + "ch",
 	}
 	solver.AddCallback(fileBackup.SaveFields)
-	nepoch := *numEpoch
-	solver.Solve(nepoch, *numSteps)
+	nepoch := args.Epoch
+	solver.Solve(nepoch, args.Steps)
 	pf.WriteXDMF(fileBackup.Prefix+".xdmf", []string{"conc", "eta1", "eta2"}, "ch", nepoch+solver.StartEpoch, []int{N, N})
 }
