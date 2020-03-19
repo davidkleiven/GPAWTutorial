@@ -178,6 +178,8 @@ def fit_landau_polynomial():
     gammas = [2.649180389240096*mJ2ev, 5.901458900832251*mJ2ev, 
               7.169435749573065*mJ2ev]
     gammas = [5.081164748586553, 17.189555738954752, 14.080720554234594]
+    
+    gammas = [30.0*mJ2ev, 75.0*mJ2ev]
 
     G_surface = poly.evaluate(x)
     x, dS = surface_formation(x, G_surface)
