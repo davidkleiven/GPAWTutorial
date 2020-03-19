@@ -173,7 +173,12 @@ func main() {
 	beta22 := 16.72 / (dx * dx)
 	alpha := pf.Scalar{
 		Name:  "alpha",
-		Value: complex(133.33/(dx*dx), 0.0),
+		Value: complex(133.33/(dx*dx*dx*dx), 0.0),
+	}
+
+	mobility := pf.Scalar{
+		Name: "mobility",
+		Value: complex(1.0/(dx*dx), 0.0)
 	}
 
 	elast1 := pf.NewHomogeneousModolus("eta1", []int{N, N}, C_al_tensor, misfit1)
@@ -191,6 +196,7 @@ func main() {
 	// Initialize the model
 	model := pf.NewModel()
 	model.AddScalar(alpha)
+	model.AddScalar(mobility)
 	model.AddField(conc)
 	model.AddField(eta1)
 	model.AddField(eta2)
@@ -214,7 +220,7 @@ func main() {
 		Eps:                  50.0,
 	}
 	model.RegisterUserDefinedTerm("SPECTRAL_VISC", &specVisc, nil)
-	model.AddEquation("dconc/dt = LAP dfdc - alpha*LAP^2 conc + SPECTRAL_VISC*conc")
+	model.AddEquation("dconc/dt = mobility*LAP dfdc - alpha*LAP^2 conc + SPECTRAL_VISC*conc")
 	model.AddEquation("deta1/dt = dfdn1 + HESS1 + ELAST1 + ETA1_CONSERVE + SPECTRAL_VISC*eta1")
 	model.AddEquation("deta2/dt = dfdn2 + HESS2 + ELAST2")
 
