@@ -189,12 +189,10 @@ func main() {
 	elast2 := pf.NewHomogeneousModolus("eta2", []int{N, N}, C_al_tensor, misfit2)
 
 	hess1 := pf.TensorialHessian{
-		Field: "eta1",
-		K:     []float64{beta11, 0.0, beta22, 0.0},
+		K: []float64{beta11, 0.0, beta22, 0.0},
 	}
 	hess2 := pf.TensorialHessian{
-		Field: "eta2",
-		K:     []float64{beta22, 0.0, beta11, 0.0},
+		K: []float64{beta22, 0.0, beta11, 0.0},
 	}
 
 	// Initialize the model
@@ -230,8 +228,8 @@ func main() {
 	// }
 	// model.RegisterUserDefinedTerm("SPECTRAL_VISC", &specVisc, nil)
 	model.AddEquation("dconc/dt = mobility*LAP dfdc")
-	model.AddEquation("deta1/dt = dfdn1 + HESS1 + ELAST1")
-	model.AddEquation("deta2/dt = dfdn2 + HESS2 + ELAST2")
+	model.AddEquation("deta1/dt = dfdn1 + HESS1*eta1 + ELAST1")
+	model.AddEquation("deta2/dt = dfdn2 + HESS2*eta2 + ELAST2")
 
 	avgConc := SoluteConcentrationMonitor{
 		Data:      []float64{},
