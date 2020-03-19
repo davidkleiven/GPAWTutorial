@@ -177,8 +177,8 @@ func main() {
 	}
 
 	mobility := pf.Scalar{
-		Name: "mobility",
-		Value: complex(1.0/(dx*dx), 0.0)
+		Name:  "mobility",
+		Value: complex(1.0/(dx*dx), 0.0),
 	}
 
 	elast1 := pf.NewHomogeneousModolus("eta1", []int{N, N}, C_al_tensor, misfit1)
