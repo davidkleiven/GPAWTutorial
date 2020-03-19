@@ -189,10 +189,10 @@ func main() {
 	elast2 := pf.NewHomogeneousModolus("eta2", []int{N, N}, C_al_tensor, misfit2)
 
 	hess1 := pf.TensorialHessian{
-		K: []float64{beta11, 0.0, beta22, 0.0},
+		K: []float64{beta11, 0.0, 0.0, beta22},
 	}
 	hess2 := pf.TensorialHessian{
-		K: []float64{beta22, 0.0, beta11, 0.0},
+		K: []float64{beta22, 0.0, beta11},
 	}
 
 	// Initialize the model
