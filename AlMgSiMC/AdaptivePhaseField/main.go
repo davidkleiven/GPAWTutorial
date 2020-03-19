@@ -218,7 +218,12 @@ func main() {
 	eta1Cons := pf.NewVolumeConservingLP("eta1", "ETA1_INDICATOR", dt, N*N)
 	model.RegisterUserDefinedTerm("ETA1_CONSERVE", &eta1Cons, nil)
 	//model.RegisterUserDefinedTerm("CONS_NOISE", &cnsvNoise, dfields)
-	//model.RegisterFunction("WHITE_NOISE", noise.Generate)
+	kT := 0.086 * 400
+	fDeriv := 2.0 * 3.77
+	noise := pf.WhiteNoise{
+		Strength: 0.5 * kT / (math.Sqrt(dt) * fDeriv),
+	}
+	model.RegisterFunction("WHITE_NOISE", noise.Generate)
 
 	// specVisc := pf.SpectralViscosity{
 	// 	Power:                2,
@@ -227,7 +232,7 @@ func main() {
 	// }
 	// model.RegisterUserDefinedTerm("SPECTRAL_VISC", &specVisc, nil)
 	model.AddEquation("dconc/dt = mobility*LAP dfdc - alpha*LAP^2 conc")
-	model.AddEquation("deta1/dt = dfdn1 + HESS1 + ELAST1 + ETA1_CONSERVE")
+	model.AddEquation("deta1/dt = dfdn1 + HESS1 + ELAST1 + WHITE_NOISE")
 	model.AddEquation("deta2/dt = dfdn2 + HESS2 + ELAST2")
 
 	avgConc := SoluteConcentrationMonitor{
