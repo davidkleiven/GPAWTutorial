@@ -165,6 +165,11 @@ func main() {
 		0, 0, 0, 0, 0, 0.42750351}
 	C_al_tensor := elasticity.FromFlatVoigt(C_al)
 
+	// DEBUG: Try to make influence of elastic fields minimal
+	for i := range C_al_tensor.Data {
+		C_al_tensor.Data[i] *= 0.01
+	}
+
 	dx := args.Dx
 	dt := args.Dt
 
