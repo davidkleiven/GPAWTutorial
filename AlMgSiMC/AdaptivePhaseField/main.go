@@ -214,14 +214,14 @@ func main() {
 	//model.RegisterUserDefinedTerm("CONS_NOISE", &cnsvNoise, dfields)
 	//model.RegisterFunction("WHITE_NOISE", noise.Generate)
 
-	specVisc := pf.SpectralViscosity{
-		Power:                2,
-		DissipationThreshold: 0.25,
-		Eps:                  5.0,
-	}
-	model.RegisterUserDefinedTerm("SPECTRAL_VISC", &specVisc, nil)
-	model.AddEquation("dconc/dt = mobility*LAP dfdc - alpha*LAP^2 conc + SPECTRAL_VISC*conc")
-	model.AddEquation("deta1/dt = dfdn1 + HESS1 + ELAST1 + ETA1_CONSERVE + SPECTRAL_VISC*eta1")
+	// specVisc := pf.SpectralViscosity{
+	// 	Power:                2,
+	// 	DissipationThreshold: 0.25,
+	// 	Eps:                  5.0,
+	// }
+	// model.RegisterUserDefinedTerm("SPECTRAL_VISC", &specVisc, nil)
+	model.AddEquation("dconc/dt = mobility*LAP dfdc - alpha*LAP^2 conc")
+	model.AddEquation("deta1/dt = dfdn1 + HESS1 + ELAST1 + ETA1_CONSERVE")
 	model.AddEquation("deta2/dt = dfdn2 + HESS2 + ELAST2")
 
 	avgConc := SoluteConcentrationMonitor{
