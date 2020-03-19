@@ -192,7 +192,7 @@ func main() {
 		K: []float64{beta11, 0.0, 0.0, beta22},
 	}
 	hess2 := pf.TensorialHessian{
-		K: []float64{beta22, 0.0, beta11},
+		K: []float64{beta22, 0.0, 0.0, beta11},
 	}
 
 	// Initialize the model
