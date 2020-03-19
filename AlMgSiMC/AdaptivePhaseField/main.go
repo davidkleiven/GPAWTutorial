@@ -211,7 +211,7 @@ func main() {
 	specVisc := pf.SpectralViscosity{
 		Power:                2,
 		DissipationThreshold: 0.25,
-		Eps:                  2.0 / float64(N),
+		Eps:                  10.0,
 	}
 	model.RegisterUserDefinedTerm("SPECTRAL_VISC", &specVisc, nil)
 	model.AddEquation("dconc/dt = LAP dfdc - alpha*LAP^2 conc + SPECTRAL_VISC*conc")
