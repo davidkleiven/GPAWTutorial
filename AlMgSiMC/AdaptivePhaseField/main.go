@@ -15,6 +15,9 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
+// EtaEq is the equillibrium eta value
+const EtaEq = 0.81649658092
+
 // SoluteConcentrationMonitor trackts the average concentration in the matrix
 type SoluteConcentrationMonitor struct {
 	Data      []float64
@@ -44,8 +47,8 @@ func (scm *SoluteConcentrationMonitor) Add(bricks map[string]pf.Brick) {
 
 func dfdc(i int, bricks map[string]pf.Brick) complex128 {
 	conc := real(bricks["conc"].Get(i))
-	eta1 := real(bricks["eta1"].Get(i))
-	eta2 := real(bricks["eta2"].Get(i))
+	eta1 := real(bricks["eta1"].Get(i)) / EtaEq
+	eta2 := real(bricks["eta2"].Get(i)) / EtaEq
 	res := 2.0*1.57*conc - 0.09 - 4.16*(eta1*eta1+eta2*eta2)
 	return complex(res, 0.0)
 }
@@ -63,6 +66,8 @@ func dfdeta(i int, bricks map[string]pf.Brick, value int) float64 {
 		eta2 = real(bricks["eta1"].Get(i))
 	}
 
+	eta1 /= EtaEq
+	eta2 /= EtaEq
 	res := -2*4.16*eta1*conc + 2*3.77*eta1
 	res -= 8.29 * (4.0*math.Pow(eta1, 3) - 2.0*eta1*eta2*eta2 - 6.0*math.Pow(eta1, 5))
 	res -= 2.76 * (2.0*eta1*math.Pow(eta2, 4) + 4.0*math.Pow(eta1, 3)*math.Pow(eta2, 2))
@@ -144,7 +149,7 @@ func main() {
 		uniform(0.1, conc.Data)
 	} else if args.Init == "square" {
 		square(1.0, conc.Data, N)
-		square(0.82, eta1.Data, N)
+		square(1.0, eta1.Data, N)
 	} else {
 		// Load from file
 		fnames := strings.Split(args.Init, ",")
@@ -218,8 +223,8 @@ func main() {
 	model.RegisterFunction("dfdn1", dfdn1)
 	model.RegisterFunction("dfdn2", dfdn2)
 	model.RegisterFunction("ETA1_INDICATOR", smearingDeriv)
-	//eta1Cons := pf.NewVolumeConservingLP("eta1", "ETA1_INDICATOR", dt, N*N)
-	//model.RegisterUserDefinedTerm("ETA1_CONSERVE", &eta1Cons, nil)
+	eta1Cons := pf.NewVolumeConservingLP("eta1", "ETA1_INDICATOR", dt, N*N)
+	model.RegisterUserDefinedTerm("ETA1_CONSERVE", &eta1Cons, nil)
 	//model.RegisterUserDefinedTerm("CONS_NOISE", &cnsvNoise, dfields)
 	// kT := 0.086 * 200
 	// fDeriv := 2.0 * 3.77
@@ -235,7 +240,7 @@ func main() {
 	// }
 	// model.RegisterUserDefinedTerm("SPECTRAL_VISC", &specVisc, nil)
 	model.AddEquation("dconc/dt = mobility*LAP dfdc")
-	model.AddEquation("deta1/dt = dfdn1 + HESS1*eta1 + ELAST1")
+	model.AddEquation("deta1/dt = dfdn1 + HESS1*eta1 + ELAST1 + ETA1_CONSERVE")
 	model.AddEquation("deta2/dt = dfdn2 + HESS2*eta2 + ELAST2")
 
 	avgConc := SoluteConcentrationMonitor{
