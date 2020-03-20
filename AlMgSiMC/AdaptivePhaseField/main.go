@@ -266,5 +266,5 @@ func main() {
 	}
 
 	b, err := json.Marshal(keyResults)
-	ioutil.WriteFile("keyResults.json", b, 0644)
+	ioutil.WriteFile("data/keyResults.json", b, 0644)
 }
