@@ -91,6 +91,8 @@ func square(value float64, data []complex128, N int) {
 		iy := i / N
 		if ix > min && ix < max && iy > min && iy < max {
 			data[i] = complex(1.0, 0.0)
+		} else {
+			data[i] = complex(rand.Float64()*0.1, 0.0)
 		}
 	}
 }
@@ -216,8 +218,8 @@ func main() {
 	model.RegisterFunction("dfdn1", dfdn1)
 	model.RegisterFunction("dfdn2", dfdn2)
 	model.RegisterFunction("ETA1_INDICATOR", smearingDeriv)
-	eta1Cons := pf.NewVolumeConservingLP("eta1", "ETA1_INDICATOR", dt, N*N)
-	model.RegisterUserDefinedTerm("ETA1_CONSERVE", &eta1Cons, nil)
+	//eta1Cons := pf.NewVolumeConservingLP("eta1", "ETA1_INDICATOR", dt, N*N)
+	//model.RegisterUserDefinedTerm("ETA1_CONSERVE", &eta1Cons, nil)
 	//model.RegisterUserDefinedTerm("CONS_NOISE", &cnsvNoise, dfields)
 	// kT := 0.086 * 200
 	// fDeriv := 2.0 * 3.77
@@ -233,7 +235,7 @@ func main() {
 	// }
 	// model.RegisterUserDefinedTerm("SPECTRAL_VISC", &specVisc, nil)
 	model.AddEquation("dconc/dt = mobility*LAP dfdc")
-	model.AddEquation("deta1/dt = dfdn1 + HESS1*eta1 + ELAST1 + ETA1_CONSERVE")
+	model.AddEquation("deta1/dt = dfdn1 + HESS1*eta1 + ELAST1")
 	model.AddEquation("deta2/dt = dfdn2 + HESS2*eta2 + ELAST2")
 
 	avgConc := SoluteConcentrationMonitor{
