@@ -96,8 +96,6 @@ func square(value float64, data []complex128, N int) {
 		iy := i / N
 		if ix > min && ix < max && iy > min && iy < max {
 			data[i] = complex(1.0, 0.0)
-		} else {
-			data[i] = complex(rand.Float64()*0.1, 0.0)
 		}
 	}
 }
