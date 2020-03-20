@@ -233,7 +233,7 @@ func main() {
 	// }
 	// model.RegisterUserDefinedTerm("SPECTRAL_VISC", &specVisc, nil)
 	model.AddEquation("dconc/dt = mobility*LAP dfdc")
-	model.AddEquation("deta1/dt = dfdn1 + HESS1*eta1 + ELAST1")
+	model.AddEquation("deta1/dt = dfdn1 + HESS1*eta1 + ELAST1 + ETA1_CONSERVE")
 	model.AddEquation("deta2/dt = dfdn2 + HESS2*eta2 + ELAST2")
 
 	avgConc := SoluteConcentrationMonitor{
