@@ -47,8 +47,8 @@ func (scm *SoluteConcentrationMonitor) Add(bricks map[string]pf.Brick) {
 
 func dfdc(i int, bricks map[string]pf.Brick) complex128 {
 	conc := real(bricks["conc"].Get(i))
-	eta1 := real(bricks["eta1"].Get(i)) / EtaEq
-	eta2 := real(bricks["eta2"].Get(i)) / EtaEq
+	eta1 := real(bricks["eta1"].Get(i)) * EtaEq
+	eta2 := real(bricks["eta2"].Get(i)) * EtaEq
 	res := 2.0*1.57*conc - 0.09 - 4.16*(eta1*eta1+eta2*eta2)
 	return complex(res, 0.0)
 }
@@ -66,8 +66,8 @@ func dfdeta(i int, bricks map[string]pf.Brick, value int) float64 {
 		eta2 = real(bricks["eta1"].Get(i))
 	}
 
-	eta1 /= EtaEq
-	eta2 /= EtaEq
+	eta1 *= EtaEq
+	eta2 *= EtaEq
 	res := -2*4.16*eta1*conc + 2*3.77*eta1
 	res -= 8.29 * (4.0*math.Pow(eta1, 3) - 2.0*eta1*eta2*eta2 - 6.0*math.Pow(eta1, 5))
 	res -= 2.76 * (2.0*eta1*math.Pow(eta2, 4) + 4.0*math.Pow(eta1, 3)*math.Pow(eta2, 2))
