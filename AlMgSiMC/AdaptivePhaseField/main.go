@@ -115,6 +115,11 @@ type Arguments struct {
 	Init     string  `json:"init"`
 }
 
+// KeyResults is a dictionary that stores key numbers from the run
+type KeyResults struct {
+	FinalSoluteConc float64
+}
+
 func main() {
 	inputfile := os.Args[1]
 	jsonFile, err := os.Open(inputfile)
@@ -255,4 +260,11 @@ func main() {
 	nepoch := args.Epoch
 	solver.Solve(nepoch, args.Steps)
 	pf.WriteXDMF(fileBackup.Prefix+".xdmf", []string{"conc", "eta1", "eta2"}, "ch", nepoch+solver.StartEpoch, []int{N, N})
+
+	keyResults := KeyResults{
+		FinalSoluteConc: avgConc.Data[len(avgConc.Data)-1],
+	}
+
+	b, err := json.Marshal(keyResults)
+	ioutil.WriteFile("keyResults.json", b, 0644)
 }
