@@ -7,7 +7,6 @@ import (
 	"math"
 	"math/rand"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/davidkleiven/gopf/elasticity"
@@ -150,18 +149,20 @@ func main() {
 		square(1.0, eta1.Data, N)
 	} else {
 		// Load from file
-		fnames := strings.Split(args.Init, ",")
-		concData := pf.LoadFloat64(fnames[0])
+		fname := args.Folder + fmt.Sprintf("/ch_conc_%d.bin", args.Start)
+		concData := pf.LoadFloat64(fname)
 		for i := range concData {
 			conc.Data[i] = complex(concData[i], 0.0)
 		}
 
-		eta1Data := pf.LoadFloat64(fnames[1])
+		fname = args.Folder + fmt.Sprintf("/ch_eta1_%d.bin", args.Start)
+		eta1Data := pf.LoadFloat64(fname)
 		for i := range eta1Data {
 			eta1.Data[i] = complex(eta1Data[i], 0.0)
 		}
 
-		eta2Data := pf.LoadFloat64(fnames[2])
+		fname = args.Folder + fmt.Sprintf("/ch_eta2_%d.bin", args.Start)
+		eta2Data := pf.LoadFloat64(fname)
 		for i := range eta2Data {
 			eta2.Data[i] = complex(eta2Data[i], 0.0)
 		}
