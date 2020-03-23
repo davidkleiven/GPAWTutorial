@@ -87,16 +87,16 @@ func uniform(maxval float64, data []complex128) {
 	}
 }
 
-func square(value float64, data []complex128, N int) {
+func square(value float64, matrix float64, data []complex128, N int) {
 	min := 7 * N / 16
 	max := 9 * N / 16
 	for i := range data {
 		ix := i % N
 		iy := i / N
 		if ix > min && ix < max && iy > min && iy < max {
-			data[i] = complex(1.0, 0.0)
+			data[i] = complex(value, 0.0)
 		} else {
-			data[i] = complex(0.09/3.14, 0.0)
+			data[i] = complex(matrix, 0.0)
 		}
 	}
 }
@@ -152,8 +152,8 @@ func main() {
 	if args.Init == "uniform" {
 		uniform(0.1, conc.Data)
 	} else if args.Init == "square" {
-		square(1.0, conc.Data, N)
-		square(1.0, eta1.Data, N)
+		square(1.0, 0.09/3.14, conc.Data, N)
+		square(1.0, 0.0, eta1.Data, N)
 	} else {
 		// Load from file
 		fname := args.Folder + fmt.Sprintf("/ch_conc_%d.bin", args.Start-1)
