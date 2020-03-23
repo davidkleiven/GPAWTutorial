@@ -241,7 +241,7 @@ func main() {
 	// 	Eps:                  5.0,
 	// }
 	// model.RegisterUserDefinedTerm("SPECTRAL_VISC", &specVisc, nil)
-	model.AddEquation("dconc/dt = mobility*dfdc + CONC_CONS")
+	model.AddEquation("dconc/dt = mobility*dfdc + CONC_CONSERVE")
 	model.AddEquation("deta1/dt = dfdn1 + HESS1*eta1 + ELAST1 + ETA1_CONSERVE")
 	model.AddEquation("deta2/dt = dfdn2 + HESS2*eta2 + ELAST2")
 
