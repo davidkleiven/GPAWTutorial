@@ -18,7 +18,7 @@ mpl.rcParams.update({"font.size": 18, "svg.fonttype": "none", "axes.unicode_minu
 fname = "data/pseudo_binary_free/adaptive_bias300K_-650mev_bck.h5"
 fname = "data/pseudo_binary_free/adaptive_bias300K_-650mev_bck2.h5"
 fname = "data/pseudo_binary_free/adaptive_bias600K_-650mev.h5"
-TEMP = 600
+TEMP = 400
 fname = "data/pseudo_binary_free/adaptive_bias{}K_-650mev.h5".format(TEMP)
 fname_diff = "data/diffraction/layered_bias700K.h5"
 
