@@ -107,6 +107,11 @@ func smearingDeriv(i int, bricks map[string]pf.Brick) complex128 {
 	return complex(6.0*x-6.0*x*x, 0.0)
 }
 
+// ConcentrationIndicator returns the concentration
+func ConcentrationIndicator(i int, bricks map[string]pf.Brick) complex128 {
+	return bricks["conc"].Get(i)
+}
+
 // Arguments is a structure that holds all the input arguments
 type Arguments struct {
 	Dx       float64 `json:"dx"`
@@ -222,10 +227,11 @@ func main() {
 	model.RegisterFunction("dfdn1", dfdn1)
 	model.RegisterFunction("dfdn2", dfdn2)
 	model.RegisterFunction("ETA1_INDICATOR", smearingDeriv)
+	model.RegisterFunction("CONC_INDICATOR", ConcentrationIndicator)
 
 	eta1Cons := pf.NewVolumeConservingLP("eta1", "ETA1_INDICATOR", dt, N*N)
 	model.RegisterUserDefinedTerm("ETA1_CONSERVE", &eta1Cons, nil)
-	concCons := pf.NewVolumeConservingLP("conc", "conc", dt, N*N)
+	concCons := pf.NewVolumeConservingLP("conc", "CONC_INDICATOR", dt, N*N)
 	model.RegisterUserDefinedTerm("CONC_CONSERVE", &concCons, nil)
 	//model.RegisterUserDefinedTerm("CONS_NOISE", &cnsvNoise, dfields)
 	// kT := 0.086 * 200
