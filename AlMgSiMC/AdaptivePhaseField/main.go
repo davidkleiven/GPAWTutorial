@@ -117,9 +117,9 @@ func uniform(maxval float64, data []complex128) {
 	}
 }
 
-func square(value float64, matrix float64, data []complex128, N int) {
-	min := 7 * N / 16
-	max := 9 * N / 16
+func square(value float64, matrix float64, data []complex128, N int, width int) {
+	min := N/2 - width/2
+	max := N/2 + width/2
 	for i := range data {
 		ix := i % N
 		iy := i / N
@@ -154,6 +154,7 @@ type Arguments struct {
 	Folder   string  `json:"folder"`
 	Start    int     `json:"start"`
 	Init     string  `json:"init"`
+	Width    int     `json:"width"`
 }
 
 // KeyResults is a dictionary that stores key numbers from the run
@@ -182,8 +183,8 @@ func main() {
 	if args.Init == "uniform" {
 		uniform(0.1, conc.Data)
 	} else if args.Init == "square" {
-		square(1.0, 0.09/3.14, conc.Data, N)
-		square(1.0, 0.0, eta1.Data, N)
+		square(1.0, 0.09/3.14, conc.Data, N, args.Width)
+		square(1.0, 0.0, eta1.Data, N, args.Width)
 	} else {
 		// Load from file
 		fname := args.Folder + fmt.Sprintf("/ch_conc_%d.bin", args.Start-1)
