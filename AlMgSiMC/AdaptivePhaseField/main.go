@@ -193,7 +193,7 @@ func main() {
 
 	mobility := pf.Scalar{
 		Name:  "mobility",
-		Value: complex(M, 0.0),
+		Value: complex(-1.0, 0.0),
 	}
 
 	elast1 := pf.NewHomogeneousModolus("eta1", []int{N, N}, C_al_tensor, misfit1)
@@ -222,8 +222,11 @@ func main() {
 	model.RegisterFunction("dfdn1", dfdn1)
 	model.RegisterFunction("dfdn2", dfdn2)
 	model.RegisterFunction("ETA1_INDICATOR", smearingDeriv)
+
 	eta1Cons := pf.NewVolumeConservingLP("eta1", "ETA1_INDICATOR", dt, N*N)
 	model.RegisterUserDefinedTerm("ETA1_CONSERVE", &eta1Cons, nil)
+	concCons := pf.NewVolumeConservingLP("conc", "conc", dt, N*N)
+	model.RegisterUserDefinedTerm("CONC_CONSERVE", &concCons, nil)
 	//model.RegisterUserDefinedTerm("CONS_NOISE", &cnsvNoise, dfields)
 	// kT := 0.086 * 200
 	// fDeriv := 2.0 * 3.77
@@ -238,7 +241,7 @@ func main() {
 	// 	Eps:                  5.0,
 	// }
 	// model.RegisterUserDefinedTerm("SPECTRAL_VISC", &specVisc, nil)
-	model.AddEquation("dconc/dt = mobility*LAP dfdc")
+	model.AddEquation("dconc/dt = mobility*dfdc + CONC_CONS")
 	model.AddEquation("deta1/dt = dfdn1 + HESS1*eta1 + ELAST1 + ETA1_CONSERVE")
 	model.AddEquation("deta2/dt = dfdn2 + HESS2*eta2 + ELAST2")
 
