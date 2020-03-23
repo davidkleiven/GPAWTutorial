@@ -14,14 +14,28 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
-// EtaEq is the equillibrium eta value
+// EtaEq is the equillibrium eta
 const EtaEq = 0.81649658092
-const cSquared = 1.57
-const cLin = 0.09
-const etaSqConc = 4.16
-const etaSq = 3.77
-const etaQuad = 8.29
-const eta1Sqeta2Quad = 2.76
+
+// Coefficients for 700K
+// const cSquared = 1.57
+// const cLin = 0.09
+// const etaSqConc = 4.16
+// const etaSq = 3.77
+// const etaQuad = 8.29
+// const eta1Sqeta2Quad = 2.76
+// const beta11Fit = 140.0
+// const beta22Fit = 878.0
+
+// Coefficients 600K
+const cSquared = 2.944216798279794
+const cLin = 0.17665300789678764
+const etaSqConc = 7.772732347458657
+const etaSq = 7.073186436187378
+const etaQuad = 15.298632023923876
+const eta1Sqeta2Quad = 5.099544007974626
+const beta11Fit = 74.44993782280204
+const beta22Fit = 465.31211139251263
 
 // SoluteConcentrationMonitor trackts the average concentration in the matrix
 type SoluteConcentrationMonitor struct {
@@ -195,8 +209,8 @@ func main() {
 	// Define gradient coefficients
 	// beta11 := 9.15 / (dx * dx)
 	// beta22 := 16.83 / (dx * dx)
-	beta11 := 140.0 / (dx * dx)
-	beta22 := 878.0 / (dx * dx)
+	beta11 := beta11Fit / (dx * dx)
+	beta22 := beta22Fit / (dx * dx)
 
 	M := 1.0 / (dx * dx)
 	alpha := pf.Scalar{
