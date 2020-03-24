@@ -168,16 +168,18 @@ func randomPrecipitates(conc []complex128, eta1 []complex128, eta2 []complex128,
 
 		for i := x - width/2; i < x+width/2; i++ {
 			for j := y - width/2; j < y+width/2; j++ {
-				if i < 0 {
-					i += N
+				idxX := i
+				idxY := j
+				if idxX < 0 {
+					idxX += N
 				}
-				if j < 0 {
-					j += N
+				if idxY < 0 {
+					idxY += N
 				}
 
-				i = i % N
-				j = j % N
-				idx := i*N + j
+				idxX = idxX % N
+				idxY = idxY % N
+				idx := idxX*N + idxY
 				conc[idx] = 1.0
 				oField[idx] = 1.0
 			}
