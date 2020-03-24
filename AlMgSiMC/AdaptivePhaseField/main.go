@@ -151,8 +151,8 @@ func randomPrecipitates(conc []complex128, eta1 []complex128, eta2 []complex128,
 		j := rand.Intn(numScaled)
 		siteGrid[i], siteGrid[j] = siteGrid[j], siteGrid[i]
 	}
-	for i := 0; i < num; i++ {
-		node := siteGrid[i]
+	for nodeIdx := 0; nodeIdx < num; nodeIdx++ {
+		node := siteGrid[nodeIdx]
 		sx := node % numScaled
 		sy := node / numScaled
 		x := sx*width + width/2
