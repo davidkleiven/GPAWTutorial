@@ -6,5 +6,7 @@
     "steps": 100,
     "folder": "/work/sophus/AdaptiveCHGL/AdaptiveSingle/DX0p5/",
     "start": 0,
-    "init": "square"
+    "init": "square",
+    "width": 32,
+    "numPrec": 20
 }
