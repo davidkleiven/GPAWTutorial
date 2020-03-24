@@ -135,41 +135,46 @@ func square(value float64, matrix float64, data []complex128, N int, width int) 
 func randomPrecipitates(conc []complex128, eta1 []complex128, eta2 []complex128, width int, num int) {
 	N := int(math.Sqrt(float64(len(conc))))
 	numScaled := len(conc) / (width * width)
-	occupied := make([]bool, numScaled)
-	numInserted := 0
-	for numInserted < num {
-		node := rand.Intn(numScaled)
-		if !occupied[node] {
-			occupied[node] = true
-			numInserted++
-			sx := node % numScaled
-			sy := node / numScaled
-			x := sx*width + width/2
-			y := sy*width + width/2
 
-			orientation := rand.Intn(2)
-			var oField []complex128
-			if orientation == 0 {
-				oField = eta1
-			} else {
-				oField = eta2
-			}
+	siteGrid := make([]int, numScaled)
+	for i := range siteGrid {
+		siteGrid[i] = i
+	}
 
-			for i := x - width/2; i < x+width/2; i++ {
-				for j := y - width/2; j < y+width/2; j++ {
-					if i < 0 {
-						i += N
-					}
-					if j < 0 {
-						j += N
-					}
+	// Shuffle
+	for i := range siteGrid {
+		j := rand.Intn(numScaled)
+		siteGrid[i], siteGrid[j] = siteGrid[j], siteGrid[i]
+	}
+	for i := 0; i < num; i++ {
+		node := siteGrid[i]
+		sx := node % numScaled
+		sy := node / numScaled
+		x := sx*width + width/2
+		y := sy*width + width/2
 
-					i = i % N
-					j = j % N
-					idx := i*N + j
-					conc[idx] = 1.0
-					oField[idx] = 1.0
+		orientation := rand.Intn(2)
+		var oField []complex128
+		if orientation == 0 {
+			oField = eta1
+		} else {
+			oField = eta2
+		}
+
+		for i := x - width/2; i < x+width/2; i++ {
+			for j := y - width/2; j < y+width/2; j++ {
+				if i < 0 {
+					i += N
 				}
+				if j < 0 {
+					j += N
+				}
+
+				i = i % N
+				j = j % N
+				idx := i*N + j
+				conc[idx] = 1.0
+				oField[idx] = 1.0
 			}
 		}
 	}
