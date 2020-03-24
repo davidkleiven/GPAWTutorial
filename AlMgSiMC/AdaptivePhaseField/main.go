@@ -18,14 +18,14 @@ import (
 const EtaEq = 0.81649658092
 
 // Coefficients for 700K
-// const cSquared = 1.57
-// const cLin = 0.09
-// const etaSqConc = 4.16
-// const etaSq = 3.77
-// const etaQuad = 8.29
-// const eta1Sqeta2Quad = 2.76
-// const beta11Fit = 140.0
-// const beta22Fit = 878.0
+const cSquared = 1.57
+const cLin = 0.09
+const etaSqConc = 4.16
+const etaSq = 3.77
+const etaQuad = 8.29
+const eta1Sqeta2Quad = 2.76
+const beta11Fit = 140.0
+const beta22Fit = 878.0
 
 // Coefficients 600K
 // const cSquared = 2.944216798279794
@@ -38,14 +38,14 @@ const EtaEq = 0.81649658092
 // const beta22Fit = 465.31211139251263
 
 // Coefficients 400K
-const cSquared = 16.643371551928645
-const cLin = 0.9986022931157187
-const etaSqConc = 43.93850089709162
-const etaSq = 39.984035816353376
-const etaQuad = 85.41959789170662
-const eta1Sqeta2Quad = 28.473199297235503
-const beta11Fit = 13.095303260422167
-const beta22Fit = 81.84564537763855
+// const cSquared = 16.643371551928645
+// const cLin = 0.9986022931157187
+// const etaSqConc = 43.93850089709162
+// const etaSq = 39.984035816353376
+// const etaQuad = 85.41959789170662
+// const eta1Sqeta2Quad = 28.473199297235503
+// const beta11Fit = 13.095303260422167
+// const beta22Fit = 81.84564537763855
 
 // SoluteConcentrationMonitor trackts the average concentration in the matrix
 type SoluteConcentrationMonitor struct {
@@ -131,6 +131,50 @@ func square(value float64, matrix float64, data []complex128, N int, width int) 
 	}
 }
 
+// Distribute a set of randomly oriented precipitates
+func randomPrecipitates(conc []complex128, eta1 []complex128, eta2 []complex128, width int, num int) {
+	N := int(math.Sqrt(float64(len(conc))))
+	numScaled := len(conc) / (width * width)
+	occupied := make([]bool, numScaled)
+	numInserted := 0
+	for numInserted < num {
+		node := rand.Intn(numScaled)
+		if !occupied[node] {
+			occupied[node] = true
+			numInserted++
+			sx := node % numScaled
+			sy := node / numScaled
+			x := sx*width + width/2
+			y := sy*width + width/2
+
+			orientation := rand.Intn(2)
+			var oField []complex128
+			if orientation == 0 {
+				oField = eta1
+			} else {
+				oField = eta2
+			}
+
+			for i := x - width/2; i < x+width/2; i++ {
+				for j := y - width/2; j < y+width/2; j++ {
+					if i < 0 {
+						i += N
+					}
+					if j < 0 {
+						j += N
+					}
+
+					i = i % N
+					j = j % N
+					idx := i*N + j
+					conc[idx] = 1.0
+					oField[idx] = 1.0
+				}
+			}
+		}
+	}
+}
+
 func smearingDeriv(i int, bricks map[string]pf.Brick) complex128 {
 	x := real(bricks["eta1"].Get(i))
 	if x < 0.0 || x > 1.0 {
@@ -155,6 +199,7 @@ type Arguments struct {
 	Start    int     `json:"start"`
 	Init     string  `json:"init"`
 	Width    int     `json:"width"`
+	NumPrec  int     `json:numPrec`
 }
 
 // KeyResults is a dictionary that stores key numbers from the run
@@ -185,6 +230,8 @@ func main() {
 	} else if args.Init == "square" {
 		square(1.0, 0.09/3.14, conc.Data, N, args.Width)
 		square(1.0, 0.0, eta1.Data, N, args.Width)
+	} else if args.Init == "rndPrec" {
+		randomPrecipitates(conc.Data, eta1.Data, eta2.Data, args.Width, args.NumPrec)
 	} else {
 		// Load from file
 		fname := args.Folder + fmt.Sprintf("/ch_conc_%d.bin", args.Start-1)
@@ -259,15 +306,15 @@ func main() {
 	model.RegisterFunction("dfdc", dfdc)
 	model.RegisterFunction("dfdn1", dfdn1)
 	model.RegisterFunction("dfdn2", dfdn2)
-	model.RegisterFunction("ETA1_INDICATOR", smearingDeriv)
-	model.RegisterFunction("CONC_INDICATOR", ConcentrationIndicator)
+	// model.RegisterFunction("ETA1_INDICATOR", smearingDeriv)
+	// model.RegisterFunction("CONC_INDICATOR", ConcentrationIndicator)
 
-	eta1Cons := pf.NewVolumeConservingLP("eta1", "ETA1_INDICATOR", dt, N*N)
-	model.RegisterUserDefinedTerm("ETA1_CONSERVE", &eta1Cons, nil)
-	concCons := pf.NewVolumeConservingLP("conc", "CONC_INDICATOR", dt, N*N)
-	model.RegisterUserDefinedTerm("CONC_CONSERVE", &concCons, nil)
-	model.AddEquation("dconc/dt = mobility*dfdc + CONC_CONSERVE")
-	model.AddEquation("deta1/dt = dfdn1 + HESS1*eta1 + ELAST1 + ETA1_CONSERVE")
+	// eta1Cons := pf.NewVolumeConservingLP("eta1", "ETA1_INDICATOR", dt, N*N)
+	// model.RegisterUserDefinedTerm("ETA1_CONSERVE", &eta1Cons, nil)
+	// concCons := pf.NewVolumeConservingLP("conc", "CONC_INDICATOR", dt, N*N)
+	// model.RegisterUserDefinedTerm("CONC_CONSERVE", &concCons, nil)
+	model.AddEquation("dconc/dt = mobility*LAP dfdc")
+	model.AddEquation("deta1/dt = dfdn1 + HESS1*eta1 + ELAST1")
 	model.AddEquation("deta2/dt = dfdn2 + HESS2*eta2 + ELAST2")
 
 	avgConc := SoluteConcentrationMonitor{
