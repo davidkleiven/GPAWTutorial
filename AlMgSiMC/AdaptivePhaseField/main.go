@@ -135,6 +135,7 @@ func square(value float64, matrix float64, data []complex128, N int, width int) 
 func randomPrecipitates(conc []complex128, eta1 []complex128, eta2 []complex128, width int, num int) {
 	N := int(math.Sqrt(float64(len(conc))))
 	numScaled := len(conc) / (4 * width * width)
+	Ns := int(math.Sqrt(float64(numScaled)))
 
 	siteGrid := make([]int, numScaled)
 	for i := range siteGrid {
@@ -153,8 +154,8 @@ func randomPrecipitates(conc []complex128, eta1 []complex128, eta2 []complex128,
 	}
 	for nodeIdx := 0; nodeIdx < num; nodeIdx++ {
 		node := siteGrid[nodeIdx]
-		sx := node % numScaled
-		sy := node / numScaled
+		sx := node % Ns
+		sy := node / Ns
 		x := 2*sx*width + width/2
 		y := 2*sy*width + width/2
 
@@ -290,7 +291,7 @@ func main() {
 
 	mobility := pf.Scalar{
 		Name:  "mobility",
-		Value: complex(-1.0, 0.0),
+		Value: complex(M, 0.0),
 	}
 
 	elast1 := pf.NewHomogeneousModolus("eta1", []int{N, N}, C_al_tensor, misfit1)
