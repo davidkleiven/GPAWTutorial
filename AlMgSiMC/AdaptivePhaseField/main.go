@@ -134,7 +134,7 @@ func square(value float64, matrix float64, data []complex128, N int, width int) 
 // Distribute a set of randomly oriented precipitates
 func randomPrecipitates(conc []complex128, eta1 []complex128, eta2 []complex128, width int, num int) {
 	N := int(math.Sqrt(float64(len(conc))))
-	numScaled := len(conc) / (width * width)
+	numScaled := len(conc) / (4 * width * width)
 
 	siteGrid := make([]int, numScaled)
 	for i := range siteGrid {
@@ -155,8 +155,8 @@ func randomPrecipitates(conc []complex128, eta1 []complex128, eta2 []complex128,
 		node := siteGrid[nodeIdx]
 		sx := node % numScaled
 		sy := node / numScaled
-		x := sx*width + width/2
-		y := sy*width + width/2
+		x := 2*sx*width + width/2
+		y := 2*sy*width + width/2
 
 		orientation := rand.Intn(2)
 		var oField []complex128
