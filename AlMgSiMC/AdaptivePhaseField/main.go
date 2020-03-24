@@ -18,24 +18,24 @@ import (
 const EtaEq = 0.81649658092
 
 // Coefficients for 700K
-const cSquared = 1.57
-const cLin = 0.09
-const etaSqConc = 4.16
-const etaSq = 3.77
-const etaQuad = 8.29
-const eta1Sqeta2Quad = 2.76
-const beta11Fit = 140.0
-const beta22Fit = 878.0
+// const cSquared = 1.57
+// const cLin = 0.09
+// const etaSqConc = 4.16
+// const etaSq = 3.77
+// const etaQuad = 8.29
+// const eta1Sqeta2Quad = 2.76
+// const beta11Fit = 140.0
+// const beta22Fit = 878.0
 
 // Coefficients 600K
-// const cSquared = 2.944216798279794
-// const cLin = 0.17665300789678764
-// const etaSqConc = 7.772732347458657
-// const etaSq = 7.073186436187378
-// const etaQuad = 15.298632023923876
-// const eta1Sqeta2Quad = 5.099544007974626
-// const beta11Fit = 74.44993782280204
-// const beta22Fit = 465.31211139251263
+const cSquared = 2.944216798279794
+const cLin = 0.17665300789678764
+const etaSqConc = 7.772732347458657
+const etaSq = 7.073186436187378
+const etaQuad = 15.298632023923876
+const eta1Sqeta2Quad = 5.099544007974626
+const beta11Fit = 74.44993782280204
+const beta22Fit = 465.31211139251263
 
 // Coefficients 400K
 // const cSquared = 16.643371551928645
