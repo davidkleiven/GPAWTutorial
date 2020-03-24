@@ -141,6 +141,11 @@ func randomPrecipitates(conc []complex128, eta1 []complex128, eta2 []complex128,
 		siteGrid[i] = i
 	}
 
+	if numScaled <= num {
+		msg := fmt.Sprintf("Num. nodes requested %d. Max. nodes: %d\n", num, numScaled)
+		panic(msg)
+	}
+
 	// Shuffle
 	for i := range siteGrid {
 		j := rand.Intn(numScaled)
