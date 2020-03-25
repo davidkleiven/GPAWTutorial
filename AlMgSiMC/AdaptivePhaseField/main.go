@@ -18,14 +18,14 @@ import (
 const EtaEq = 0.81649658092
 
 // Coefficients for 700K
-// const cSquared = 1.57
-// const cLin = 0.09
-// const etaSqConc = 4.16
-// const etaSq = 3.77
-// const etaQuad = 8.29
-// const eta1Sqeta2Quad = 2.76
-// const beta11Fit = 140.0
-// const beta22Fit = 878.0
+const cSquared = 1.57
+const cLin = 0.09
+const etaSqConc = 4.16
+const etaSq = 3.77
+const etaQuad = 8.29
+const eta1Sqeta2Quad = 2.76
+const beta11Fit = 140.0
+const beta22Fit = 878.0
 
 // Coefficients 600K
 // const cSquared = 2.944216798279794
@@ -38,14 +38,14 @@ const EtaEq = 0.81649658092
 // const beta22Fit = 465.31211139251263
 
 // Coefficients 400K
-const cSquared = 16.643371551928645
-const cLin = 0.9986022931157187
-const etaSqConc = 43.93850089709162
-const etaSq = 39.984035816353376
-const etaQuad = 85.41959789170662
-const eta1Sqeta2Quad = 28.473199297235503
-const beta11Fit = 13.095303260422167
-const beta22Fit = 81.84564537763855
+// const cSquared = 16.643371551928645
+// const cLin = 0.9986022931157187
+// const etaSqConc = 43.93850089709162
+// const etaSq = 39.984035816353376
+// const etaQuad = 85.41959789170662
+// const eta1Sqeta2Quad = 28.473199297235503
+// const beta11Fit = 13.095303260422167
+// const beta22Fit = 81.84564537763855
 
 // SoluteConcentrationMonitor trackts the average concentration in the matrix
 type SoluteConcentrationMonitor struct {
@@ -196,6 +196,14 @@ func smearingDeriv(i int, bricks map[string]pf.Brick) complex128 {
 	return complex(6.0*x-6.0*x*x, 0.0)
 }
 
+func smearingDeriv2(i int, bricks map[string]pf.Brick) complex128 {
+	x := real(bricks["eta2"].Get(i))
+	if x < 0.0 || x > 1.0 {
+		return 0.0
+	}
+	return complex(6.0*x-6.0*x*x, 0.0)
+}
+
 // ConcentrationIndicator returns the concentration
 func ConcentrationIndicator(i int, bricks map[string]pf.Brick) complex128 {
 	return bricks["conc"].Get(i)
@@ -319,16 +327,19 @@ func main() {
 	model.RegisterFunction("dfdc", dfdc)
 	model.RegisterFunction("dfdn1", dfdn1)
 	model.RegisterFunction("dfdn2", dfdn2)
-	// model.RegisterFunction("ETA1_INDICATOR", smearingDeriv)
+	model.RegisterFunction("ETA1_INDICATOR", smearingDeriv)
+	model.RegisterFunction("ETA2_INDICATOR", smearingDeriv2)
 	// model.RegisterFunction("CONC_INDICATOR", ConcentrationIndicator)
 
-	// eta1Cons := pf.NewVolumeConservingLP("eta1", "ETA1_INDICATOR", dt, N*N)
-	// model.RegisterUserDefinedTerm("ETA1_CONSERVE", &eta1Cons, nil)
+	eta1Cons := pf.NewVolumeConservingLP("eta1", "ETA1_INDICATOR", dt, N*N)
+	model.RegisterUserDefinedTerm("ETA1_CONSERVE", &eta1Cons, nil)
+	eta2Cons := pf.NewVolumeConservingLP("eta2", "ETA2_INDICATOR", dt, N*N)
+	model.RegisterUserDefinedTerm("ETA2_CONSERVE", &eta2Cons, nil)
 	// concCons := pf.NewVolumeConservingLP("conc", "CONC_INDICATOR", dt, N*N)
 	// model.RegisterUserDefinedTerm("CONC_CONSERVE", &concCons, nil)
 	model.AddEquation("dconc/dt = mobility*LAP dfdc")
-	model.AddEquation("deta1/dt = dfdn1 + HESS1*eta1 + ELAST1")
-	model.AddEquation("deta2/dt = dfdn2 + HESS2*eta2 + ELAST2")
+	model.AddEquation("deta1/dt = dfdn1 + HESS1*eta1 + ELAST1 + ETA1_CONSERVE")
+	model.AddEquation("deta2/dt = dfdn2 + HESS2*eta2 + ELAST2 + ETA2_CONSERVE")
 
 	avgConc := SoluteConcentrationMonitor{
 		Data:      []float64{},
