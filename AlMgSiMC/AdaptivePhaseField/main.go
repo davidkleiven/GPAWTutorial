@@ -28,24 +28,24 @@ const EtaEq = 0.81649658092
 // const beta22Fit = 878.0
 
 // Coefficients 600K
-const cSquared = 2.944216798279794
-const cLin = 0.17665300789678764
-const etaSqConc = 7.772732347458657
-const etaSq = 7.073186436187378
-const etaQuad = 15.298632023923876
-const eta1Sqeta2Quad = 5.099544007974626
-const beta11Fit = 74.44993782280204
-const beta22Fit = 465.31211139251263
+// const cSquared = 2.944216798279794
+// const cLin = 0.17665300789678764
+// const etaSqConc = 7.772732347458657
+// const etaSq = 7.073186436187378
+// const etaQuad = 15.298632023923876
+// const eta1Sqeta2Quad = 5.099544007974626
+// const beta11Fit = 74.44993782280204
+// const beta22Fit = 465.31211139251263
 
 // Coefficients 400K
-// const cSquared = 16.643371551928645
-// const cLin = 0.9986022931157187
-// const etaSqConc = 43.93850089709162
-// const etaSq = 39.984035816353376
-// const etaQuad = 85.41959789170662
-// const eta1Sqeta2Quad = 28.473199297235503
-// const beta11Fit = 13.095303260422167
-// const beta22Fit = 81.84564537763855
+const cSquared = 16.643371551928645
+const cLin = 0.9986022931157187
+const etaSqConc = 43.93850089709162
+const etaSq = 39.984035816353376
+const etaQuad = 85.41959789170662
+const eta1Sqeta2Quad = 28.473199297235503
+const beta11Fit = 13.095303260422167
+const beta22Fit = 81.84564537763855
 
 // SoluteConcentrationMonitor trackts the average concentration in the matrix
 type SoluteConcentrationMonitor struct {
