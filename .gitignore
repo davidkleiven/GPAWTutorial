@@ -12,3 +12,24 @@
 *.traj
 *.db
 Exercises/GettingStarted/data/*
+AgPt/*.csv
+*/.vscode/*
+AgPt/.cluster_manager_backup.json
+AgPt/nestedlassoTrain.json
+AgPt/saAgPtSearch.json
+AlMgSQS/data/almg_sqs.xyz AlMgSQS/data/fit_fcc.json AlMgSQS/data/fit_hcp.json AlMgSQS/data/fit_sp217_ordered.json
+AlMgSiMC/.smt/labels AlMgSiMC/.smt/project
+AlMgSiMC/AdaptivePhaseField/main
+AlMgSiMC/AdaptivePhaseField/pfProf.prof
+AlMgSiMC/CHGlobalAniso/chGlobalAniso
+AlMgSiMC/CHGlobalAniso/chVandeven
+
+AlMgSiMC/S0022-0248(01)01891-7
+AlMgSiMC/*.csv
+AlMgSiMC/main
+AlMgSiMC/phaseField/data/*
+AlMgSiMC/phaseField/main
+CE/AlMgSiX_FCC/.Rhistory
+CE/AlMgSiX_FCC/.smt/*
+AlMgSQS/data/*
+AlMgSiMC/.smt/*

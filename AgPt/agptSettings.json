@@ -1,0 +1,49 @@
+{
+  "size": [
+    4,
+    4,
+    4
+  ],
+  "supercell_factor": 20,
+  "db_name": "agpt.db",
+  "max_cluster_size": 4,
+  "max_cluster_dia": 8.0,
+  "ignore_background_atoms": true,
+  "concentration": {
+    "A_eq": [
+      [
+        1,
+        1
+      ]
+    ],
+    "b_eq": [
+      1
+    ],
+    "A_lb": [
+      [
+        1,
+        0
+      ],
+      [
+        0,
+        1
+      ]
+    ],
+    "b_lb": [
+      0,
+      0
+    ],
+    "basis_elements": [
+      [
+        "Ag",
+        "Pt"
+      ]
+    ]
+  },
+  "crystalstructure": "fcc",
+  "a": 4.09,
+  "c": null,
+  "covera": null,
+  "u": null,
+  "factory": "CEBulk"
+}
