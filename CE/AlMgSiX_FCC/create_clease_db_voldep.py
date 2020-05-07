@@ -10,6 +10,7 @@ from clease import PhysicalRidge
 from clease.physical_ridge import random_cv_hyper_opt
 import numpy as np
 import re
+import json
 
 db_local = "data/structures_with_bulk.db"
 def initialize_db():
@@ -90,12 +91,26 @@ def fit():
         else:
             regressor.diameters.append(float(result.groups()[0]))
     params = {
-            'lamb_dia': np.logspace(-12, 4, 5).tolist(),
-            'lamb_size': np.logspace(-12, 4, 5).tolist(),
-            'size_decay': ['linear', 'exponential'],
-            'dia_decay': ['linear', 'exponential']
+            'lamb_dia': np.logspace(-12, 4, 500).tolist(),
+            'lamb_size': np.logspace(-12, 4, 500).tolist(),
+            'size_decay': ['linear', 'exponential', 'poly2', 'poly4', 'poly6'],
+            'dia_decay': ['linear', 'exponential', 'poly2', 'poly4', 'poly6']
         }
     res = random_cv_hyper_opt(regressor, params, X, y, cv=5, num_trials=100)
+
+    outfile = "data/voldep_fit_result.json"
+    data = {
+        'names': cf_names,
+        'coeff': res['best_coeffs'],
+        'X': X.tolist(),
+        'y': y.tolist(),
+        'cv': res['best_cf'],
+        'best_params': res['best_params']
+    }
+
+    with open(outfile, 'w') as out:
+        json.dump(outfile, data)
+
 
 
 fit()
