@@ -28,22 +28,23 @@ def initialize_db():
     settings = CEBulk(
         Concentration(basis_elements=[['Al', 'Mg', 'Si', 'X']]),
         crystalstructure='fcc',
-        a=4.05, size=[1, 1, 1], max_cluster_size=4,
-        max_cluster_dia=[5.0, 5.0, 5.0],
+        a=4.05, size=[1, 1, 1], max_cluster_size=3,
+        max_cluster_dia=[5.0, 5.0],
         db_name=db_name
     )
+    settings.basis_func_type = 'binary_linear'
 
     newStruct = NewStructures(settings)
 
     # Insert all initial structures
     counter = 0
-    # with connect(db_local) as db:
-    #     for row in db.select():
-    #         counter += 1
-    #         print(f"Inserting structure {counter}")
-    #         name = f"group{row.group}"
-    #         atoms = row.toatoms()
-    #         newStruct.insert_structure(atoms, name=name)
+    with connect(db_local) as db:
+        for row in db.select():
+            counter += 1
+            print(f"Inserting structure {counter}")
+            name = f"group{row.group}"
+            atoms = row.toatoms()
+            newStruct.insert_structure(atoms, name=name)
     
     data = pd.read_csv("data/bulk_mod_fit.csv")
     db = connect(settings.db_name)
@@ -58,6 +59,7 @@ def initialize_db():
             E = row[2]
             B = row[3]
             V = row[4]
+            dBdP = row[5]
             L = V**(1.0/3.0)
             atoms = Atoms(cell=[L, L, L])
             calc = SinglePointCalculator(atoms, energy=E)
@@ -66,7 +68,7 @@ def initialize_db():
             print(name)
             init_id = db.get([('name', '=', name)]).id
             update_db(init_id, final_struct=atoms, db_name=settings.db_name,
-                    custom_kvp_init={'bulk_mod': B})
+                    custom_kvp_init={'bulk_mod': B, 'dBdP': dBdP})
         except Exception as exc:
             print(exc)
             traceback.print_exc()
