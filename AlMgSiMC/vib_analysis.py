@@ -16,12 +16,16 @@ from matplotlib import pyplot as plt
 import numpy as np
 from hiphive.calculators import ForceConstantCalculator
 from ase.build import make_supercell
+from hiphive.core.translational_constraints import get_translational_constraint_matrix
+from hiphive.core.rotational_constraints import get_rotational_constraint_matrix
 
 ref_fcc = "data/mgsi100_fully_relaxed.xyz"
+ref_fcc_conv = "data/mgsi_rattled8full_relax.xyz"
 beta_struct = "data/mgsi_interstitial_fully_relaxed.xyz"
+ref_fcc_conv2x2x2 = "data/mgsi2.xyz"
 
 DB_NAME = "mgsi_hiphive.db"
-rattle_std = 0.03
+rattle_std = 0.01
 minimum_distance = 2.3
 hbar = 4.135667696e-15  # eVs
 
@@ -31,26 +35,33 @@ def prepare(phase):
 
     if phase == 'fcc':
         ref_struct = read(ref_fcc)*(2, 2, 2)
+    elif phase == 'fcc_conventional':
+        ref_struct = read(ref_fcc_conv)*(2, 2, 2)
     elif phase == 'beta':
         ref_struct = read(beta_struct)*(2, 2, 2)
+    elif phase == 'fcc2x2x2':
+        ref_struct = read(ref_fcc_conv2x2x2)
 
-    db.write(ref_struct, group=1, comment="Reference structure for mgfi FCC")
+    db.write(ref_struct, group=3, comment="Reference structure for mgfi FCC conv")
     structures = generate_mc_rattled_structures(ref_struct, 20, rattle_std,
                                                 minimum_distance)
     for s in structures:
         num = random.randint(0, 2**32-1)
-        db.write(s, group=num, phase=phase)
+        db.write(s, group=num, phase=phase, rattle_std=rattle_std)
 
 
 def fit(phase):
     db = connect(DB_NAME)
     if phase == 'fcc':
         ref_fcc = db.get(id=1).toatoms()
+    elif phase == 'fcc2x2x2':
+        ref_fcc = db.get(group=3).toatoms()
     else:
         ref_fcc = db.get(id=41)
     structures = []
     groups = []
-    for row in db.select(phase=phase):
+    scond = [('phase', '=', phase), ('rattle_std','<',0.02)]
+    for row in db.select(scond):
         groups.append(row.group)
 
     for g in groups:
@@ -62,10 +73,10 @@ def fit(phase):
 
     structures = prepare_structures(structures, ref_fcc)
 
-    cutoffs = [5.0, 5.0, 3.0]
-    cs = ClusterSpace(structures[0], cutoffs)
+    cutoffs = [3.0, 3.0, 3.0]
+    cs = ClusterSpace(structures[0], cutoffs, symprec=1e-4)
     print(cs)
-    print(cs.print_orbits())
+    print(structures)
 
     sc = StructureContainer(cs)
     for structure in structures:
@@ -75,9 +86,19 @@ def fit(phase):
             print(exc)
     print(sc)
 
-    opt = Optimizer(sc.get_fit_data())
+    A, y = sc.get_fit_data()
+    At = get_rotational_constraint_matrix(sc.cluster_space)
+    yt = np.zeros((At.shape[0]))
+    lam_trans = 0.001
+    A_full = np.vstack((A, lam_trans * At))
+    y_full = np.hstack((y, yt))
+    # A_full = A
+    # y_full = y
+    
+
+    opt = Optimizer((A_full, y_full), standardize=False)
     opt.train()
-    plot_fit(opt, sc)
+    #plot_fit(opt, sc)
 
     print(opt)
 
@@ -153,7 +174,10 @@ def md_calculation(fcp_file):
 
 
 def phonon_dos(fcp_file):
-    prim = read(ref_fcc)
+    if 'fcc2x2x2' in fcp_file:
+        prim = read(ref_fcc_conv2x2x2)
+    else:
+        prim = read(ref_fcc)
     fcp = ForceConstantPotential.read(fcp_file)
     mesh = [33, 33, 33]
 
@@ -187,6 +211,7 @@ def phonon_dos(fcp_file):
     xticks = [x*hbar*1e15 for x in xticks]  # Convert THz to meV
     # plt.gca().set_xticks(xticks)
     plt.gca().set_xlabel("Frequency (THz)")
+    plt.savefig("phononBand.png", dpi=200)
     phonopy.run_thermal_properties(t_step=10, t_max=800, t_min=100)
     tp_dict = phonopy.get_thermal_properties_dict()
     temperatures = tp_dict['temperatures']
@@ -199,8 +224,10 @@ def phonon_dos(fcp_file):
     plt.show()
 
 
-phonon_dos('mgsi_fcc.fcp')
+fit("fcc2x2x2")
+#phonon_dos('mgsi_fcc2x2x2.fcp')
 #md_calculation('mgsi_fcc.fcp')
-#fit("fcc")
 #prepare_fcc()
 #prepare("beta")
+#prepare("fcc")
+#prepare("fcc2x2x2")
