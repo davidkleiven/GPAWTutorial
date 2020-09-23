@@ -20,7 +20,8 @@ def get_conc(rowNum):
         return None
     symbs = ['Al', 'Mg', 'Si', 'Cu']
     concs = {s: float(c) for s, c in zip(symbs, lines[rowNum].split(','))}
-    return concs
+    s = sum(concs.values())
+    return {k: v/s for k, v in concs.items()}
 
 def get_eci():
     with open(eci_file, 'r') as infile:
