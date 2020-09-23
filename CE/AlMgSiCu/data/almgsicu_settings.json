@@ -1,0 +1,115 @@
+{
+  "kwargs": {
+    "size": [
+      1,
+      1,
+      1
+    ],
+    "supercell_factor": 27,
+    "db_name": "data/almgsicu_ce.db",
+    "max_cluster_size": 4,
+    "max_cluster_dia": [
+      5.0,
+      5.0,
+      4.0
+    ],
+    "concentration": {
+      "A_eq": [
+        [
+          1,
+          1,
+          1,
+          1
+        ]
+      ],
+      "b_eq": [
+        1
+      ],
+      "A_lb": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          -1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          -1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          -1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          -1.0
+        ]
+      ],
+      "b_lb": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -1.0,
+        -1.0,
+        -0.55,
+        -1.0
+      ],
+      "basis_elements": [
+        [
+          "Al",
+          "Mg",
+          "Si",
+          "Cu"
+        ]
+      ]
+    },
+    "crystalstructure": "fcc",
+    "a": 4.05,
+    "c": null,
+    "covera": null,
+    "u": null,
+    "factory": "CEBulk"
+  },
+  "include_background_atoms": false,
+  "skew_threshold": 40,
+  "basis_func_type": {
+    "name": "polynomial",
+    "unique_elements": [
+      "Al",
+      "Cu",
+      "Mg",
+      "Si"
+    ]
+  }
+}
