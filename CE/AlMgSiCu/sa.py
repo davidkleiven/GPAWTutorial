@@ -32,6 +32,7 @@ def get_eci():
 
 def main(rowNum):
     conc = get_conc(rowNum)
+    print(conc)
     if conc is None:
         return
 
@@ -50,16 +51,17 @@ def main(rowNum):
     # Trigger a calculation
     atoms.get_potential_energy()
     temperatures = list(range(1000, 1, -50))
-    mc = Montecarlo(atoms, 60)
     obs = LowestEnergyStructure(atoms)
-    mc.attach(obs)
 
     for T in temperatures:
-        mc.T = T
+        print(f"Temperature {T}")
+        mc = Montecarlo(atoms, T)
+        mc.attach(obs)
         mc.run(steps=20*len(atoms))
     
     db = connect(db_name)
-    obs.emin_atoms.set_calculator(SinglePointCalculator(energy=obs.lowest_energy))
+    calc = SinglePointCalculator(obs.emin_atoms, energy=obs.lowest_energy)
+    obs.emin_atoms.set_calculator(calc)
     db.write(obs.emin_atoms)
 
 main(int(sys.argv[1]))

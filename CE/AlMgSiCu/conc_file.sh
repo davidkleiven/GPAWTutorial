@@ -15,6 +15,10 @@ do
                 continue
             fi
             nal=$((100-$nsi-$ncu-$nmg))
+	    if (($nal == 100))
+            then
+                continue
+	    fi
 
             echo $nal,$nmg,$nsi,$ncu >> $FILE
             NUM_JOBS=$(($NUM_JOBS+1))
