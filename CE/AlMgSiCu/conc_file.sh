@@ -4,7 +4,7 @@ NUM_JOBS=0
 
 echo "Al,Mg,Si,Cu" > $FILE
 
-for (( nsi=0; nsi<50; nsi += $STEP))
+for (( nsi=0; nsi<51; nsi += $STEP))
 do
     for (( ncu=0; ncu<95; ncu += $STEP ))
     do
