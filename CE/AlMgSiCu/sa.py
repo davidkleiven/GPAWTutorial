@@ -1,3 +1,4 @@
+import sys
 from ase.db import connect
 from clease.montecarlo import Montecarlo
 from clease.montecarlo.observers import LowestEnergyStructure
@@ -12,6 +13,7 @@ N = 4
 eci_file = "data/ga_almgsicu_model.json"
 db_name = "data/almgsicu_sa.db"
 conc_file = "data/sa_concs.csv"
+settings_file = "data/almgsicu_settings.json"
 
 def get_conc(rowNum):
     with open(conc_file, 'r') as infile:
@@ -26,13 +28,14 @@ def get_conc(rowNum):
 def get_eci():
     with open(eci_file, 'r') as infile:
         data = json.load(infile)
-    return data['Coeff']
+    return data['Coeffs']
 
 def main(rowNum):
     conc = get_conc(rowNum)
     if conc is None:
         return
 
+    settings = settings_from_json(settings_file)
     atoms = bulk('Al', a=4.05, crystalstructure='fcc', cubic=True)*(N, N, N)
 
     atoms = attach_calculator(settings, atoms, get_eci())

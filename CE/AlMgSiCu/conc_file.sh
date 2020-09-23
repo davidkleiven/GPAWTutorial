@@ -1,14 +1,14 @@
 STEP=5
-FILE="conc_file.csv"
+FILE="data/sa_concs.csv"
 NUM_JOBS=0
 
 echo "Al,Mg,Si,Cu" > $FILE
 
 for (( nsi=0; nsi<50; nsi += $STEP))
 do
-    for (( ncu=0; ncu<100; ncu += $STEP ))
+    for (( ncu=0; ncu<95; ncu += $STEP ))
     do
-        for (( nmg=0;nmg<100;nmg += $STEP ))
+        for (( nmg=0;nmg<95;nmg += $STEP ))
         do
             if (($nsi+$nmg+$ncu > 100))
             then
