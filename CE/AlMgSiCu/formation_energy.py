@@ -74,7 +74,7 @@ def main():
     neg_hull = convex_hull(dE, concs)
     stable_structs = structs_on_hull(neg_hull)
     print(max(stable_structs))
-    show_stable([ids[s] for s in stable_structs if s < len(ids)])
+    # show_stable([ids[s] for s in stable_structs if s < len(ids)])
 
     fig = plt.figure(figsize=(4, 3))
     mg_conc = [c['Cu'] for c in concs]
