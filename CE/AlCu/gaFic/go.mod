@@ -3,8 +3,9 @@ module gafic
 go 1.13
 
 require (
+	github.com/MaxHalford/eaopt v0.1.1-0.20200203085436-ba4b9950c779
 	github.com/ajstarks/svgo v0.0.0-20200725142600-7a3c8b57fecb // indirect
-	github.com/davidkleiven/gogafit v0.0.0-20200930084144-d402d349b320 // indirect
+	github.com/davidkleiven/gogafit v0.0.0-20201001090823-c113a69dae44
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
