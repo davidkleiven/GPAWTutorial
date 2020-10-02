@@ -9,7 +9,8 @@ from ase.visualize import view
 
 REF_ENG = {
     "Al": -3.735496408086985, 
-    "Mg": -1.608, 
+    #"Mg": -1.608, 
+    "Mg": -1.582328, # NOMAD value
     "Si": -4.800166410712106,
     "Cu": -3.674
 }
