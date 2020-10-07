@@ -58,8 +58,8 @@ def main():
     kmc = KineticMonteCarlo(
         atoms, T, barrier, [neighbor]
     )
-    kmc.add_observer(snapshot, 10)
-    kmc.run(1000, vac_idx)
+    kmc.add_observer(snapshot, 100)
+    kmc.run(1000000, vac_idx)
     snapshot.close()
 
 main()
