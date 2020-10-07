@@ -14,7 +14,7 @@ func main() {
 	ga.NGenerations = 1000
 
 	fic := gafit.PredictionErrorFIC{
-		Data: []int{10, 42, 86, 136, 116},
+		Data: []int{10, 42, 86, 136, 116, 177},
 	}
 
 	factory := gafit.LinearModelFactory{
