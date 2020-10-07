@@ -9,7 +9,8 @@ from ase.visualize import view
 
 REF_ENG = {
     "Al": -3.735496408086985, 
-    "Mg": -1.608, 
+    #"Mg": -1.608, 
+    "Mg": -1.582328, # NOMAD value
     "Si": -4.800166410712106,
     "Cu": -3.674
 }
@@ -74,7 +75,7 @@ def main():
     neg_hull = convex_hull(dE, concs)
     stable_structs = structs_on_hull(neg_hull)
     print(max(stable_structs))
-    show_stable([ids[s] for s in stable_structs if s < len(ids)])
+    # show_stable([ids[s] for s in stable_structs if s < len(ids)])
 
     fig = plt.figure(figsize=(4, 3))
     mg_conc = [c['Cu'] for c in concs]

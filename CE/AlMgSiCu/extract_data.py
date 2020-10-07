@@ -3,7 +3,7 @@ from clease.data_manager import CorrFuncEnergyDataManager
 from clease import ClusterCoverageChecker
 
 db_name = "data/almgsicu_ce.db"
-out = "data/almgsi.csv"
+out = "data/almgsicu.csv"
 
 manager = CorrFuncEnergyDataManager(db_name, 'polynomial_cf')
 manager.get_data([('converged', '=', 1)])
