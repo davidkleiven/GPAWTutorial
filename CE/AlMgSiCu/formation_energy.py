@@ -78,7 +78,7 @@ def main():
     # show_stable([ids[s] for s in stable_structs if s < len(ids)])
 
     fig = plt.figure(figsize=(4, 3))
-    mg_conc = [c['Cu'] for c in concs]
+    mg_conc = [c['Al'] for c in concs]
     ax = fig.add_subplot(1, 1, 1)
     ax.plot(mg_conc, dE, 'o', mfc='none')
     ax.set_xlabel('Concentration')
