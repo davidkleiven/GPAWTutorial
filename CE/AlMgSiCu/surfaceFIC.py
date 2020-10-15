@@ -32,6 +32,7 @@ def fic_single(X, y, coeff, names, target_data):
 	X = data[:, :-2]
 	E_dft = data[:, -2]
 	size = data[:,-1]
+	E_dft /= size
 	inv_size = 1.0/size
 	with open(target_data, 'r') as infile:
 		header = infile.readline().strip()
