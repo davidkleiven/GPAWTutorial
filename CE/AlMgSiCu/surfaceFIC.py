@@ -55,7 +55,8 @@ def fic(X, y, coeff, names):
 
 
 def main(arg):
-	args = json.loads(arg)
+	with open(arg, 'r') as infile:
+		args = json.load(infile)
 
 	# When gogafit calls this script, args will now contain
 	# {
