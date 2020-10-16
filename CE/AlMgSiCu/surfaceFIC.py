@@ -20,10 +20,10 @@ def slope(x, y, var=None):
 	var_slope = np.sum(dx**2*var)/s
 	return slope, var_slope
 
-def fic_single(X, y, coeff, names, target_data):
+def fic_single(X, y, coeff, names, target_data, verbose=False):
 	pred = X.dot(coeff)
 	prec = np.linalg.inv(X.T.dot(X))
-	rmse = np.sqrt(np.mean(pred - y)**2)
+	rmse = np.sqrt(np.mean((pred - y)**2))
 	rows, cols = X.shape
 	if rows > cols:
 		rmse *= np.sqrt(rows/(rows - cols))
@@ -42,17 +42,42 @@ def fic_single(X, y, coeff, names, target_data):
 	cols = [header_col[k] for k in names]
 	X = X[:, cols]
 	pred = X.dot(coeff)
+	print(E_dft, pred)
 
 	slope_dft, _ = slope(inv_size, E_dft)
 	var = rmse**2*(1.0 + np.diag(X.dot(prec).dot(X.T)))
 	slope_ce, slope_var = slope(inv_size, pred, var=var)
 	bias = slope_ce - slope_dft
+
+	if verbose:
+		print(f"Slope DFT: {slope_dft}")
+		print(f"Slope CE: {slope_ce} std {np.sqrt(slope_var)}")
 	return np.sqrt(bias**2 + slope_var)
 
 def fic(X, y, coeff, names):
 	fic1 = fic_single(X, y, coeff, names, surfaceAlt)
 	fic2 = fic_single(X, y, coeff, names, surfacePure)
 	return fic1 + fic2
+
+def from_model(model_file):
+	with open(model_file, 'r') as infile:
+		data = json.load(infile)
+		coeff = data["Coeffs"]
+	
+	data = np.loadtxt("data/almgsicu.csv", skiprows=1, delimiter=",")
+	X = data[:, :-1]
+	y = data[:, -1]
+	with open("data/almgsicu.csv", 'r') as infile:
+		header = infile.readline().strip()
+		header = header.replace("#", "")
+		header = header.replace(" ", "")
+		header = header.split(",")
+	cols = [header.index(k) for k in coeff.keys()]
+	vals = np.array(list(coeff.values()))
+	X = X[:, cols]
+	fic_single(X, y, vals, list(coeff.keys()), surfaceAlt, verbose=True)
+	
+
 
 
 def main(arg):
@@ -81,5 +106,6 @@ def main(arg):
     # if gogafit should be able to extract
 	print("GOGAFIT_COST: {}".format(cost_value))
 
+#from_model("data/ga_surface_fic.json")
 main(sys.argv[1])
 	
