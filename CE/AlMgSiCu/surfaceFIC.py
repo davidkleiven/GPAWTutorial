@@ -28,6 +28,7 @@ def fic_single(X, y, coeff, names, target_data, verbose=False):
 	rows, cols = X.shape
 	if rows > cols:
 		rmse *= np.sqrt(rows/(rows - cols))
+	print(f"RMSE: {rmse}")
 
 	data = np.loadtxt(target_data, skiprows=1, delimiter=",")
 	X = data[:, :-2]
@@ -105,7 +106,6 @@ def main(arg):
 	# Predictions for Y can be obtained via y_pred = X.dot(Coeff)
 
 	X = np.reshape(args["X"], (args["Rows"], args["Cols"]))
-	assert np.allclose(X[:, 0], 1.0)
 	y = np.array(args["Y"])
 	coeff = np.array(args["Coeff"])
 	names = args["Names"]
