@@ -17,7 +17,8 @@ def slope(x, y, var=None):
 		return slope, None
 	
 	s = np.sum(dx**2)**2
-	var_slope = np.sum(dx**2*var)/s
+	variances = var*(1.0 - 2.0/len(dy)) + np.sum(var)/len(dy)**2
+	var_slope = np.sum(dx**2*variances)/s
 	return slope, var_slope
 
 def fic_single(X, y, coeff, names, target_data, verbose=False):
@@ -42,17 +43,26 @@ def fic_single(X, y, coeff, names, target_data, verbose=False):
 	cols = [header_col[k] for k in names]
 	X = X[:, cols]
 	pred = X.dot(coeff)
-	print(E_dft, pred)
 
 	slope_dft, _ = slope(inv_size, E_dft)
 	var = rmse**2*(1.0 + np.diag(X.dot(prec).dot(X.T)))
 	slope_ce, slope_var = slope(inv_size, pred, var=var)
 	bias = slope_ce - slope_dft
 
+	# Try to fit the energies
+	bias = np.sum((E_dft - pred)**2)
+
 	if verbose:
+		print(f"Inv. size: {inv_size}")
 		print(f"Slope DFT: {slope_dft}")
 		print(f"Slope CE: {slope_ce} std {np.sqrt(slope_var)}")
-	return np.sqrt(bias**2 + slope_var)
+
+		from matplotlib import pyplot as plt
+		plt.plot(inv_size, E_dft, 'x')
+		plt.plot(inv_size, pred, 'o')
+		plt.show()
+	return np.sqrt(bias + var)
+	#return np.sqrt(bias**2 + slope_var)
 
 def fic(X, y, coeff, names):
 	fic1 = fic_single(X, y, coeff, names, surfaceAlt)
@@ -75,9 +85,9 @@ def from_model(model_file):
 	cols = [header.index(k) for k in coeff.keys()]
 	vals = np.array(list(coeff.values()))
 	X = X[:, cols]
+	print(f"No. coeffs: {len(coeff)}")
 	fic_single(X, y, vals, list(coeff.keys()), surfaceAlt, verbose=True)
-	
-
+	fic_single(X, y, vals, list(coeff.keys()), surfacePure, verbose=True)
 
 
 def main(arg):
@@ -107,5 +117,6 @@ def main(arg):
 	print("GOGAFIT_COST: {}".format(cost_value))
 
 #from_model("data/ga_surface_fic.json")
+#from_model("data/ga_almgsicu_aicc.json")
 main(sys.argv[1])
 	
