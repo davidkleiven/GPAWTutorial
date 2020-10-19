@@ -117,5 +117,5 @@ def main(arg):
 	print("GOGAFIT_COST: {}".format(cost_value))
 
 #from_model("data/ga_surface_fic.json")
-from_model("data/ga_almgsicu_aicc.json")
-#main(sys.argv[1])
+#from_model("data/ga_almgsicu_aicc.json")
+main(sys.argv[1])
