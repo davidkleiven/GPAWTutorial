@@ -105,6 +105,7 @@ def main(arg):
 	# Predictions for Y can be obtained via y_pred = X.dot(Coeff)
 
 	X = np.reshape(args["X"], (args["Rows"], args["Cols"]))
+	assert np.allclose(X[:, 0], 1.0)
 	y = np.array(args["Y"])
 	coeff = np.array(args["Coeff"])
 	names = args["Names"]
