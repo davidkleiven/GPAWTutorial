@@ -50,7 +50,7 @@ def fic_single(X, y, coeff, names, target_data, verbose=False):
 	bias = slope_ce - slope_dft
 
 	# Try to fit the energies
-	bias = np.sum((E_dft - pred)**2)
+	bias = np.mean((E_dft - pred)**2)
 
 	if verbose:
 		print(f"Inv. size: {inv_size}")
@@ -61,7 +61,7 @@ def fic_single(X, y, coeff, names, target_data, verbose=False):
 		plt.plot(inv_size, E_dft, 'x')
 		plt.plot(inv_size, pred, 'o')
 		plt.show()
-	return np.sqrt(bias + var)
+	return np.sqrt(bias + np.mean(var))
 	#return np.sqrt(bias**2 + slope_var)
 
 def fic(X, y, coeff, names):
