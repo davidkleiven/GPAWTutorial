@@ -31,7 +31,7 @@ def fic_single(X, y, coeff, names, target_data, verbose=False):
 	print(f"RMSE: {rmse}")
 
 	data = np.loadtxt(target_data, skiprows=1, delimiter=",")
-	X = data[:, :-2]
+	X_target = data[:, :-2]
 	E_dft = data[:, -2]
 	size = data[:,-1]
 	E_dft /= size
@@ -42,16 +42,20 @@ def fic_single(X, y, coeff, names, target_data, verbose=False):
 	
 	header_col = {k: i for i, k in enumerate(header)}
 	cols = [header_col[k] for k in names]
-	X = X[:, cols]
-	pred = X.dot(coeff)
+	X_target = X_target[:, cols]
+	pred = X_target.dot(coeff)
 
 	slope_dft, _ = slope(inv_size, E_dft)
-	var = rmse**2*(1.0 + np.diag(X.dot(prec).dot(X.T)))
+	var = rmse**2*(1.0 + np.diag(X_target.dot(prec).dot(X_target.T)))
 	slope_ce, slope_var = slope(inv_size, pred, var=var)
 	bias = slope_ce - slope_dft
 
 	# Try to fit the energies
 	bias = np.mean((E_dft - pred)**2)
+	print("BIAS", np.sqrt(bias))
+	print('\n'.join(str(x) for x in E_dft))
+	print()
+	print('\n'.join(str(x) for x in pred))
 
 	if verbose:
 		print(f"Inv. size: {inv_size}")
@@ -118,5 +122,5 @@ def main(arg):
 	print("GOGAFIT_COST: {}".format(cost_value))
 
 #from_model("data/ga_surface_fic.json")
-#from_model("data/ga_almgsicu_aicc.json")
-main(sys.argv[1])
+from_model("data/ga_almgsicu_aicc.json")
+#main(sys.argv[1])

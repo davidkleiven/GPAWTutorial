@@ -1,6 +1,7 @@
 from ase.io.trajectory import TrajectoryReader
 from clease.settings import settings_from_json
 from clease.corr_func import CorrFunction
+from clease.tools import wrap_and_sort_by_position
 
 outfile = "data/surfacePure.csv"
 
@@ -14,7 +15,7 @@ def main():
     for i in range(0, len(traj), 2):
         init = traj[i]
         final = traj[i+1]
-        corrs.append(cf.get_cf(init))
+        corrs.append(cf.get_cf(wrap_and_sort_by_position(init)))
         sizes.append(len(init))
         energies.append(final.get_potential_energy())
 
